@@ -50,5 +50,3 @@ next-env.d.ts
 __pycache__/
 *.pyc
 
-# copied from node_modules on install (scripts/copy-maplibre-worker.mjs)
-/public/vendor/

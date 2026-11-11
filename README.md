@@ -8,6 +8,23 @@ See its README for setup, endpoints, and current limitations. The frontend below
 still demonstrates the original Jakobshavn sample dataset; connecting it to the
 Chattogram backend is a subsequent step.
 
+## Chattogram observation explorer
+
+The first integrated feature is at **[/explore](http://localhost:3000/explore)**:
+NASA GCOV catalog footprints, an attributed division boundary, date filtering,
+scene evidence, and a tilted MapLibre map with NASA GIBS Blue Marble context.
+It discovers observations; it does not yet compute environmental changes.
+
+Start the backend using [its instructions](backend/README.md), then run `pnpm dev`.
+The frontend proxies its two explorer requests to `http://127.0.0.1:8000` by
+default; set server-side `BACKEND_URL` for another backend location. No client
+secret or Earthdata login is needed for this metadata feature. A fresh database
+starts empty: use **Discover observations**, then **Load next page** if offered.
+
+Use pnpm for Node dependencies (`pnpm install`, `pnpm build`). See
+[the explorer implementation notes](docs/EXPLORER.md) for architecture, data
+provenance, library choices, validation, and remaining work.
+
 Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing with the SARs**. We use radar from NISAR (NASA–ISRO) to track Jakobshavn Glacier (Sermeq Kujalleq), Greenland's fastest glacier, through cloud and polar night.
 
 - `/`: project page with a live 3D view beside the NISAR spacecraft
@@ -16,9 +33,9 @@ Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing 
 ## Run the site
 
 ```bash
-npm install
-npm run dev        # http://localhost:3000
-npm run build      # production check
+pnpm install
+pnpm dev        # http://localhost:3000
+pnpm build      # production check
 ```
 
 ## Dashboard data

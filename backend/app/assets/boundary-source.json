@@ -1,0 +1,14 @@
+{
+  "name": "Chattogram Division",
+  "source_name": "Chittagong",
+  "source": "Bangladesh Bureau of Statistics (BBS) / HDX, via geoBoundaries gbHumanitarian",
+  "source_url": "https://data.humdata.org/dataset/cod-ab-bgd",
+  "download_url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbHumanitarian/BGD/ADM1/geoBoundaries-BGD-ADM1.geojson",
+  "boundary_id": "BGD-ADM1-88445334",
+  "year": 2018,
+  "license": "CC BY 3.0 IGO",
+  "license_url": "https://creativecommons.org/licenses/by/3.0/igo/",
+  "downloaded_at": "2026-11-11T20:30:19.837563+00:00",
+  "sha256": "873c0f69fbf6d4a623b89b78ef4cabf88a2dfe6fb32c2e3cad2e71cbf7c4dc31",
+  "note": "2018 reference boundary, not verified as the current legal boundary. Display is simplified; intersection tests use the original geometry. Not suitable for cadastral decisions."
+}

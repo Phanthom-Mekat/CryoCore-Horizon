@@ -55,8 +55,8 @@ export function SiteNav() {
           </a>
         ))}
       </nav>
-      <Link href="/dashboard" className="nav-cta">
-        Dashboard
+      <Link href="/explore" className="nav-cta">
+        Explore Chattogram
       </Link>
     </header>
   );

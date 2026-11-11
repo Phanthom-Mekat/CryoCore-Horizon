@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, BookOpen, Gauge, LayoutDashboard, Menu, Mountain, Radar, Satellite, Search, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Bell, BookOpen, Compass, Gauge, LayoutDashboard, Menu, Mountain, Radar, Satellite, Search, X, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { DataGate, useDashboardMaybe } from "./DashboardProvider";
 
 type Item = { href: string; label: string; icon: LucideIcon };
 const NAV: { group?: string; items: Item[] }[] = [
-  { items: [{ href: "/dashboard", label: "Overview", icon: LayoutDashboard }] },
+  { group: "Chattogram", items: [{ href: "/explore", label: "Observation explorer", icon: Compass }] },
+  { group: "Jakobshavn", items: [{ href: "/dashboard", label: "Overview", icon: LayoutDashboard }] },
   {
     group: "Glacier",
     items: [
@@ -33,6 +34,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const data = useDashboardMaybe();
+  const isExplorer = path === "/explore";
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const alertCount = data?.alerts.filter((a) => a.kind !== "peak").length ?? 0;
@@ -82,6 +84,7 @@ export function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="d-side-foot">
+          {isExplorer && <p className="d-status is-live"><i aria-hidden="true" />NASA catalog metadata</p>}
           {data && (
             <p className={`d-status ${data.manifest.sample ? "is-sample" : "is-live"}`}>
               <i aria-hidden="true" />
@@ -102,7 +105,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Menu size={20} />
           </button>
           <p className="d-title">{TITLES[path] ?? "Dashboard"}</p>
-          <form
+          {!isExplorer && <form
             className="d-search"
             role="search"
             onSubmit={(e) => {
@@ -112,11 +115,11 @@ export function Shell({ children }: { children: ReactNode }) {
           >
             <Search size={15} aria-hidden="true" />
             <input type="search" placeholder="Search passes by date" aria-label="Search NISAR passes by date" value={q} onChange={(e) => setQ(e.target.value)} />
-          </form>
-          <Link href="/dashboard/alerts" className="d-icon-btn d-bell" aria-label={`Alerts, ${alertCount} active`}>
+          </form>}
+          {!isExplorer && <Link href="/dashboard/alerts" className="d-icon-btn d-bell" aria-label={`Alerts, ${alertCount} active`}>
             <Bell size={18} aria-hidden="true" />
             {alertCount > 0 && <span className="d-dot" />}
-          </Link>
+          </Link>}
           <span className="d-avatar" title="Team CryoCore Horizon" aria-hidden="true">
             CH
           </span>
@@ -128,7 +131,8 @@ export function Shell({ children }: { children: ReactNode }) {
           </p>
         )}
         <main id="d-main" className="d-body">
-          <DataGate>{children}</DataGate>
+          {/* the glacier pages wait for their data; the explorer brings its own */}
+          {isExplorer ? children : <DataGate>{children}</DataGate>}
         </main>
       </div>
     </div>

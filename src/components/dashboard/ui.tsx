@@ -3,13 +3,13 @@ import { ChevronRight, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 /** Breadcrumb trail plus page actions, as in the top of every dashboard page. */
-export function PageHead({ crumbs, actions }: { crumbs: string[]; actions?: ReactNode }) {
+export function PageHead({ crumbs, actions, root = { href: "/dashboard", label: "Jakobshavn" } }: { crumbs: string[]; actions?: ReactNode; root?: { href: string; label: string } }) {
   return (
     <div className="d-head">
       <nav aria-label="Breadcrumb">
         <ol className="d-crumbs">
           <li>
-            <Link href="/dashboard">Jakobshavn</Link>
+            <Link href={root.href}>{root.label}</Link>
           </li>
           {crumbs.map((c, i) => (
             <li key={c} aria-current={i === crumbs.length - 1 ? "page" : undefined}>

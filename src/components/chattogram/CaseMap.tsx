@@ -85,7 +85,6 @@ export function CaseMap({
     let dead = false;
     import("maplibre-gl").then((ml) => {
       if (dead || !el.current) return;
-      ml.setWorkerUrl(`/vendor/maplibre-gl-worker-${ml.getVersion()}.mjs`); // copied there on install
 
       const reduced = matchMedia(REDUCED).matches;
       const m = new ml.Map({
@@ -104,8 +103,8 @@ export function CaseMap({
         m.addControl(new ml.ScaleControl({ unit: "metric", maxWidth: 120 }), "bottom-left");
       }
       // the basemap style names a few icons its sprite lacks; a blank one keeps the console clean
-      m.setMissingStyleImageResolver((id) => {
-        if (!m.hasImage(id)) m.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) });
+      m.on("styleimagemissing", (e: { id: string }) => {
+        if (!m.hasImage(e.id)) m.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
       });
       m.on("error", (e) => {
         if (String(e.error?.message ?? "").includes("tiles.openfreemap.org")) setError("The basemap couldn’t load. The radar layers still work.");

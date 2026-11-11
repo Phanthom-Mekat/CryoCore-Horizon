@@ -1,7 +1,29 @@
 # CryoCore Horizon: Chattogram implementation plan
 
-Status: proposed roadmap, ready to implement on `backendv1`.
+Status: discovery explorer implemented on `backendv1`; scientific case processing remains planned.
+
+Implementation update: the first discovery increment is implemented at `/explore`.
+It includes an attributed 2018 BBS/HDX reference boundary, real NASA catalog
+footprints, polygon-intersection filtering, date selection, and source inspection.
+See [feature notes](docs/EXPLORER.md). F01 remains incomplete for analysis use until
+the boundary's current suitability and a smaller analysis polygon are verified;
+F02 still needs real-file inspection and a scientifically compatible pair.
 Prepared: 12 November 2026.
+
+### Completed discovery increment
+
+- [x] Serve catalog footprints, acquisition-day counts, and boundary provenance through the FastAPI explorer endpoint.
+- [x] Filter actual scene polygons against the division polygon; report excluded and missing footprints separately.
+- [x] Add reproducible boundary preparation, pinned source metadata, checksum, and license attribution.
+- [x] Connect real NASA CMR search and pagination to the SQLite catalog through server-side frontend routes.
+- [x] Build a MapLibre explorer with NASA GIBS context, selectable scenes, date filtering, and source inspection.
+- [x] Match the existing landing/dashboard aesthetic using the shared brand, dashboard shell, navigation, page header, KPI components, and color tokens.
+- [x] Adopt pnpm with a committed lockfile and document frontend/backend setup and data limitations.
+- [x] Pass 17 backend tests, the production frontend build, and TypeScript checking; inspect desktop and 390 px mobile layouts.
+
+These completed tasks cover discovery, not processed radar imagery or validated
+surface-change findings. F01/F02 and the scientific milestones remain incomplete.
+
 Demo target: 240 seconds, as specified by the team. Verify the actual submission
 duration, format, eligibility, and deadlines against the current event rules before recording.
 
@@ -62,11 +84,14 @@ Already present:
 - Next.js/React frontend, Three.js hero, dashboard shell, charts, and comparison UI.
 - FastAPI backend, SQLite catalog, NASA CMR discovery, source metadata, and tests.
 - Original Jakobshavn sample dashboard and glacier-specific Python pipeline.
+- Chattogram discovery explorer with a versioned reference boundary, real catalog
+  footprints, acquisition-date filtering, and source inspection.
 
 Not yet present:
 
-- Verified Chattogram boundary, authenticated NISAR downloads, processed rasters,
-  change analysis, frontend integration, or validated local findings.
+- Verification of the reference boundary's current suitability, authenticated
+  NISAR downloads, processed rasters, change analysis, processed-case frontend
+  integration, or validated local findings.
 
 The existing NASA search demonstrates metadata discovery only. Catalog record
 counts are not counts of usable temporal observations, validated changes, or full
@@ -104,7 +129,9 @@ Priority definitions:
 
 ### Gate A — select a usable story before polishing it
 
-- [ ] Obtain a verified administrative polygon and record provenance/license.
+- [x] Obtain a versioned reference administrative polygon and record provenance/license
+  (2018 BBS/HDX boundary via pinned geoBoundaries source).
+- [ ] Verify the reference boundary's current suitability for the selected analysis.
 - [ ] Choose a manageable analysis subset with actual overlapping NISAR coverage.
 - [ ] Inspect real files and record acquisition times, product versions, maturity,
   orbit/track, frequency, polarization, and relevant quality metadata.
@@ -201,11 +228,15 @@ Proposed additions; final schemas must be agreed before frontend integration:
 
 ### F-A. Replace the glacier assumptions
 
-- [x] Add a typed Chattogram API client and case provider; remove glacier-specific
-  speed units, calving-front summaries, labels, and assumptions from this journey.
-- [x] Keep any old sample experience explicitly separate from the real case.
+- [x] Add a typed Chattogram discovery API client and remove glacier-specific
+  metrics and labels from the explorer journey.
+  _Frontend: `src/lib/chattogram/api.ts`, types generated from the backend OpenAPI schema (`npm run api:types`)._
+- [ ] Add the processed-case provider once the case API is available.
+- [x] Separate the real Chattogram discovery workspace from the Jakobshavn sample dashboard in navigation.
 - [x] Simplify navigation to **Explore**, **Compare**, **Evidence**, and **About**.
+  _Frontend: `/chattogram` has these four views._
 - [x] Keep a single selected case/date/extent state across map, chart, and evidence.
+  _Frontend: stack, before/after dates, map view and selected acquisition live in the URL (`CaseProvider`)._
 
 ### F-B. Build the main screen around the map
 
@@ -213,16 +244,18 @@ Target desktop composition: a dominant map occupying about two thirds of the
 screen, a compact evidence panel, and a bottom timeline. Put the case name,
 observation dates, and data source above the map. Avoid a wall of small metric cards.
 
-- [x] Use a WebGL map with georeferenced raster and polygon layers; evaluate a
-  MapLibre-based implementation against the first real processed layer.
-  _Frontend: MapLibre 6.16 draws real NISAR GCOV browse quicklooks (georeferenced from their KML) and NASA footprints; re-check against the first processed γ⁰ layer._
+- [x] Use MapLibre with georeferenced catalog polygons and attributed NASA GIBS raster context.
+  _Frontend: `/chattogram` also draws the real NISAR GCOV browse quicklooks, georeferenced from ASF's KML or the CMR footprint._
+- [ ] Evaluate the map against the first real processed NISAR raster layer.
+- [x] Reuse the established navy surfaces, ice-blue accents, typography, and shared components across the explorer, dashboard, and landing navigation.
 - [x] Use ink/navy surfaces, warm white text, cyan for new water candidates, and
   amber for recession candidates, with patterns/icons for accessibility.
   _Frontend: colours checked with a CVD/contrast validator; each category also has its own stripe direction and icon. The map layer is ready for `/findings` polygons._
 - [x] Use a separate diverging legend for signed backscatter change. Do not reuse
   water-category colors in a way that implies classification.
   _Frontend: magenta–grey–green dB scale, ±6 dB; never drawn together with the categories (see `src/lib/chattogram/palette.ts`)._
-- [x] Add named landmarks, a scale bar, restrained boundaries, and always-visible legends.
+- [x] Add a named city landmark, a scale bar, restrained boundaries, and always-visible discovery legends.
+  _Frontend: `/chattogram` names eight landmarks (Chattogram, Cox’s Bazar, Feni, Noakhali, Sandwip, Hatiya, Maheshkhali, Kaptai Lake)._
 - [x] Add hover values, selected-area outlines, and smooth transitions lasting
   roughly 150–300 ms. Respect reduced-motion settings.
   _Frontend: hover shows each acquisition's date, time, track and polarizations; pixel values follow once processed rasters exist._
