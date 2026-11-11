@@ -1,26 +1,29 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
+import { Shell } from "@/components/dashboard/Shell";
 import { CaseProvider } from "@/components/chattogram/CaseProvider";
-import { CaseShell } from "@/components/chattogram/CaseShell";
+import { CaseGate } from "@/components/chattogram/CaseGate";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "../dashboard/dashboard.css";
 import "./chattogram.css";
 
-// The case is read in the browser from the backend API, so navigating in may wait on it.
+// The case is read in the browser through the backend proxy, so navigating in may wait on it.
 export const instant = false;
 
 export const metadata: Metadata = {
   title: { template: "%s | Chattogram NISAR case", default: "Chattogram NISAR case" },
-  description: "NASA–ISRO NISAR radar acquisitions over Chattogram, Bangladesh: explore, compare and inspect the evidence.",
+  description: "NASA–ISRO NISAR radar over Chattogram, Bangladesh: explore the acquisitions, compare dates and inspect the evidence.",
 };
 
 export default function CaseLayout({ children }: { children: ReactNode }) {
   return (
-    // the selection lives in the URL (useSearchParams), which needs a Suspense boundary on a static route
-    <Suspense>
-      <CaseProvider>
-        <CaseShell>{children}</CaseShell>
-      </CaseProvider>
-    </Suspense>
+    <Shell>
+      {/* the selection lives in the URL (useSearchParams), which needs a Suspense boundary on a static route */}
+      <Suspense>
+        <CaseProvider>
+          <CaseGate>{children}</CaseGate>
+        </CaseProvider>
+      </Suspense>
+    </Shell>
   );
 }

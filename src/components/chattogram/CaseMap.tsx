@@ -42,7 +42,8 @@ type Props = {
   footprints?: Acquisition[];
   selected?: string | null;
   onPick?: (conceptId: string | null) => void;
-  envelope?: [number, number, number, number] | null;
+  /** Division outline (GeoJSON) from the backend. */
+  boundary?: GeoJSON.FeatureCollection | null;
   label: string;
   /** Hands the map instance to a parent, e.g. to sync two maps in a swipe. */
   onReady?: (map: MlMap) => void;
@@ -60,7 +61,7 @@ export function CaseMap({
   footprints = [],
   selected = null,
   onPick,
-  envelope,
+  boundary = null,
   label,
   onReady,
   controls = true,
@@ -111,23 +112,24 @@ export function CaseMap({
       });
       m.on("load", () => {
         if (dead) return;
-        m.addSource("envelope", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        m.addLayer({ id: "envelope", type: "line", source: "envelope", paint: { "line-color": "#b4ab9c", "line-width": 1, "line-dasharray": [3, 3], "line-opacity": 0.7 } });
+        m.addSource("boundary", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        m.addLayer({ id: "boundary-glow", type: "line", source: "boundary", paint: { "line-color": "#8fe3ff", "line-width": 6, "line-opacity": 0.12 } });
+        m.addLayer({ id: "boundary", type: "line", source: "boundary", paint: { "line-color": "#8fe3ff", "line-width": 1.4, "line-opacity": 0.9 } });
         m.addSource("footprints", { type: "geojson", data: { type: "FeatureCollection", features: [] }, promoteId: "id" });
         m.addLayer({
           id: "footprints-fill",
           type: "fill",
           source: "footprints",
-          paint: { "fill-color": "#f3eee5", "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.08, 0] },
+          paint: { "fill-color": "#e9f0f6", "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.08, 0] },
         });
         m.addLayer({
           id: "footprints",
           type: "line",
           source: "footprints",
           paint: {
-            "line-color": ["case", ["boolean", ["get", "selected"], false], "#f3eee5", "#8fe3ff"],
+            "line-color": ["case", ["boolean", ["get", "selected"], false], "#ffb454", "#3987e5"],
             "line-width": ["case", ["boolean", ["get", "selected"], false], 2.2, 1],
-            "line-opacity": ["case", ["boolean", ["get", "selected"], false], 1, 0.45],
+            "line-opacity": ["case", ["boolean", ["get", "selected"], false], 1, 0.55],
           },
         });
         // processed water-change candidates: category colour, its own stripe direction, outline brighter when selected
@@ -209,16 +211,9 @@ export function CaseMap({
   }, [findings, selectedFinding, ready]);
 
   useEffect(() => {
-    const src = map.current?.getSource("envelope") as GeoJSONSource | undefined;
-    if (!src) return;
-    const b = envelope;
-    src.setData({
-      type: "FeatureCollection",
-      features: b
-        ? [{ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]]] } }]
-        : [],
-    });
-  }, [envelope, ready]);
+    const src = map.current?.getSource("boundary") as GeoJSONSource | undefined;
+    src?.setData(boundary ?? { type: "FeatureCollection", features: [] });
+  }, [boundary, ready]);
 
   useEffect(() => {
     const src = map.current?.getSource("footprints") as GeoJSONSource | undefined;
@@ -256,7 +251,7 @@ export function CaseMap({
           m.addSource("browse", { type: "image", url, coordinates: corners });
           m.addLayer(
             { id: "browse", type: "raster", source: "browse", paint: { "raster-opacity": imageOpacity, "raster-fade-duration": 0, "raster-resampling": "linear" } },
-            "envelope",
+            "boundary-glow",
           );
         }
         m.once("idle", () => live && setImg({ id, state: "shown" }));

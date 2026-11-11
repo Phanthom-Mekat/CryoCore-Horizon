@@ -1,7 +1,8 @@
 # Feature 01: Chattogram observation explorer
 
-Implemented on `backendv1`: `/explore`. This is the discovery portion of roadmap
-F01/F02, not a finished environmental analysis or validated before/after pair.
+Now the **Scene catalogue** page of the Chattogram case: `/chattogram/catalogue` (the old `/explore` redirects there).
+This is the discovery portion of roadmap F01/F02, not a finished environmental analysis or validated before/after pair.
+How it fits with the radar map, Compare and Evidence pages: [CHATTOGRAM.md](CHATTOGRAM.md).
 
 The explorer shares the existing dashboard `Shell`, navigation, `PageHead`,
 `KpiStrip`, and `Kpi` components. Both workspaces inherit the same navy surfaces,
@@ -11,7 +12,7 @@ it must use the existing design tokens instead of introducing another visual the
 
 ## User journey
 
-1. Open `/explore` with the backend running. Stored real NASA records load from SQLite.
+1. Open `/chattogram/catalogue` with the backend running. Stored real NASA records load from SQLite.
 2. Inspect the division outline and catalog footprints. “Fit division” resets the
    camera; “Tilt view” changes the viewing angle, not the terrain elevation.
 3. Click a timeline bar to filter by an actual acquisition date. Bar spacing is

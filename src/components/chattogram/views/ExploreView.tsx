@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback } from "react";
-import { ExternalLink, FileText } from "lucide-react";
+import Link from "next/link";
+import { Columns2, ExternalLink, FileText } from "lucide-react";
 import { covers, fmtDate, fmtSize, fmtTime, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { CaseMap } from "../CaseMap";
 import { FOCUS, useCase } from "../CaseProvider";
+import { CaseBar } from "../CaseBar";
 import { Timeline } from "../Timeline";
 
 export function ExploreView() {
-  const { load, stack, before, after, view, pick, set } = useCase();
+  const { load, stack, before, after, view, pick, set, href } = useCase();
   const onMove = useCallback((v: typeof view) => set({ view: v }), [set]);
   const onPick = useCallback((a: Acquisition) => set({ pick: a.conceptId }), [set]);
   if (load.status !== "ready" || !stack) return null;
@@ -20,6 +22,16 @@ export function ExploreView() {
   if (after) marks[after.conceptId] = "After";
 
   return (
+    <>
+      <CaseBar
+        title="Explore the radar"
+        actions={
+          <Link className="c-btn is-primary" href={href("/chattogram/compare")}>
+            <Columns2 size={16} aria-hidden="true" />
+            Compare two dates
+          </Link>
+        }
+      />
     <div className="c-explore">
       <section className="c-stage" aria-label="Map">
         <CaseMap
@@ -30,7 +42,7 @@ export function ExploreView() {
           footprints={stack.items}
           selected={shown.conceptId}
           onPick={(id) => id && set({ pick: id })}
-          envelope={load.data.region.bbox}
+          boundary={load.data.region.boundary}
         />
         <Timeline items={stack.items} current={shown.conceptId} onPick={onPick} marks={marks} />
       </section>
@@ -108,15 +120,16 @@ export function ExploreView() {
             </li>
             <li>
               <i className="c-key c-key-foot" aria-hidden="true" />
-              Footprint of each date in this stack; the bright one is shown.
+              Footprint of each date in this stack; amber is the one shown.
             </li>
             <li>
               <i className="c-key c-key-env" aria-hidden="true" />
-              Search envelope. Not the division boundary.
+              Chattogram Division ({load.data.region.provenance.year} reference boundary, {load.data.region.provenance.source}).
             </li>
           </ul>
         </div>
       </aside>
     </div>
+    </>
   );
 }

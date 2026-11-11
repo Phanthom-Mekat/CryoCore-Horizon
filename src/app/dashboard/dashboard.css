@@ -37,9 +37,30 @@
   font-weight: 600;
 }
 .d-nav-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin: 22px 10px 8px;
   font-size: 0.76rem;
   color: var(--muted);
+}
+.d-nav > div:first-child .d-nav-group {
+  margin-top: 4px;
+}
+.d-nav-tag {
+  padding: 1px 7px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font: 600 0.62rem/1.5 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.d-nav-tag.is-live {
+  color: var(--d-good);
+}
+.d-nav-tag.is-sample {
+  color: var(--d-warn);
 }
 .d-nav ul {
   display: grid;

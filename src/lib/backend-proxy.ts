@@ -1,5 +1,5 @@
-/** Only the two explicit public explorer routes use this server-side proxy. */
-export async function proxyBackend(request: Request, path: "explorer" | "nasa/search") {
+/** Only these explicit public routes use this server-side proxy; the browser never names a backend path itself. */
+export async function proxyBackend(request: Request, path: "explorer" | "nasa/search" | "scenes") {
   const origin = process.env.BACKEND_URL || "http://127.0.0.1:8000";
   try {
     const response = await fetch(`${origin}/api/v1/${path}${new URL(request.url).search}`, {

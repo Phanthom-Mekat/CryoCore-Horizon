@@ -2,7 +2,7 @@
 
 Status: discovery explorer implemented on `backendv1`; scientific case processing remains planned.
 
-Implementation update: the first discovery increment is implemented at `/explore`.
+Implementation update: the case lives at `/chattogram` (Overview, Explore map, Compare, Evidence, Scene catalogue, About; see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md)). The first discovery increment is its Scene catalogue.
 It includes an attributed 2018 BBS/HDX reference boundary, real NASA catalog
 footprints, polygon-intersection filtering, date selection, and source inspection.
 See [feature notes](docs/EXPLORER.md). F01 remains incomplete for analysis use until
@@ -234,7 +234,7 @@ Proposed additions; final schemas must be agreed before frontend integration:
 - [ ] Add the processed-case provider once the case API is available.
 - [x] Separate the real Chattogram discovery workspace from the Jakobshavn sample dashboard in navigation.
 - [x] Simplify navigation to **Explore**, **Compare**, **Evidence**, and **About**.
-  _Frontend: `/chattogram` has these four views._
+  _Frontend: `/chattogram` has these four views, plus an Overview front door and the Scene catalogue (formerly `/explore`), in the shared dashboard shell._
 - [x] Keep a single selected case/date/extent state across map, chart, and evidence.
   _Frontend: stack, before/after dates, map view and selected acquisition live in the URL (`CaseProvider`)._
 

@@ -134,3 +134,4 @@
   .atlas-footer p { width: 100%; order: 3; }
 }
 @media (prefers-reduced-motion: reduce) { .atlas-spin { animation: none; } .atlas * { transition: none !important; } }
+.atlas-evidence .atlas-open { margin: 12px 0 10px; text-decoration: none; }

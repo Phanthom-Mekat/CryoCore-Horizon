@@ -2,34 +2,31 @@
 
 import dynamic from "next/dynamic";
 import { Kpi, KpiStrip, PageHead } from "@/components/dashboard/ui";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { ArrowDownToLine, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Compass, Database, ExternalLink, Info, Layers, LoaderCircle, Radar, RefreshCw, Satellite, X } from "lucide-react";
-import { formatDate, getJSON, type ExplorerData } from "@/lib/explorer-data";
+import { formatDate, getJSON } from "@/lib/explorer-data";
+import { useCase } from "@/components/chattogram/CaseProvider";
 
 const StudyMap = dynamic(() => import("./StudyMap"), { ssr: false, loading: () => <div className="atlas-map-loading"><Radar size={32} /><p>Preparing the observation map…</p></div> });
 
 export function Explorer() {
-  const [data, setData] = useState<ExplorerData | null>(null);
+  // the boundary, footprints and counts come from the case provider, so the whole case shares one fetch
+  const { explorer: data, load: caseLoad, reload } = useCase();
   const [selected, setSelected] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [start, setStart] = useState("2025-10-01");
   const [end, setEnd] = useState("2026-11-12");
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const loading = caseLoad.status === "loading";
+  const [searchError, setError] = useState<string | null>(null);
+  const error = searchError ?? (caseLoad.status === "unavailable" || caseLoad.status === "failed" ? caseLoad.reason : null);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [search, setSearch] = useState<{ page: number; hits: number; hasMore: boolean; start: string; end: string } | null>(null);
 
-  const load = useCallback(async (signal?: AbortSignal) => {
-    const result = await getJSON<ExplorerData>("/api/earth/explorer", { signal });
-    setData(result);
-  }, []);
-  useEffect(() => {
-    const controller = new AbortController();
-    load(controller.signal).catch(e => { if (e.name !== "AbortError") setError(e.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [load]);
+  // radar-stack details for scenes the case knows (maturity from the collection name, stack for the map link)
+  const known = useMemo(() => new Map(caseLoad.status === "ready" ? caseLoad.data.acquisitions.map((a) => [a.conceptId, a]) : []), [caseLoad]);
 
   async function searchNASA(nextPage = false) {
     if (start > end) { setError("Choose an end date on or after the start date."); return; }
@@ -42,20 +39,21 @@ export function Explorer() {
         body: JSON.stringify({ start_date: range.start, end_date: range.end, product: "GCOV", page_size: 100, page }),
       });
       setSearch({ page, hits: result.total_hits, hasMore: result.has_more, start: range.start, end: range.end });
-      await load(); setDay(null); setSelected(null);
+      reload(); setDay(null); setSelected(null);
     } catch (e) { setError(e instanceof Error ? e.message : "Search failed. Please retry."); }
     finally { setBusy(false); }
   }
 
   const scenes = useMemo(() => ({ type: "FeatureCollection" as const, features: data?.scenes.features.filter(f => !day || f.properties.date?.startsWith(day)) ?? [] }), [data, day]);
   const chosen = scenes.features.find(f => f.properties.id === selected)?.properties;
+  const chosenCase = chosen ? known.get(chosen.id) : undefined;
   const activeIndex = data?.timeline.findIndex(t => t.date === day) ?? -1;
   const selectDay = (value: string | null) => { setDay(value); setSelected(null); };
 
   return <MotionConfig reducedMotion="user"><div className="atlas">
-    <PageHead root={{ href: "/explore", label: "Chattogram" }} crumbs={["Observations"]} actions={<button className="d-btn" aria-label="Explore the data sources" onClick={() => setSourceOpen(!sourceOpen)} aria-expanded={sourceOpen}><Database size={16} />Data and sources</button>} />
+    <PageHead root={{ href: "/chattogram", label: "Chattogram" }} crumbs={["Scene catalogue"]} actions={<button className="d-btn" aria-label="Explore the data sources" onClick={() => setSourceOpen(!sourceOpen)} aria-expanded={sourceOpen}><Database size={16} />Data and sources</button>} />
 
-    <div className="atlas-intro"><div><p className="atlas-eyebrow">NASA–ISRO NISAR · BANGLADESH</p><h1>Chattogram observations</h1><p>Explore acquisition dates, radar footprints, and the evidence behind each scene.</p></div>
+    <div className="atlas-intro"><div><p className="atlas-eyebrow">NASA–ISRO NISAR · BANGLADESH</p><h1>Scene catalogue</h1><p>Every stored NISAR scene that overlaps the division, by date. Pick one to see its source, or open it on the radar map.</p></div>
     </div>
 
     {sourceOpen && <section className="atlas-provenance" aria-label="Data sources"><div><h2>Every layer has a source.</h2><p>NISAR footprints: NASA Earthdata CMR / ASF DAAC. These are metadata extents, not processed radar imagery.</p><p>Boundary: {data?.region.provenance.source ?? "BBS / HDX via geoBoundaries"}. Reference year: 2018, not verified as the current legal boundary. Display geometry is simplified; spatial filtering uses the original polygon.</p></div><div><a href="https://nisar-docs.asf.alaska.edu/gcov/" target="_blank" rel="noreferrer">NISAR product guide <ExternalLink size={13} /></a><a href="https://data.humdata.org/dataset/cod-ab-bgd" target="_blank" rel="noreferrer">Boundary source <ExternalLink size={13} /></a><a href="https://creativecommons.org/licenses/by/3.0/igo/" target="_blank" rel="noreferrer">Boundary license: CC BY 3.0 IGO <ExternalLink size={13} /></a><small>Context imagery: NASA GIBS / Blue Marble. Static background, not current conditions or NISAR imagery. Tilt is a camera perspective, not a terrain model.</small></div></section>}
@@ -67,7 +65,7 @@ export function Explorer() {
       <Kpi label="Primary dataset" value="NISAR" sub="L2 · GCOV" icon={Satellite} />
     </KpiStrip>
 
-    {error && <div className="atlas-error" role="alert"><Info size={18} /><span>{error}</span><button onClick={async () => { setError(null); setLoading(true); try { await load(); } catch (e) { setError((e as Error).message); } finally { setLoading(false); } }}>Retry</button></div>}
+    {error && <div className="atlas-error" role="alert"><Info size={18} /><span>{error}</span><button onClick={() => { setError(null); reload(); }}>Retry</button></div>}
     <div className="atlas-workspace" id="atlas-content">
       <section className="atlas-map-column" aria-label="Chattogram map and observation dates">
         <div className="atlas-map-heading"><span><Compass size={18} /> Observation map</span><span>22°N · 92°E <i>WGS 84</i></span></div>
@@ -85,7 +83,7 @@ export function Explorer() {
         <div className="atlas-list-label"><span>{day ? formatDate(day) : "STORED OBSERVATIONS"}</span><span>{scenes.features.length} scenes</span></div>
         <div className="atlas-scene-list">{scenes.features.map(f => <button className={`atlas-scene ${selected === f.properties.id ? "is-selected" : ""}`} key={f.properties.id} onClick={() => setSelected(selected === f.properties.id ? null : f.properties.id)} aria-pressed={selected === f.properties.id}><span className="atlas-scene-icon"><Layers size={18} /></span><span><strong>{formatDate(f.properties.date)}</strong><small>Track {f.properties.track ?? "—"} · {f.properties.direction === "ASCENDING" ? "Ascending" : f.properties.direction === "DESCENDING" ? "Descending" : "Direction unknown"}</small></span><span className="atlas-pol">{f.properties.polarization?.replaceAll(", ", "/") ?? "GCOV"}</span></button>)}{!scenes.features.length && <div className="atlas-empty"><Satellite size={28} /><strong>{loading ? "Loading observations" : "No matching footprints yet"}</strong><p>Discover NASA observations above. Only records with valid geometry intersecting the division appear here.</p></div>}</div>
 
-        <AnimatePresence mode="wait">{chosen && <motion.section key={chosen.id} className="atlas-evidence" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} aria-label="Selected scene details"><div className="atlas-evidence-title"><span>SELECTED OBSERVATION</span><button aria-label="Close scene details" onClick={() => setSelected(null)}><X size={16} /></button></div><h3>{formatDate(chosen.date)}</h3><dl><div><dt>Track / frame</dt><dd>{chosen.track ?? "—"} / {chosen.frame ?? "—"}</dd></div><div><dt>Polarization · frequency A</dt><dd>{chosen.polarization ?? "Unavailable"}</dd></div><div><dt>Calibration maturity</dt><dd>{chosen.maturity}</dd></div><div><dt>CMR revision</dt><dd>{chosen.revision}</dd></div></dl><p className="atlas-granule">{chosen.name}</p><a href={chosen.source_url} target="_blank" rel="noreferrer">Inspect NASA source metadata <ArrowUpRight size={15} /></a><p className="atlas-evidence-note">Footprint overlap does not establish usable pixel coverage or a comparable before/after pair.</p></motion.section>}</AnimatePresence>
+        <AnimatePresence mode="wait">{chosen && <motion.section key={chosen.id} className="atlas-evidence" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} aria-label="Selected scene details"><div className="atlas-evidence-title"><span>SELECTED OBSERVATION</span><button aria-label="Close scene details" onClick={() => setSelected(null)}><X size={16} /></button></div><h3>{formatDate(chosen.date)}</h3><dl><div><dt>Track / frame</dt><dd>{chosen.track ?? "—"} / {chosen.frame ?? "—"}</dd></div><div><dt>Polarization · frequency A</dt><dd>{chosen.polarization ?? "Unavailable"}</dd></div><div><dt>Data maturity</dt><dd>{chosenCase ? (chosenCase.maturity ?? "Not labelled beta/provisional") : chosen.maturity}</dd></div><div><dt>CMR revision</dt><dd>{chosen.revision}</dd></div></dl><p className="atlas-granule">{chosen.name}</p>{chosenCase && <Link className="atlas-primary atlas-open" href={`/chattogram/explore?stack=${encodeURIComponent(chosenCase.stack)}&pick=${encodeURIComponent(chosenCase.conceptId)}`}>Open on the radar map <ArrowRight size={15} /></Link>}<a href={chosen.source_url} target="_blank" rel="noreferrer">Inspect NASA source metadata <ArrowUpRight size={15} /></a><p className="atlas-evidence-note">Footprint overlap does not establish usable pixel coverage or a comparable before/after pair.</p></motion.section>}</AnimatePresence>
         <div className="atlas-note"><Info size={16} /><p>Observation discovery, not a change assessment. Radar processing and environmental interpretation come next.</p></div>
       </aside>
     </div>

@@ -24,7 +24,7 @@ lists the settings. Local Next.js origins on port 3000 are enabled through CORS.
 
 ## API
 
-The integrated frontend explorer is available at `/explore` in Next.js. Its
+The frontend's Chattogram case is at `/chattogram` in Next.js (its Scene catalogue, formerly `/explore`, uses this endpoint). Its
 `GET /api/v1/explorer` endpoint returns the attributed 2018 BBS/HDX division boundary,
 stored scene footprints that intersect it, and acquisition-day counts. It accepts
 optional `product`, `start_date`, and `end_date` filters. See
@@ -68,7 +68,7 @@ observations are seeded.
 - Check calibration maturity, polarization, quality masks, and matching viewing
   geometry before comparing observations. Backscatter changes alone do not prove
   flooding or deforestation; validate against reference observations.
-- The `/explore` frontend uses this backend's real catalog metadata. The separate
+- The `/chattogram` frontend uses this backend's real catalog metadata, always through the Next.js proxy routes. The separate
   original glacier dashboard and pipeline still use the Jakobshavn sample dataset.
 - This local development API has no user authentication. Bind to localhost until
   authentication and deployment controls are added.

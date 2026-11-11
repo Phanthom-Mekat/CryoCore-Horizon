@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import type { Map as MlMap } from "maplibre-gl";
-import { AlertTriangle, ArrowLeftRight, Check } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, ArrowLeftRight, Check, FileSearch } from "lucide-react";
 import { compatibility, fmtDate, fmtTime, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { CaseMap, browseUrl } from "../CaseMap";
+import { CaseBar } from "../CaseBar";
 import { useCase, type View } from "../CaseProvider";
 
 /** Keeps two maps on the same centre and zoom, so both sides of the divider always show the same extent and scale. */
@@ -24,7 +26,7 @@ function useSyncedMaps() {
 }
 
 export function CompareView() {
-  const { load, stack, before, after, view, set } = useCase();
+  const { load, stack, before, after, view, set, href } = useCase();
   const [pos, setPos] = useState(50);
   const frame = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -60,6 +62,16 @@ export function CompareView() {
   );
 
   return (
+    <>
+      <CaseBar
+        title="Compare two dates"
+        actions={
+          <Link className="c-btn" href={href("/chattogram/evidence")}>
+            <FileSearch size={16} aria-hidden="true" />
+            Evidence for this pair
+          </Link>
+        }
+      />
     <div className="c-compare">
       <div className="c-compare-bar">
         <label className="c-field">
@@ -143,5 +155,6 @@ export function CompareView() {
         open water; bright is rough or vegetated ground. These pictures are for looking, not measuring: a measured change map needs the calibrated γ⁰ layers.
       </p>
     </div>
+    </>
   );
 }

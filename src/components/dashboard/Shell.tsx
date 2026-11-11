@@ -3,31 +3,33 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, BookOpen, Columns2, Compass, Gauge, LayoutDashboard, Menu, Mountain, Radar, Satellite, Search, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Bell, BookOpen, Columns2, FileSearch, Gauge, Home, Info, Layers, LayoutDashboard, Map, Menu, Mountain, Radar, Satellite, Search, X, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { DataGate, useDashboardMaybe } from "./DashboardProvider";
 
 type Item = { href: string; label: string; icon: LucideIcon };
-const NAV: { group?: string; items: Item[] }[] = [
+type Group = { group: string; tag?: { label: string; tone: "live" | "sample" }; items: Item[] };
+const NAV: Group[] = [
   {
-    group: "Chattogram",
+    group: "Chattogram · NISAR",
+    tag: { label: "Real data", tone: "live" },
     items: [
-      { href: "/chattogram", label: "Radar: explore & compare", icon: Columns2 },
-      { href: "/explore", label: "Scene catalogue", icon: Compass },
+      { href: "/chattogram", label: "Overview", icon: Home },
+      { href: "/chattogram/explore", label: "Explore map", icon: Map },
+      { href: "/chattogram/compare", label: "Compare dates", icon: Columns2 },
+      { href: "/chattogram/evidence", label: "Evidence & brief", icon: FileSearch },
+      { href: "/chattogram/catalogue", label: "Scene catalogue", icon: Layers },
+      { href: "/chattogram/about", label: "About & sources", icon: Info },
     ],
   },
-  { group: "Jakobshavn", items: [{ href: "/dashboard", label: "Overview", icon: LayoutDashboard }] },
   {
-    group: "Glacier",
+    group: "Jakobshavn · glacier",
+    tag: { label: "Sample", tone: "sample" },
     items: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/speed", label: "Ice speed", icon: Gauge },
       { href: "/dashboard/fronts", label: "Calving front", icon: Mountain },
       { href: "/dashboard/radar", label: "Radar images", icon: Radar },
-    ],
-  },
-  {
-    group: "Data",
-    items: [
       { href: "/dashboard/passes", label: "NISAR passes", icon: Satellite },
       { href: "/dashboard/alerts", label: "Alerts", icon: Bell },
       { href: "/dashboard/methods", label: "Data and methods", icon: BookOpen },
@@ -40,7 +42,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const data = useDashboardMaybe();
-  const isExplorer = path === "/explore";
+  // the Chattogram case brings its own data and selection; the glacier pages wait for the sample files
+  const isCase = path.startsWith("/chattogram");
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const alertCount = data?.alerts.filter((a) => a.kind !== "peak").length ?? 0;
@@ -72,13 +75,26 @@ export function Shell({ children }: { children: ReactNode }) {
           </button>
         </div>
         <nav className="d-nav">
-          {NAV.map((g, gi) => (
-            <div key={gi}>
-              {g.group && <p className="d-nav-group">{g.group}</p>}
+          {NAV.map((g) => (
+            <div key={g.group}>
+              <p className="d-nav-group">
+                {g.group}
+                {g.tag && <span className={`d-nav-tag is-${g.tag.tone}`}>{g.tag.label}</span>}
+              </p>
               <ul>
                 {g.items.map(({ href, label, icon: Icon }) => (
                   <li key={href}>
-                    <Link href={href} aria-current={path === href ? "page" : undefined}>
+                    <Link
+                      href={href}
+                      aria-current={path === href ? "page" : undefined}
+                      onClick={(e) => {
+                        // moving within the case keeps the chosen stack, dates and map view (they live in the query)
+                        if (isCase && href.startsWith("/chattogram") && window.location.search && !e.metaKey && !e.ctrlKey) {
+                          e.preventDefault();
+                          router.push(href + window.location.search);
+                        }
+                      }}
+                    >
                       <Icon size={17} aria-hidden="true" />
                       {label}
                       {href === "/dashboard/alerts" && alertCount > 0 && <span className="d-badge">{alertCount}</span>}
@@ -90,7 +106,12 @@ export function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="d-side-foot">
-          {isExplorer && <p className="d-status is-live"><i aria-hidden="true" />NASA catalog metadata</p>}
+          {isCase && (
+            <p className="d-status is-live">
+              <i aria-hidden="true" />
+              Real NISAR catalogue · NASA CMR
+            </p>
+          )}
           {data && (
             <p className={`d-status ${data.manifest.sample ? "is-sample" : "is-live"}`}>
               <i aria-hidden="true" />
@@ -111,7 +132,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Menu size={20} />
           </button>
           <p className="d-title">{TITLES[path] ?? "Dashboard"}</p>
-          {!isExplorer && <form
+          {!isCase && <form
             className="d-search"
             role="search"
             onSubmit={(e) => {
@@ -122,7 +143,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Search size={15} aria-hidden="true" />
             <input type="search" placeholder="Search passes by date" aria-label="Search NISAR passes by date" value={q} onChange={(e) => setQ(e.target.value)} />
           </form>}
-          {!isExplorer && <Link href="/dashboard/alerts" className="d-icon-btn d-bell" aria-label={`Alerts, ${alertCount} active`}>
+          {!isCase && <Link href="/dashboard/alerts" className="d-icon-btn d-bell" aria-label={`Alerts, ${alertCount} active`}>
             <Bell size={18} aria-hidden="true" />
             {alertCount > 0 && <span className="d-dot" />}
           </Link>}
@@ -136,9 +157,8 @@ export function Shell({ children }: { children: ReactNode }) {
             Real NISAR measurements replace them during the hackathon.
           </p>
         )}
-        <main id="d-main" className="d-body">
-          {/* the glacier pages wait for their data; the explorer brings its own */}
-          {isExplorer ? children : <DataGate>{children}</DataGate>}
+        <main id="d-main" className={`d-body${isCase ? " is-case" : ""}`}>
+          {isCase ? children : <DataGate>{children}</DataGate>}
         </main>
       </div>
     </div>

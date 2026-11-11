@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { allScenes, api, toLoadError, type Load, type Region } from "@/lib/chattogram/api";
+import type { ExplorerData } from "@/lib/explorer-data";
 import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "@/lib/chattogram/acquisitions";
 
 /** The curated starting point: the city, which the most NISAR dates cover. Changing it only changes the default view. */
@@ -12,9 +13,11 @@ export const DEFAULT_VIEW = { lon: 91.85, lat: 22.4, zoom: 8.2 };
 export type View = { lon: number; lat: number; zoom: number };
 export type Stack = { id: string; items: Acquisition[] };
 
-type Data = { region: Region; acquisitions: Acquisition[]; stacks: Stack[] };
+type Data = { region: Region; explorer: ExplorerData; acquisitions: Acquisition[]; stacks: Stack[] };
 type Ctx = {
   load: Load<Data>;
+  /** The backend's division view (boundary, footprints, counts). Present even when no scene overlaps yet. */
+  explorer: ExplorerData | null;
   reload: () => void;
   /** Selection, all of it mirrored in the URL so any view can be shared as a link. */
   stack: Stack | null;
@@ -32,20 +35,24 @@ const CaseContext = createContext<Ctx | null>(null);
 export function CaseProvider({ children }: { children: ReactNode }) {
   const params = useSearchParams();
   const [load, setLoad] = useState<Load<Data>>({ status: "loading" });
+  const [explorer, setExplorer] = useState<ExplorerData | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let live = true;
-    Promise.all([api.region(), allScenes("GCOV")])
-      .then(([region, scenes]) => {
+    Promise.all([api.explorer(), allScenes("GCOV")])
+      .then(([explorer, scenes]) => {
         if (!live) return;
-        const acquisitions = scenes.map(toAcquisition).filter((a) => a.footprint.length >= 3 && a.day);
+        setExplorer(explorer);
+        // only scenes the backend found intersecting the division polygon (not just its bounding box)
+        const inside = new Set(explorer.scenes.features.map((f) => f.properties.id));
+        const acquisitions = scenes.map(toAcquisition).filter((a) => inside.has(a.conceptId) && a.footprint.length >= 3 && a.day);
         if (!acquisitions.length)
-          return setLoad({ status: "empty", reason: "The backend has no NISAR GCOV scenes stored yet. Run a NASA search (Explore → Fetch from NASA) to fill it." });
+          return setLoad({ status: "empty", reason: "No stored NISAR GCOV scene overlaps the division yet. Open the Scene catalogue and run “Discover observations” to fetch them from NASA." });
         // stacks over the focus point first: those are the ones a before/after comparison can use there
         const over = stacks(acquisitions.filter((a) => covers(a, FOCUS.lonLat)));
         const rest = stacks(acquisitions).filter((s) => !over.some((o) => o.id === s.id));
-        setLoad({ status: "ready", data: { region, acquisitions, stacks: [...over, ...rest] } });
+        setLoad({ status: "ready", data: { region: explorer.region, explorer, acquisitions, stacks: [...over, ...rest] } });
       })
       .catch((e) => live && setLoad(toLoadError(e)));
     return () => {
@@ -83,7 +90,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, []);
   const href = useCallback((p: string) => (params.size ? `${p}?${params}` : p), [params]);
 
-  const value: Ctx = { load, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };
+  const value: Ctx = { load, explorer, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };
   return <CaseContext.Provider value={value}>{children}</CaseContext.Provider>;
 }
 

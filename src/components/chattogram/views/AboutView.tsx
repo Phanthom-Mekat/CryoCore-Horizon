@@ -1,39 +1,47 @@
 "use client";
 
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { useCase } from "../CaseProvider";
 import { ChangeKey, WaterKey } from "../MapKey";
 
 export function AboutView() {
-  const { load } = useCase();
-  const region = load.status === "ready" ? load.data.region : null;
+  const { load, explorer } = useCase();
+  const region = explorer?.region;
   const n = load.status === "ready" ? load.data.acquisitions.length : 0;
 
   return (
     <article className="c-doc">
-      <h1>About this case</h1>
+      <p className="c-eyebrow">About this case</p>
+      <h1>Chattogram, through the clouds</h1>
       <p className="c-lede">
         Where did surface-water conditions change around Chattogram, and how can we tell? NISAR’s L-band radar sees the ground through monsoon cloud, day or
-        night. This app lines up its acquisitions over the same place so changes between dates can be inspected, with the evidence and its limits in view.
+        night. This app lines up its acquisitions over the same place so the changes between dates can be inspected, with the evidence and its limits in
+        view.
       </p>
 
       <h2>What is real here</h2>
       <ul>
         <li>
-          <strong>Acquisitions.</strong> {n ? `${n} NISAR GCOV scenes` : "NISAR GCOV scenes"} found through NASA Earthdata CMR and stored by our backend, with
-          their dates, tracks, frames, polarizations, product versions and footprints exactly as NASA publishes them.
+          <strong>Acquisitions.</strong> {n ? `${n} NISAR GCOV scenes` : "NISAR GCOV scenes"} that intersect the division, found through NASA Earthdata CMR and
+          stored by our backend, with dates, tracks, frames, polarizations, product versions and footprints exactly as NASA publishes them.
         </li>
         <li>
-          <strong>Radar images.</strong> The pictures are the browse quicklooks that come with each NISAR product (an RGB composite of polarizations), served
-          by the Alaska Satellite Facility. They are for looking, not measuring: they are not calibrated backscatter.
+          <strong>Radar images.</strong> The browse quicklooks that come with each NISAR product (a colour composite of polarizations), served by the Alaska
+          Satellite Facility. For looking, not measuring: they are not calibrated backscatter.
         </li>
+        {region && (
+          <li>
+            <strong>Division boundary.</strong> The {region.provenance.year} reference boundary from {region.provenance.source}. {region.provenance.note}
+          </li>
+        )}
       </ul>
 
       <h2>What is not done yet</h2>
       <ul>
         <li>Calibrated backscatter (γ⁰ in dB), quality masks and a common grid from the full GCOV files: the processing worker is next on the backend.</li>
         <li>Signed backscatter change and any water classification. Until reference checks support it, a change is “observed radar change”, never a flood.</li>
-        <li>Area statistics. They need the verified division boundary and an equal-area projection.</li>
+        <li>Area statistics. They need the boundary’s suitability confirmed and an equal-area projection.</li>
       </ul>
 
       <h2>How processed results will look</h2>
@@ -46,29 +54,40 @@ export function AboutView() {
         <ChangeKey />
       </div>
 
-      {region && (
-        <>
-          <h2>Study area</h2>
-          <p>
-            {region.name}, {region.country}. The box {region.bbox.join(", ")} ({region.crs}) is a search envelope, not a boundary: {region.boundary_note}
-          </p>
-        </>
-      )}
-
       <h2>Sources</h2>
       <ul>
         <li>
-          NISAR data: NASA and ISRO, distributed by the <a href="https://nisar-docs.asf.alaska.edu/">Alaska Satellite Facility DAAC</a>, discovered through{" "}
-          <a href="https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html">NASA CMR</a>.
+          NISAR data: NASA and ISRO, distributed by the{" "}
+          <a href="https://nisar-docs.asf.alaska.edu/gcov/" target="_blank" rel="noreferrer">
+            Alaska Satellite Facility DAAC <ExternalLink size={12} aria-hidden="true" />
+          </a>
+          , discovered through{" "}
+          <a href="https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html" target="_blank" rel="noreferrer">
+            NASA CMR <ExternalLink size={12} aria-hidden="true" />
+          </a>
+          .
         </li>
+        {region && (
+          <li>
+            Boundary:{" "}
+            <a href={region.provenance.source_url} target="_blank" rel="noreferrer">
+              {region.provenance.source} <ExternalLink size={12} aria-hidden="true" />
+            </a>
+            , licence{" "}
+            <a href={region.provenance.license_url} target="_blank" rel="noreferrer">
+              {region.provenance.license} <ExternalLink size={12} aria-hidden="true" />
+            </a>
+            . SHA-256 <span className="c-mono c-hash">{region.provenance.sha256}</span>
+          </li>
+        )}
         <li>
-          Basemap: <a href="https://openfreemap.org/">OpenFreeMap</a>, © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>.
+          Basemaps: <a href="https://openfreemap.org/">OpenFreeMap</a>, © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>; NASA
+          GIBS Blue Marble in the scene catalogue (static context, not NISAR).
         </li>
       </ul>
 
       <p className="c-aside">
-        Every stored NISAR scene with the division boundary: <Link href="/explore">scene catalogue</Link>. The earlier Jakobshavn Glacier dashboard runs on
-        synthetic sample data and is kept separate: <Link href="/dashboard">open the glacier sample</Link>.
+        The Jakobshavn Glacier pages run on synthetic sample data and are kept separate from this case: <Link href="/dashboard">open the glacier sample</Link>.
       </p>
     </article>
   );

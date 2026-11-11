@@ -128,7 +128,8 @@ export function EvidenceView() {
           <li>Quicklooks are browse images: a colour composite of polarizations, stretched for display. Brightness is not calibrated backscatter.</li>
           <li>Tide, rain on the surface, wind on water, wet soil and crop growth all change radar brightness; a difference is not proof of flooding.</li>
           <li>
-            The study area is a search envelope ({region.bbox.join(", ")}), not the division boundary, so no area figures are given.
+            The division outline is the {region.provenance.year} reference boundary from {region.provenance.source}, not verified as today’s legal boundary.
+            No area figures are given until change is measured in an equal-area projection.
           </li>
           <li>Provisional products are early releases; NASA advises not mixing maturity levels in one analysis. Each date’s maturity is listed above.</li>
         </ul>
