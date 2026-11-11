@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { allScenes, api, toLoadError, type Load, type Region } from "@/lib/chattogram/api";
 import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "@/lib/chattogram/acquisitions";
 
@@ -31,8 +31,6 @@ const CaseContext = createContext<Ctx | null>(null);
 
 export function CaseProvider({ children }: { children: ReactNode }) {
   const params = useSearchParams();
-  const router = useRouter();
-  const path = usePathname();
   const [load, setLoad] = useState<Load<Data>>({ status: "loading" });
   const [tick, setTick] = useState(0);
 
@@ -66,23 +64,23 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const v = (q("v") ?? "").split(",").map(Number);
   const view: View = v.length === 3 && v.every(Number.isFinite) ? { lon: v[0], lat: v[1], zoom: v[2] } : DEFAULT_VIEW;
 
-  const set: Ctx["set"] = useCallback(
-    (patch) => {
-      const next = new URLSearchParams(params);
-      if (patch.stack !== undefined) {
-        next.set("stack", patch.stack);
-        next.delete("a");
-        next.delete("b");
-      }
-      if (patch.a !== undefined) next.set("a", patch.a);
-      if (patch.b !== undefined) next.set("b", patch.b);
-      if (patch.view) next.set("v", `${patch.view.lon.toFixed(4)},${patch.view.lat.toFixed(4)},${patch.view.zoom.toFixed(2)}`);
-      if (patch.pick) next.set("pick", patch.pick);
-      else if (patch.pick === null) next.delete("pick");
-      router.replace(`${path}?${next}`, { scroll: false });
-    },
-    [params, path, router],
-  );
+  // Selection changes rewrite the query string with the native History API, which Next.js syncs into
+  // useSearchParams without starting a navigation. A router.replace here would be a navigation, and one fired by a
+  // late map event cancels the link the user just clicked, bouncing them back to this page.
+  const set: Ctx["set"] = useCallback((patch) => {
+    const next = new URLSearchParams(window.location.search);
+    if (patch.stack !== undefined) {
+      next.set("stack", patch.stack);
+      next.delete("a");
+      next.delete("b");
+    }
+    if (patch.a !== undefined) next.set("a", patch.a);
+    if (patch.b !== undefined) next.set("b", patch.b);
+    if (patch.view) next.set("v", `${patch.view.lon.toFixed(4)},${patch.view.lat.toFixed(4)},${patch.view.zoom.toFixed(2)}`);
+    if (patch.pick) next.set("pick", patch.pick);
+    else if (patch.pick === null) next.delete("pick");
+    if (next.toString() !== window.location.search.slice(1)) window.history.replaceState(null, "", `?${next}`);
+  }, []);
   const href = useCallback((p: string) => (params.size ? `${p}?${params}` : p), [params]);
 
   const value: Ctx = { load, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };

@@ -88,7 +88,7 @@ export function CompareView() {
           <CaseMap label={`NISAR quicklook of ${fmtDate(after.start)}`} view={view} onMove={onMove} image={after} imageOpacity={1} onReady={ready(1)} controls={false} />
         </div>
         <div className="c-reveal-layer c-reveal-before">
-          <CaseMap label={`NISAR quicklook of ${fmtDate(before.start)}`} view={view} image={before} imageOpacity={1} onReady={ready(0)} />
+          <CaseMap label={`NISAR quicklook of ${fmtDate(before.start)}`} view={view} onMove={onMove} image={before} imageOpacity={1} onReady={ready(0)} />
         </div>
         <span className="c-badge c-badge-l">
           <strong>Before</strong> {fmtDate(before.start)} · {fmtTime(before.start)}

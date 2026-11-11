@@ -172,7 +172,9 @@ export function CaseMap({
           m.getCanvas().style.cursor = "";
         });
         m.on("click", "footprints-fill", (e: MapMouseEvent & { features?: { id?: string | number }[] }) => latest.current.onPick?.(String(e.features?.[0]?.id ?? "") || null));
-        m.on("moveend", () => {
+        // only the viewer's own pans and zooms are saved; loads, resizes and syncing from another map are not
+        m.on("moveend", (e: { originalEvent?: Event }) => {
+          if (!e.originalEvent) return;
           const c = m.getCenter();
           latest.current.onMove?.({ lon: c.lng, lat: c.lat, zoom: m.getZoom() });
         });
