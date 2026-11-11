@@ -1,5 +1,13 @@
 # CryoCore Horizon
 
+## Backend development
+
+The new [FastAPI + SQLite backend](backend/README.md) focuses on **Chattogram
+Division, Bangladesh**, using NASA-ISRO NISAR metadata from NASA Earthdata CMR.
+See its README for setup, endpoints, and current limitations. The frontend below
+still demonstrates the original Jakobshavn sample dataset; connecting it to the
+Chattogram backend is a subsequent step.
+
 Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing with the SARs**. We use radar from NISAR (NASA–ISRO) to track Jakobshavn Glacier (Sermeq Kujalleq), Greenland's fastest glacier, through cloud and polar night.
 
 - `/`: project page with a live 3D view beside the NISAR spacecraft
