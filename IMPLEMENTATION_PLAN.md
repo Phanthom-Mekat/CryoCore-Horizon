@@ -1,6 +1,6 @@
 # CryoCore Horizon: Chattogram implementation plan
 
-Status: discovery explorer implemented on `backendv1`; scientific case processing remains planned.
+Status (12 Nov 2026): discovery catalogue and the frontend case journey are built on real NISAR metadata and browse quicklooks; scientific processing (calibrated layers, change, validation) remains planned. See the progress tracker below.
 
 Implementation update: the case lives at `/chattogram` (Overview, Explore map, Compare, Evidence, Scene catalogue, About; see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md)). The first discovery increment is its Scene catalogue.
 It includes an attributed 2018 BBS/HDX reference boundary, real NASA catalog
@@ -23,6 +23,47 @@ Prepared: 12 November 2026.
 
 These completed tasks cover discovery, not processed radar imagery or validated
 surface-change findings. F01/F02 and the scientific milestones remain incomplete.
+
+### Completed frontend case increment
+
+- [x] Merge the scene catalogue and the radar views into one case at `/chattogram` in the shared dashboard shell: Overview, Explore map, Compare dates, Evidence & brief, Scene catalogue, About & sources ([docs/CHATTOGRAM.md](docs/CHATTOGRAM.md)). `/explore` redirects to the catalogue.
+- [x] Show real NISAR GCOV browse quicklooks on the map through a server proxy (granule IDs only, no raw URLs); georeference from ASF's KML, or for provisional products from the image's valid extent and the CMR footprint (checked to about one pixel against a public KML).
+- [x] Group scenes into stacks (same track, frame, direction) over the division polygon; timeline of actual acquisition dates with replay and background prefetch.
+- [x] Before/after reveal with synced maps, keyboard control and date badges; automatic compatibility check (geometry, polarizations, data maturity from the CMR collection, product version). Default pair: the widest-spaced fully compatible one.
+- [x] Evidence page and observation brief: observed vs measured vs interpreted, full provenance (granule, CMR concept, collection, version, MD5, QA report), JSON/CSV/GeoJSON export and print.
+- [x] Selection (stack, dates, map view, selected scene) kept in the URL so views can be shared; catalogue scenes open directly on the radar map.
+- [x] Legends and map layers ready for processed results: water-change candidates (cyan/amber with stripes) and signed dB change (separate diverging scale), colours checked with a CVD/contrast validator.
+- [x] Lint, TypeScript and production build pass; all case pages checked at 1920×1080 and 390 px; backend-down and empty states tested.
+
+### Progress tracker
+
+Updated 12 November 2026. "Partial" means the interface exists on real metadata and quicklooks, waiting for processed data.
+
+| ID | Feature | Status | Done | Still needed |
+| --- | --- | --- | --- | --- |
+| F01 | Verified study area | Partial | 2018 BBS/HDX boundary with provenance; scenes filtered by the polygon; drawn on every map | Confirm current suitability; add the smaller analysis polygon |
+| F02 | Real NISAR case selection | Partial | Acquisition details from CMR metadata (dates, track/frame, polarizations, maturity, version); compatibility check; candidate pair 7 Jul vs 11 Oct 2026, track 163 frame 77 | Gate A: inspect the real files and confirm the pair |
+| F03 | Reliable data preparation | Not started | – | Earthdata-authenticated worker, resumable downloads, job states |
+| F04 | Processed radar layers | Not started | Quicklooks stand in for display; map can take raster layers | Calibrated γ⁰ (dB), masks, common grid, display tiles |
+| F05 | Defensible change map | Not started | Legends and map styling ready | Signed dB change; water candidates only if reference checks support them |
+| F06 | Before/after comparison | Partial | Swipe, badges, keyboard, synced zoom, same extent and scale | Swap quicklooks for processed paired layers on one contrast scale |
+| F07 | Click-to-explain evidence | Partial | Evidence page with sources, checks, limitations | `/cases/{id}/findings` polygons to click; local statistics |
+| F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison | Observed area, eligible comparison area, change summaries |
+| F09 | Reproducible case replay | Not started | Shareable URLs restore the view | Frozen case bundle (also fixes 8–11 s first loads of a new date) |
+| F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
+| F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
+| F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata | Add findings and statistics once they exist |
+| F13 | NASA rainfall context | Not started | – | Verify GPM/IMERG access, then a small contextual chart |
+| F14 | Community context | Not started | – | Licensed overlays |
+| F15 | Local accessibility | Partial | Keyboard use, reduced motion, colour plus pattern, 390 px layouts | Bangla copy |
+| F16 | Terrain storytelling | Not started | – | P2 |
+| F17 | Evidence-based narration | Not started | – | P2 |
+
+### Next up
+
+- **Backend:** run Gate A on the candidate pair (download the two GCOV files, inspect layers and masks); build the processing worker (F03) and the first γ⁰ layers (F04); serve `/api/v1/cases` and findings (B3); freeze a replay bundle (F09).
+- **Frontend:** connect `/cases` and findings to Explore, Compare and Evidence; pixel-value hover on processed layers; rework the landing page around the Chattogram case (needs a team decision).
+- **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission
 duration, format, eligibility, and deadlines against the current event rules before recording.
