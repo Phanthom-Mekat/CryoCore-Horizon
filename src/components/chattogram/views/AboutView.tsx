@@ -67,7 +67,8 @@ export function AboutView() {
       </ul>
 
       <p className="c-aside">
-        The earlier Jakobshavn Glacier dashboard runs on synthetic sample data and is kept separate: <Link href="/dashboard">open the glacier sample</Link>.
+        Every stored NISAR scene with the division boundary: <Link href="/explore">scene catalogue</Link>. The earlier Jakobshavn Glacier dashboard runs on
+        synthetic sample data and is kept separate: <Link href="/dashboard">open the glacier sample</Link>.
       </p>
     </article>
   );

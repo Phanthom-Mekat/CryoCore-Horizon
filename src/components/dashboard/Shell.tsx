@@ -3,13 +3,19 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, BookOpen, Compass, Gauge, LayoutDashboard, Menu, Mountain, Radar, Satellite, Search, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Bell, BookOpen, Columns2, Compass, Gauge, LayoutDashboard, Menu, Mountain, Radar, Satellite, Search, X, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { DataGate, useDashboardMaybe } from "./DashboardProvider";
 
 type Item = { href: string; label: string; icon: LucideIcon };
 const NAV: { group?: string; items: Item[] }[] = [
-  { group: "Chattogram", items: [{ href: "/explore", label: "Observation explorer", icon: Compass }] },
+  {
+    group: "Chattogram",
+    items: [
+      { href: "/chattogram", label: "Radar: explore & compare", icon: Columns2 },
+      { href: "/explore", label: "Scene catalogue", icon: Compass },
+    ],
+  },
   { group: "Jakobshavn", items: [{ href: "/dashboard", label: "Overview", icon: LayoutDashboard }] },
   {
     group: "Glacier",

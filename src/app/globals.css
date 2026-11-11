@@ -192,6 +192,27 @@ section[id]:not(#top) {
 .nav nav a[aria-current="location"]::after {
   transform: scaleX(1);
 }
+.nav .nav-link-plain {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-left: 28px;
+  margin-right: 16px;
+  color: var(--muted);
+  font: 500 0.84rem/1 var(--mono);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.nav .nav-link-plain:hover {
+  color: var(--snow);
+}
+@media (max-width: 760px) {
+  .nav .nav-link-plain {
+    display: none; /* the phone header holds the brand and one button; the catalogue is linked from About */
+  }
+}
 .nav .nav-cta {
   display: inline-flex;
   align-items: center;
