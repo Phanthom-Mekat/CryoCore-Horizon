@@ -275,12 +275,16 @@ observation dates, and data source above the map. Avoid a wall of small metric c
 ### F-D. Performance and delivery targets
 
 - [x] Preload the curated demo case and next playback frame; lazy-load secondary content.
-- [ ] Target a usable initial view within three seconds on the rehearsed setup,
+- [x] Target a usable initial view within three seconds on the rehearsed setup,
   and cached date changes within 300 ms. Measure and report actual results.
-- [ ] Keep interactions responsive on the recording laptop; test mobile at 390 px width.
-- [ ] Handle unavailable tiles, no observations, partial coverage, and backend failure
+  _Measured on /chattogram (1920×1080, software-rendered test browser): panel and dates 1.3–1.4 s; first radar quicklook 2.8–3.3 s once the server has it cached; switching to an already-loaded date 31–276 ms (one 1.2 s outlier). A date never fetched before takes 8–11 s from ASF; the frozen replay bundle (F09) removes that._
+- [x] Keep interactions responsive on the recording laptop; test mobile at 390 px width.
+  _Frontend: all four /chattogram views checked at 390 px: no sideways scroll, nav fits, the reveal works by touch._
+- [x] Handle unavailable tiles, no observations, partial coverage, and backend failure
   with useful UI rather than silent blank maps or invented values.
+  _Frontend: backend down shows how to start it with a working Try again; empty catalogue, missing quicklook, basemap failure and missing /cases each say so on screen._
 - [ ] Save a link that restores case, dates, selected finding, and extent.
+  _Frontend: the /chattogram URL restores stack, before/after dates, map extent and selected acquisition. Selected finding waits for findings to exist._
 
 ## 8. Build milestones and stop conditions
 
