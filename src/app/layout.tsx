@@ -11,7 +11,11 @@ const description =
   "Our NASA Space Apps 2026 project for Dancing with the SARs. We use NASA–ISRO NISAR radar to track Greenland's fastest glacier through cloud and polar night.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://cryocore-horizon.example"),
+  // absolute URLs for the share image: an explicit site URL, else the Vercel production domain, else local dev
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000"),
+  ),
   title,
   description,
   openGraph: { title, description, type: "website" },

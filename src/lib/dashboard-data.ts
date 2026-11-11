@@ -1,12 +1,14 @@
 // File contract for /public/data/jakobshavn, written by scripts/nisar_pipeline.py (real data)
 // or scripts/make-sample-data.mjs (sample). Keep both writers and these types in step.
 
-export type Pass = { date: string; direction: "A" | "D"; track: number; frame: number; radar: string | null };
+export type Pass = { date: string; direction: "A" | "D" | "?"; track: number | null; frame: number | null; radar: string | null };
 export type Pair = { start: string; end: string; days: number; speed: string };
 export type Probe = { id: string; label: string; lon: number; lat: number };
 export type Manifest = {
   sample: boolean;
   note?: string;
+  /** NISAR data maturity of the products used: "BETA", "PROVISIONAL" or "VALIDATED". Optional; shown next to the data status. */
+  maturity?: string;
   glacier: string;
   bbox: [number, number, number, number]; // lon min, lat min, lon max, lat max (EPSG:4326)
   basemap: { src: string; caption: string };
@@ -33,6 +35,47 @@ export async function loadDashboardData() {
   const [manifest, timeseries, fronts] = await Promise.all([get<Manifest>("manifest.json"), get<TimeSeries>("timeseries.json"), get<Fronts>("fronts.json")]);
   return { manifest, timeseries, fronts };
 }
+
+/**
+ * Plain-language problems with the files, empty when they match the contract. Shown on screen instead of a crash,
+ * so whoever runs the pipeline sees exactly what to fix.
+ */
+export function checkData(m: Manifest, ts: TimeSeries, fr: Fronts): string[] {
+  const out: string[] = [];
+  const isDay = (s: unknown) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  if (!Array.isArray(m.bbox) || m.bbox.length !== 4 || !(m.bbox[0] < m.bbox[2] && m.bbox[1] < m.bbox[3])) out.push("manifest.bbox must be [lon min, lat min, lon max, lat max]");
+  if (!(m.grid?.width > 0 && m.grid?.height > 0)) out.push("manifest.grid needs a positive width and height");
+  if (!(m.speedMax > 0)) out.push("manifest.speedMax must be a positive number (the speed of PNG code 255)");
+  if (!m.basemap?.src) out.push("manifest.basemap.src is missing");
+  if (!m.passes?.length) out.push("manifest.passes is empty: at least one NISAR pass is needed");
+  if (!m.pairs?.length) out.push("manifest.pairs is empty: at least one GOFF pair is needed for ice speed");
+  if (!m.probes?.length) out.push("manifest.probes is empty: the charts need at least one probe point");
+  else if (!m.probes.some((p) => p.id === "front")) out.push('manifest.probes needs one probe with id "front" (near the calving front); the headline numbers and alerts read it');
+  m.passes?.forEach((p, i) => !isDay(p.date) && out.push(`manifest.passes[${i}].date should look like 2026-01-31, got ${JSON.stringify(p.date)}`));
+  m.pairs?.forEach((p, i) => {
+    if (!isDay(p.start) || !isDay(p.end)) out.push(`manifest.pairs[${i}] needs start and end dates like 2026-01-31`);
+    if (!p.speed) out.push(`manifest.pairs[${i}].speed (the PNG path) is missing`);
+  });
+  if (ts.series?.length !== m.pairs?.length) out.push(`timeseries.series has ${ts.series?.length ?? 0} rows but manifest.pairs has ${m.pairs?.length ?? 0}; they must match one to one`);
+  else ts.series.forEach((r, i) => (r.start !== m.pairs[i].start || r.end !== m.pairs[i].end) && out.push(`timeseries.series[${i}] is ${r.start}→${r.end} but pairs[${i}] is ${m.pairs[i].start}→${m.pairs[i].end}`));
+  if (!Array.isArray(fr.flowline) || fr.flowline.length < 2) out.push("fronts.flowline needs at least two [lon, lat] points");
+  fr.fronts?.forEach((f, i) => {
+    if (!isDay(f.date)) out.push(`fronts.fronts[${i}].date should look like 2026-01-31`);
+    if (typeof f.advanceKm !== "number") out.push(`fronts.fronts[${i}].advanceKm must be a number`);
+    if (!Array.isArray(f.line) || f.line.length < 2) out.push(`fronts.fronts[${i}].line needs at least two [lon, lat] points`);
+  });
+  return out;
+}
+
+/** Index of the date in `dates` (ISO days) closest to `target`. Speed pairs and front picks come from different products, so their dates need not line up. */
+export function nearestIndex(dates: string[], target: string) {
+  const t = Date.parse(target);
+  let best = 0;
+  dates.forEach((d, i) => Math.abs(Date.parse(d) - t) < Math.abs(Date.parse(dates[best]) - t) && (best = i));
+  return best;
+}
+
+export const directionLabel = (d: string) => (d === "A" ? "Ascending" : d === "D" ? "Descending" : "Unknown");
 
 /** lon/lat -> grid pixel (fractional), for SVG overlays drawn in grid units. */
 export const toGrid = (m: Manifest, lon: number, lat: number): [number, number] => [
@@ -127,7 +170,7 @@ export function deriveAlerts(ts: TimeSeries, fr: Fronts): Alert[] {
         kind: "retreat",
         title: `Front retreated ${Math.abs(d).toFixed(1)} km`,
         detail: `Between the passes on ${fmtDayShort(prev.date)} and ${fmtDayShort(f.date)}.`,
-        pairIndex: Math.max(0, i - 1),
+        pairIndex: nearestIndex(ts.series.map((r) => r.end as string), f.date),
       });
   });
   if (peak.i >= 0)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DATA_ROOT, SERIES_COLORS, UNIT_LABEL, fmtDayShort, rampColor, toGrid, toLonLat, toUnit, type Fronts, type Manifest, type Pair, type SpeedUnit } from "@/lib/dashboard-data";
+import { DATA_ROOT, SERIES_COLORS, UNIT_LABEL, fmtDayShort, nearestIndex, rampColor, toGrid, toLonLat, toUnit, type Fronts, type Manifest, type Pair, type SpeedUnit } from "@/lib/dashboard-data";
 
 export type Layers = { speed: boolean; fronts: boolean; probes: boolean };
 
@@ -37,7 +37,21 @@ function loadGrid(src: string, w: number, h: number) {
   return cache.get(src)!;
 }
 
-export function SpeedMap({ manifest, fronts, pair, layers, units = "mday" }: { manifest: Manifest; fronts: Fronts; pair: Pair; layers: Layers; units?: SpeedUnit }) {
+export function SpeedMap({
+  manifest,
+  fronts,
+  pair,
+  layers,
+  units = "mday",
+  frontDate,
+}: {
+  manifest: Manifest;
+  fronts: Fronts;
+  pair: Pair;
+  layers: Layers;
+  units?: SpeedUnit;
+  frontDate?: string;
+}) {
   const { width: W, height: H } = manifest.grid;
   const canvas = useRef<HTMLCanvasElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -80,7 +94,8 @@ export function SpeedMap({ manifest, fronts, pair, layers, units = "mday" }: { m
     el.scrollLeft = (toGrid(manifest, p.lon, p.lat)[0] / manifest.grid.width) * el.scrollWidth - el.clientWidth / 2;
   }, [manifest]);
 
-  const endFront = fronts.fronts.find((f) => f.date === pair.end);
+  // the front picked closest to the end of this pair (fronts and pairs come from different products), or the one asked for
+  const endFront = fronts.fronts.length ? fronts.fronts[nearestIndex(fronts.fronts.map((f) => f.date), frontDate ?? pair.end)] : undefined;
   const pts = (line: [number, number][]) => line.map(([lon, lat]) => toGrid(manifest, lon, lat).map((v) => v.toFixed(2)).join(",")).join(" ");
   const pick = (e: React.PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -95,6 +110,7 @@ export function SpeedMap({ manifest, fronts, pair, layers, units = "mday" }: { m
       <div
         className="map-frame"
         style={{ aspectRatio: `${W} / ${H}` }}
+        data-speed={layers.speed ? "" : undefined}
         onPointerMove={(e) => pick(e)}
         onPointerDown={(e) => pick(e)}
         onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}

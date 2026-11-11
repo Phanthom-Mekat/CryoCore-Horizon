@@ -251,6 +251,42 @@
   font: 600 1.2rem var(--sans);
   margin-bottom: 8px;
 }
+.d-state code {
+  font: 0.85em var(--mono);
+  color: var(--snow);
+}
+.d-problems {
+  max-width: 720px;
+  margin: 18px auto 0;
+  padding: 14px 18px 14px 34px;
+  border: 1px solid rgb(255 180 84 / 0.35);
+  border-radius: 8px;
+  background: rgb(255 180 84 / 0.06);
+  color: var(--text);
+  font: 0.84rem/1.6 var(--mono);
+  text-align: left;
+  list-style: disc;
+}
+.d-loading {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  background: none;
+}
+.d-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--d-line-2);
+  border-top-color: var(--ice);
+  border-radius: 50%;
+  animation: d-spin 0.8s linear infinite;
+}
+@keyframes d-spin {
+  to {
+    rotate: 1turn;
+  }
+}
 
 /* ---------- page head ---------- */
 .d-head {
@@ -768,6 +804,11 @@
 .map-base {
   object-fit: fill;
   filter: saturate(0.75) brightness(0.8);
+  transition: filter 0.3s;
+}
+/* under the speed layer the photo steps back to dim grey, so the blue-to-white ramp isn't lost against white snow */
+.map-frame[data-speed] .map-base {
+  filter: grayscale(0.9) brightness(0.42) contrast(1.15);
 }
 .map-svg {
   pointer-events: none;
@@ -959,6 +1000,66 @@
   width: 100%;
   height: 100%;
 }
+/* difference and blink share the swipe's frame */
+.d-diff,
+.d-blink {
+  position: relative;
+  aspect-ratio: 1000 / 375;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #000;
+}
+.d-diff img,
+.d-blink img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.d-diff-top {
+  mix-blend-mode: difference;
+}
+.d-blink img[hidden] {
+  display: block;
+  visibility: hidden;
+}
+.d-blink-tag {
+  cursor: pointer;
+  color: var(--snow);
+}
+.d-seg {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 3px;
+  border: 1px solid var(--d-line-2);
+  border-radius: 9px;
+  background: var(--d-card);
+}
+.d-seg button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font: 500 0.84rem var(--sans);
+  cursor: pointer;
+}
+.d-seg button:hover {
+  color: var(--snow);
+}
+.d-seg button[aria-checked="true"] {
+  background: var(--d-field);
+  color: var(--snow);
+  box-shadow: inset 0 0 0 1px var(--d-line-2);
+}
+.d-seg button:focus-visible {
+  outline: 2px solid var(--ice);
+  outline-offset: 1px;
+}
+
 .d-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));

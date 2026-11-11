@@ -1,11 +1,14 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Gauge } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Gauge, Pause, Play } from "lucide-react";
 import { useDashboard } from "../DashboardProvider";
 import { SpeedMap } from "../SpeedMap";
 import { Card, PageHead, Toggle } from "../ui";
 import { RAMP_CSS, UNIT_LABEL, fmtDay, fmtDayShort, toUnit } from "@/lib/dashboard-data";
 import { setSettings, useSettings } from "@/lib/dashboard-settings";
+
+const FRAME_MS = 900;
 
 export function SpeedView() {
   const { manifest, fronts, timeseries, pairIdx, setPairIdx } = useDashboard();
@@ -14,6 +17,24 @@ export function SpeedView() {
   const unit = UNIT_LABEL[settings.units];
   const layers = settings.layers;
   const row = timeseries.series[pairIdx];
+  const last = manifest.pairs.length - 1;
+  const [playing, setPlaying] = useState(false);
+
+  // time-lapse: step through the pairs, then stop on the latest one
+  useEffect(() => {
+    if (!playing) return;
+    const t = setTimeout(() => (pairIdx >= last ? setPlaying(false) : setPairIdx(pairIdx + 1)), FRAME_MS);
+    return () => clearTimeout(t);
+  }, [playing, pairIdx, last, setPairIdx]);
+
+  const togglePlay = () => {
+    if (!playing && pairIdx >= last) setPairIdx(0);
+    setPlaying(!playing);
+  };
+  const step = (i: number) => {
+    setPlaying(false);
+    setPairIdx(i);
+  };
 
   return (
     <>
@@ -21,11 +42,15 @@ export function SpeedView() {
         crumbs={["Ice speed"]}
         actions={
           <div className="d-stepper" role="group" aria-label="Change pass pair">
-            <button type="button" className="d-btn" onClick={() => setPairIdx(pairIdx - 1)} disabled={pairIdx === 0}>
+            <button type="button" className="d-btn is-primary" onClick={togglePlay} aria-pressed={playing}>
+              {playing ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
+              {playing ? "Pause" : "Play the year"}
+            </button>
+            <button type="button" className="d-btn" onClick={() => step(pairIdx - 1)} disabled={pairIdx === 0}>
               <ChevronLeft size={16} aria-hidden="true" />
               Earlier
             </button>
-            <button type="button" className="d-btn" onClick={() => setPairIdx(pairIdx + 1)} disabled={pairIdx === manifest.pairs.length - 1}>
+            <button type="button" className="d-btn" onClick={() => step(pairIdx + 1)} disabled={pairIdx === last}>
               Later
               <ChevronRight size={16} aria-hidden="true" />
             </button>
@@ -41,7 +66,7 @@ export function SpeedView() {
               <output htmlFor="pair" className="d-pair-out">
                 {fmtDayShort(pair.start)} → {fmtDayShort(pair.end)}
               </output>
-              <input id="pair" type="range" min={0} max={manifest.pairs.length - 1} value={pairIdx} onChange={(e) => setPairIdx(Number(e.target.value))} aria-valuetext={`${fmtDay(pair.start)} to ${fmtDay(pair.end)}`} />
+              <input id="pair" type="range" min={0} max={manifest.pairs.length - 1} value={pairIdx} onChange={(e) => step(Number(e.target.value))} aria-valuetext={`${fmtDay(pair.start)} to ${fmtDay(pair.end)}`} />
               <small>
                 {pairIdx + 1} of {manifest.pairs.length} pairs
               </small>

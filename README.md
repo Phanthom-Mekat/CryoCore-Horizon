@@ -23,7 +23,7 @@ npm run build      # production check
 
 ## Dashboard data
 
-The dashboard reads static files from `public/data/jakobshavn/`. The file format is defined in `src/lib/dashboard-data.ts`.
+The dashboard reads static files from `public/data/jakobshavn/`. The file format is described in [docs/DATA_CONTRACT.md](docs/DATA_CONTRACT.md) (types in `src/lib/dashboard-data.ts`); malformed files show a list of problems on screen instead of crashing.
 
 The files in the repo are **sample data** (`"sample": true` in `manifest.json`). They are synthetic placeholders, and the dashboard shows a "Sample data" banner while they're in use. The basemap is a real image: Sentinel-2 via NASA HLS, 14 July 2025, from NASA GIBS.
 

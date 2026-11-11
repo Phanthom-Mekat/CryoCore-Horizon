@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // third-party files copied in on install / generated from the backend's OpenAPI schema
+    "public/vendor/**",
+    "src/lib/chattogram/api-schema.d.ts",
+    "backend/**",
   ]),
 ]);
 

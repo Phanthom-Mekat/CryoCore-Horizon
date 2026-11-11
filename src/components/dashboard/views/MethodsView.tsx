@@ -3,7 +3,7 @@
 import { BookOpen, Database, FlaskConical, Terminal } from "lucide-react";
 import { useDashboard } from "../DashboardProvider";
 import { Card, PageHead } from "../ui";
-import { fmtDay } from "@/lib/dashboard-data";
+import { directionLabel, fmtDay } from "@/lib/dashboard-data";
 
 const STEPS = [
   { cmd: "python scripts/nisar_pipeline.py search --start 2025-10-01", what: "Lists NISAR GCOV (backscatter) and GOFF (pixel offsets) files over the glacier from the Alaska Satellite Facility. Track 170, frame 53 by default." },
@@ -24,6 +24,12 @@ export function MethodsView() {
               <dt>Status</dt>
               <dd>{manifest.sample ? <span className="d-pill is-warn">Sample data</span> : <span className="d-pill is-ok">Real NISAR data</span>}</dd>
             </div>
+            {manifest.maturity && (
+              <div>
+                <dt>Data maturity</dt>
+                <dd>{manifest.maturity}</dd>
+              </div>
+            )}
             <div>
               <dt>Glacier</dt>
               <dd>{manifest.glacier}</dd>
@@ -37,7 +43,7 @@ export function MethodsView() {
             <div>
               <dt>Geometry</dt>
               <dd>
-                Track {manifest.passes[0].track}, frame {manifest.passes[0].frame}, {manifest.passes[0].direction === "A" ? "ascending" : "descending"}
+                Track {manifest.passes[0].track}, frame {manifest.passes[0].frame}, {directionLabel(manifest.passes[0].direction).toLowerCase()}
               </dd>
             </div>
             <div>

@@ -188,7 +188,8 @@ Proposed additions; final schemas must be agreed before frontend integration:
 | `GET /api/v1/cases/{id}/timeseries` | Actual observation timestamps, values, units, gaps |
 | `GET /api/v1/cases/{id}/export?format=geojson` | Downloadable case data with provenance; also support CSV/JSON |
 
-- [ ] Generate typed frontend contracts from OpenAPI or maintain validated shared fixtures.
+- [x] Generate typed frontend contracts from OpenAPI or maintain validated shared fixtures.
+  _Frontend: `npm run api:types` writes `src/lib/chattogram/api-schema.d.ts` from the running backend; `/api/v1/region` still needs a response model._
 - [ ] Define empty, partial, failed, unavailable, and ready states explicitly.
 - [ ] Serve precomputed display assets with cache headers; do not run analyses for
   map pans. Choose precomputed tiles versus a raster tile server after testing a real asset.
@@ -200,11 +201,11 @@ Proposed additions; final schemas must be agreed before frontend integration:
 
 ### F-A. Replace the glacier assumptions
 
-- [ ] Add a typed Chattogram API client and case provider; remove glacier-specific
+- [x] Add a typed Chattogram API client and case provider; remove glacier-specific
   speed units, calving-front summaries, labels, and assumptions from this journey.
-- [ ] Keep any old sample experience explicitly separate from the real case.
-- [ ] Simplify navigation to **Explore**, **Compare**, **Evidence**, and **About**.
-- [ ] Keep a single selected case/date/extent state across map, chart, and evidence.
+- [x] Keep any old sample experience explicitly separate from the real case.
+- [x] Simplify navigation to **Explore**, **Compare**, **Evidence**, and **About**.
+- [x] Keep a single selected case/date/extent state across map, chart, and evidence.
 
 ### F-B. Build the main screen around the map
 
@@ -212,16 +213,20 @@ Target desktop composition: a dominant map occupying about two thirds of the
 screen, a compact evidence panel, and a bottom timeline. Put the case name,
 observation dates, and data source above the map. Avoid a wall of small metric cards.
 
-- [ ] Use a WebGL map with georeferenced raster and polygon layers; evaluate a
+- [x] Use a WebGL map with georeferenced raster and polygon layers; evaluate a
   MapLibre-based implementation against the first real processed layer.
-- [ ] Use ink/navy surfaces, warm white text, cyan for new water candidates, and
+  _Frontend: MapLibre 6.16 draws real NISAR GCOV browse quicklooks (georeferenced from their KML) and NASA footprints; re-check against the first processed γ⁰ layer._
+- [x] Use ink/navy surfaces, warm white text, cyan for new water candidates, and
   amber for recession candidates, with patterns/icons for accessibility.
-- [ ] Use a separate diverging legend for signed backscatter change. Do not reuse
+  _Frontend: colours checked with a CVD/contrast validator; each category also has its own stripe direction and icon. The map layer is ready for `/findings` polygons._
+- [x] Use a separate diverging legend for signed backscatter change. Do not reuse
   water-category colors in a way that implies classification.
-- [ ] Add named landmarks, a scale bar, restrained boundaries, and always-visible legends.
-- [ ] Add hover values, selected-area outlines, and smooth transitions lasting
+  _Frontend: magenta–grey–green dB scale, ±6 dB; never drawn together with the categories (see `src/lib/chattogram/palette.ts`)._
+- [x] Add named landmarks, a scale bar, restrained boundaries, and always-visible legends.
+- [x] Add hover values, selected-area outlines, and smooth transitions lasting
   roughly 150–300 ms. Respect reduced-motion settings.
-- [ ] At 1920×1080 recording size, make dates, the selected finding, and primary
+  _Frontend: hover shows each acquisition's date, time, track and polarizations; pixel values follow once processed rasters exist._
+- [x] At 1920×1080 recording size, make dates, the selected finding, and primary
   numbers readable without zooming into the footage.
 
 ### F-C. Signature interactions
@@ -236,7 +241,7 @@ observation dates, and data source above the map. Avoid a wall of small metric c
 
 ### F-D. Performance and delivery targets
 
-- [ ] Preload the curated demo case and next playback frame; lazy-load secondary content.
+- [x] Preload the curated demo case and next playback frame; lazy-load secondary content.
 - [ ] Target a usable initial view within three seconds on the rehearsed setup,
   and cached date changes within 300 ms. Measure and report actual results.
 - [ ] Keep interactions responsive on the recording laptop; test mobile at 390 px width.

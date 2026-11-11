@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useDashboard } from "../DashboardProvider";
 import { Card, Kpi, KpiStrip, PageHead } from "../ui";
 import { CalendarDays, Images, Orbit, Satellite, Search } from "lucide-react";
-import { fmtDay, season } from "@/lib/dashboard-data";
+import { directionLabel, fmtDay, nearestIndex, season } from "@/lib/dashboard-data";
 
 export function PassesView() {
   const { manifest, setPairIdx } = useDashboard();
@@ -22,6 +22,7 @@ export function PassesView() {
     return newest ? shown.reverse() : shown;
   }, [manifest, q, onlyRadar, newest]);
 
+  const starts = manifest.pairs.map((p) => p.start);
   const first = manifest.passes[0];
   const last = manifest.passes[manifest.passes.length - 1];
 
@@ -30,7 +31,7 @@ export function PassesView() {
       <PageHead crumbs={["NISAR passes"]} />
       <KpiStrip label="Pass catalogue summary">
         <Kpi label="Passes over the glacier" value={String(manifest.passes.length)} icon={Satellite} sub={`Track ${first.track}, frame ${first.frame}`} />
-        <Kpi label="First pass" value={fmtDay(first.date)} icon={CalendarDays} sub={first.direction === "A" ? "Ascending" : "Descending"} />
+        <Kpi label="First pass" value={fmtDay(first.date)} icon={CalendarDays} sub={directionLabel(first.direction)} />
         <Kpi label="Latest pass" value={fmtDay(last.date)} icon={Orbit} sub="Repeats every 12 days" />
         <Kpi label="With radar previews" value={String(manifest.passes.filter((p) => p.radar).length)} icon={Images} sub="Open them under Radar images" />
       </KpiStrip>
@@ -63,15 +64,15 @@ export function PassesView() {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ p, i }) => {
-                const pairI = Math.min(i, manifest.pairs.length - 1); // the pair starting here (the last pass ends the last pair)
+              {rows.map(({ p }) => {
+                const pairI = nearestIndex(starts, p.date); // the speed pair starting closest to this pass
                 return (
                   <tr key={p.date}>
                     <th scope="row">{fmtDay(p.date)}</th>
                     <td>{season(p.date)}</td>
-                    <td>{p.direction === "A" ? "Ascending" : "Descending"}</td>
-                    <td className="num">{p.track}</td>
-                    <td className="num">{p.frame}</td>
+                    <td>{directionLabel(p.direction)}</td>
+                    <td className="num">{p.track ?? "–"}</td>
+                    <td className="num">{p.frame ?? "–"}</td>
                     <td>{p.radar ? <span className="d-pill is-ok">Available</span> : <span className="d-pill">None</span>}</td>
                     <td>
                       <button

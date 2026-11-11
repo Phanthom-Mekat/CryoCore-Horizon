@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 // TODO(team): fill these in before sharing.
 const LINKS = {
-  repo: "https://github.com/", // your GitHub repo
+  repo: "https://github.com/Phanthom-Mekat/CryoCore-Horizon",
   challenge: "https://www.spaceappschallenge.org/2026/challenges/dancing-with-the-sars/",
 };
 const TEAM = [
@@ -202,7 +202,7 @@ export default function Home() {
           <div className="foot-copy">
             <p>
               Radar data: NISAR, a joint mission of NASA and ISRO, distributed by the Alaska Satellite Facility. Earth imagery: NASA Blue Marble
-              and Black Marble, via the three.js examples. Glacier facts: UNESCO.
+              and VIIRS Black Marble from NASA GIBS; cloud layer from the three.js examples. Glacier facts: UNESCO.
             </p>
             <p>Built by CryoCore Horizon for the NASA International Space Apps Challenge 2026. Not an official NASA or ISRO website.</p>
           </div>

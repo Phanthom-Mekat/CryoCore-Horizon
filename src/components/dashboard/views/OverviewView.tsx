@@ -7,7 +7,7 @@ import { Activity, ArrowUpRight, Download, Gauge, HeartPulse, Map as MapIcon, Mo
 import { useDashboard } from "../DashboardProvider";
 import { LineChart } from "../LineChart";
 import { Card, Kpi, KpiStrip, Meter, PageHead, Toggle } from "../ui";
-import { SERIES_COLORS, UNIT_LABEL, fmtDay, fmtDayShort, midDate, season, smooth3, toCsv, toUnit } from "@/lib/dashboard-data";
+import { SERIES_COLORS, UNIT_LABEL, fmtDay, fmtDayShort, midDate, nearestIndex, season, smooth3, toCsv, toUnit } from "@/lib/dashboard-data";
 import { setSettings, useSettings } from "@/lib/dashboard-settings";
 
 const SORTS = {
@@ -35,7 +35,7 @@ export function OverviewView() {
   const now = val(pairIdx);
   const prev = val(pairIdx - 1);
   const firstFront = fronts.fronts[0]?.advanceKm ?? 0;
-  const endFront = fronts.fronts.find((f) => f.date === pair.end);
+  const endFront = fronts.fronts.length ? fronts.fronts[nearestIndex(fronts.fronts.map((f) => f.date), pair.end)] : undefined;
   const frontKm = endFront ? endFront.advanceKm - firstFront : null;
   const peak = timeseries.series.reduce((b, r, i) => (typeof r.front === "number" && r.front > b.v ? { v: r.front, i } : b), { v: -Infinity, i: 0 });
 
@@ -46,7 +46,7 @@ export function OverviewView() {
     { label: "Pairs with ice speed", value: manifest.pairs.length / Math.max(1, manifest.passes.length - 1), display: `${manifest.pairs.length} of ${manifest.passes.length - 1}` },
     { label: "Probe readings present", value: withBoth / Math.max(1, timeseries.series.length), display: `${Math.round((withBoth / Math.max(1, timeseries.series.length)) * 100)}%` },
     { label: "Calving fronts picked", value: fronts.fronts.length / manifest.passes.length, display: `${fronts.fronts.length} of ${manifest.passes.length}` },
-    { label: "Passes with radar previews", value: radarCount / manifest.passes.length, display: `${radarCount} of ${manifest.passes.length}`, note: "Previews are kept for every 4th pass to save space." },
+    { label: "Passes with radar previews", value: radarCount / manifest.passes.length, display: `${radarCount} of ${manifest.passes.length}`, note: manifest.sample ? "The sample keeps a preview for every 4th pass to save space." : undefined },
   ];
 
   const series = manifest.probes.map((p, k) => {
@@ -109,10 +109,10 @@ export function OverviewView() {
           unit={unit}
           icon={Gauge}
           sub={now !== null && prev !== null ? `${sign(toUnit(now - prev, u))} vs previous pair` : `${fmtDayShort(pair.start)} → ${fmtDayShort(pair.end)}`}
-          tone={now !== null && prev !== null ? (now >= prev ? "up" : "down") : undefined}
+          tone={now !== null && prev !== null && now !== prev ? (now > prev ? "up" : "down") : undefined}
         />
         <Kpi label="Fastest pair in the record" value={Number.isFinite(peak.v) ? toUnit(peak.v, u).toFixed(1) : "–"} unit={unit} icon={TrendingUp} sub={`${fmtDayShort(manifest.pairs[peak.i].start)} → ${fmtDayShort(manifest.pairs[peak.i].end)}`} />
-        <Kpi label="Calving front vs first pass" value={frontKm === null ? "–" : sign(frontKm)} unit="km" icon={Mountain} sub={frontKm === null ? "No front picked" : frontKm >= 0 ? "Advanced since the first pass" : "Retreated since the first pass"} />
+        <Kpi label="Calving front vs first pass" value={frontKm === null ? "–" : sign(frontKm)} unit="km" icon={Mountain} sub={frontKm === null ? "No front picked" : frontKm > 0 ? "Advanced since the first pass" : frontKm < 0 ? "Retreated since the first pass" : "Same place as the first pass"} />
         <Kpi label="NISAR passes" value={String(manifest.passes.length)} icon={Satellite} sub={`Track ${manifest.passes[0]?.track}, frame ${manifest.passes[0]?.frame}, every 12 days`} />
       </KpiStrip>
 
