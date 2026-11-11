@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import date
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query
@@ -6,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings
 from .database import Database
+from .explorer import build_explorer
 from .nasa import CMR_URL, CatalogError, NasaCatalog
 from .region import PRODUCTS, REGION
 from .schemas import Product, Scene, ScenePage, SearchRequest, SearchResponse
@@ -40,6 +42,21 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
     @app.get("/api/v1/region", tags=["Study area"])
     def region():
         return REGION
+
+    @app.get("/api/v1/explorer", tags=["Study area"])
+    def explorer(product: Product = "GCOV", start_date: date | None = None, end_date: date | None = None):
+        if start_date and end_date and start_date > end_date:
+            raise HTTPException(status_code=422, detail="end_date must be on or after start_date")
+        clause, args = "product = ?", [product]
+        if start_date:
+            clause += " AND substr(start_time, 1, 10) >= ?"
+            args.append(start_date.isoformat())
+        if end_date:
+            clause += " AND substr(start_time, 1, 10) <= ?"
+            args.append(end_date.isoformat())
+        with database.connect() as db:
+            rows = db.execute(f"SELECT payload FROM scenes WHERE {clause} ORDER BY start_time DESC, concept_id", args).fetchall()
+        return build_explorer(rows)
 
     @app.get("/api/v1/sources", tags=["NASA data"])
     def sources():

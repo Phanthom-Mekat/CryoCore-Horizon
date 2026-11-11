@@ -24,6 +24,13 @@ lists the settings. Local Next.js origins on port 3000 are enabled through CORS.
 
 ## API
 
+The integrated frontend explorer is available at `/explore` in Next.js. Its
+`GET /api/v1/explorer` endpoint returns the attributed 2018 BBS/HDX division boundary,
+stored scene footprints that intersect it, and acquisition-day counts. It accepts
+optional `product`, `start_date`, and `end_date` filters. See
+[the feature notes](../docs/EXPLORER.md). Shapely is required; rerun the editable
+install command when updating an existing environment.
+
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/health` | Application and SQLite connectivity |
@@ -61,8 +68,8 @@ observations are seeded.
 - Check calibration maturity, polarization, quality masks, and matching viewing
   geometry before comparing observations. Backscatter changes alone do not prove
   flooding or deforestation; validate against reference observations.
-- The frontend and existing glacier pipeline still use the Jakobshavn sample
-  dataset. Connecting and adapting them to Chattogram is a subsequent step.
+- The `/explore` frontend uses this backend's real catalog metadata. The separate
+  original glacier dashboard and pipeline still use the Jakobshavn sample dataset.
 - This local development API has no user authentication. Bind to localhost until
   authentication and deployment controls are added.
 - Schema version 1 is initialized at startup. Future column changes need explicit

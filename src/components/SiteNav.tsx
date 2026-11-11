@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { BrandMark } from "./BrandMark";
 
 const SECTIONS = [
   { id: "dark", label: "Why radar" },
@@ -44,12 +45,7 @@ export function SiteNav() {
   return (
     <header className="nav" data-scrolled={scrolled ? "true" : undefined}>
       <a className="brand" href="#top" aria-label="CryoCore Horizon, back to top">
-        <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-          <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="1.5" opacity=".35" />
-          <path d="M5.5 20.5h21" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M16 20.5 9 9.5" stroke="var(--ice)" strokeWidth="1.5" />
-          <path d="M16 20.5l-4.2-6.6a8 8 0 0 1 8.4 0z" fill="var(--ice)" opacity=".35" />
-        </svg>
+        <BrandMark />
         CryoCore Horizon
       </a>
       <nav aria-label="Sections">
@@ -59,8 +55,8 @@ export function SiteNav() {
           </a>
         ))}
       </nav>
-      <Link href="/dashboard" className="nav-cta">
-        Dashboard
+      <Link href="/explore" className="nav-cta">
+        Explore Chattogram
       </Link>
     </header>
   );
