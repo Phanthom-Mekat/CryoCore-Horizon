@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CryoCore Horizon
 
-## Getting Started
+Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing with the SARs**. We use radar from NISAR (NASA–ISRO) to track Jakobshavn Glacier (Sermeq Kujalleq), Greenland's fastest glacier, through cloud and polar night.
 
-First, run the development server:
+- `/`: project page with a live 3D view beside the NISAR spacecraft
+- `/dashboard`: ice speed map, speed over time, calving front position, radar before/after
+
+## Run the site
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # production check
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Dashboard data
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The dashboard reads static files from `public/data/jakobshavn/`. The file format is defined in `src/lib/dashboard-data.ts`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The files in the repo are **sample data** (`"sample": true` in `manifest.json`). They are synthetic placeholders, and the dashboard shows a "Sample data" banner while they're in use. The basemap is a real image: Sentinel-2 via NASA HLS, 14 July 2025, from NASA GIBS.
 
-## Learn More
+### Replace the sample with real NISAR data (at the hackathon)
 
-To learn more about Next.js, take a look at the following resources:
+You need Python 3.10+ and a free NASA Earthdata login (https://urs.earthdata.nasa.gov).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pip install asf_search h5py numpy pyproj scipy pillow
+export EARTHDATA_USERNAME=...   # or put urs.earthdata.nasa.gov in ~/.netrc; never commit credentials
+export EARTHDATA_PASSWORD=...
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+python scripts/nisar_pipeline.py search --start 2025-10-01   # track 170, frame 53 by default
+python scripts/nisar_pipeline.py download                     # ~31 GB into data/raw (git-ignored)
+python scripts/nisar_pipeline.py inspect data/raw/<a GOFF file>.h5   # confirm the offset layer names
+python scripts/nisar_pipeline.py build                        # writes public/data/jakobshavn with sample: false
+```
 
-## Deploy on Vercel
+In November 2026, ASF listed 18 GCOV and 15 GOFF files for track 170 / frame 53 over the glacier, from Oct 2025 to Oct 2026. Run `inspect` before `build`. The GOFF layer paths are matched by name and haven't been checked against a real file yet.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The pipeline's simplifications (2-D speed from offsets, front picked along one flowline) are listed at the top of `scripts/nisar_pipeline.py`. Mention them in the submission.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Checks
+
+```bash
+python scripts/test_pipeline.py                                # pipeline helpers
+node --experimental-strip-types scripts/check-sun.mts          # sun position behind the 3D view
+```
+
+### Regenerate assets
+
+- `node scripts/make-sample-data.mjs <basemap-hls.png>`: the sample dataset
+- `node scripts/make-textures.mjs <folder>`: Earth textures for the 3D view (sources listed in the script)
+
+## Credits
+
+NISAR data: NASA and ISRO, distributed by the Alaska Satellite Facility DAAC. Earth imagery: NASA Blue Marble, VIIRS Black Marble and HLS via NASA GIBS. Glacier facts: UNESCO World Heritage Centre. This is not an official NASA or ISRO website.

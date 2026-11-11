@@ -1,0 +1,436 @@
+{
+ "sample": true,
+ "note": "SAMPLE DATA for layout and testing. Speeds, fronts and radar images are synthetic. Replace by running scripts/nisar_pipeline.py.",
+ "glacier": "Sermeq Kujalleq (Jakobshavn Isbræ)",
+ "bbox": [
+  -51.3,
+  68.95,
+  -48.3,
+  69.35
+ ],
+ "basemap": {
+  "src": "basemap.webp",
+  "caption": "Sentinel-2 via NASA HLS, 14 Jul 2025 (NASA GIBS)"
+ },
+ "grid": {
+  "width": 400,
+  "height": 150
+ },
+ "speedMax": 45,
+ "units": "m/day",
+ "passes": [
+  {
+   "date": "2025-11-07",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": "radar/2025-11-07.webp"
+  },
+  {
+   "date": "2025-11-19",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2025-12-01",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2025-12-13",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2025-12-25",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": "radar/2025-12-25.webp"
+  },
+  {
+   "date": "2026-01-06",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-01-18",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-01-30",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-02-11",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": "radar/2026-02-11.webp"
+  },
+  {
+   "date": "2026-02-23",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-03-07",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-03-19",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-03-31",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": "radar/2026-03-31.webp"
+  },
+  {
+   "date": "2026-04-12",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-04-24",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-05-06",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-05-18",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": "radar/2026-05-18.webp"
+  },
+  {
+   "date": "2026-05-30",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-06-11",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-06-23",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-07-05",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": "radar/2026-07-05.webp"
+  },
+  {
+   "date": "2026-07-17",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-07-29",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-08-10",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-08-22",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": "radar/2026-08-22.webp"
+  },
+  {
+   "date": "2026-09-03",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-09-15",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-09-27",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-10-09",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": "radar/2026-10-09.webp"
+  },
+  {
+   "date": "2026-10-21",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  },
+  {
+   "date": "2026-11-02",
+   "direction": "D",
+   "track": 170,
+   "frame": 53,
+   "radar": null
+  }
+ ],
+ "pairs": [
+  {
+   "start": "2025-11-07",
+   "end": "2025-11-19",
+   "days": 12,
+   "speed": "speed/2025-11-07_2025-11-19.png"
+  },
+  {
+   "start": "2025-11-19",
+   "end": "2025-12-01",
+   "days": 12,
+   "speed": "speed/2025-11-19_2025-12-01.png"
+  },
+  {
+   "start": "2025-12-01",
+   "end": "2025-12-13",
+   "days": 12,
+   "speed": "speed/2025-12-01_2025-12-13.png"
+  },
+  {
+   "start": "2025-12-13",
+   "end": "2025-12-25",
+   "days": 12,
+   "speed": "speed/2025-12-13_2025-12-25.png"
+  },
+  {
+   "start": "2025-12-25",
+   "end": "2026-01-06",
+   "days": 12,
+   "speed": "speed/2025-12-25_2026-01-06.png"
+  },
+  {
+   "start": "2026-01-06",
+   "end": "2026-01-18",
+   "days": 12,
+   "speed": "speed/2026-01-06_2026-01-18.png"
+  },
+  {
+   "start": "2026-01-18",
+   "end": "2026-01-30",
+   "days": 12,
+   "speed": "speed/2026-01-18_2026-01-30.png"
+  },
+  {
+   "start": "2026-01-30",
+   "end": "2026-02-11",
+   "days": 12,
+   "speed": "speed/2026-01-30_2026-02-11.png"
+  },
+  {
+   "start": "2026-02-11",
+   "end": "2026-02-23",
+   "days": 12,
+   "speed": "speed/2026-02-11_2026-02-23.png"
+  },
+  {
+   "start": "2026-02-23",
+   "end": "2026-03-07",
+   "days": 12,
+   "speed": "speed/2026-02-23_2026-03-07.png"
+  },
+  {
+   "start": "2026-03-07",
+   "end": "2026-03-19",
+   "days": 12,
+   "speed": "speed/2026-03-07_2026-03-19.png"
+  },
+  {
+   "start": "2026-03-19",
+   "end": "2026-03-31",
+   "days": 12,
+   "speed": "speed/2026-03-19_2026-03-31.png"
+  },
+  {
+   "start": "2026-03-31",
+   "end": "2026-04-12",
+   "days": 12,
+   "speed": "speed/2026-03-31_2026-04-12.png"
+  },
+  {
+   "start": "2026-04-12",
+   "end": "2026-04-24",
+   "days": 12,
+   "speed": "speed/2026-04-12_2026-04-24.png"
+  },
+  {
+   "start": "2026-04-24",
+   "end": "2026-05-06",
+   "days": 12,
+   "speed": "speed/2026-04-24_2026-05-06.png"
+  },
+  {
+   "start": "2026-05-06",
+   "end": "2026-05-18",
+   "days": 12,
+   "speed": "speed/2026-05-06_2026-05-18.png"
+  },
+  {
+   "start": "2026-05-18",
+   "end": "2026-05-30",
+   "days": 12,
+   "speed": "speed/2026-05-18_2026-05-30.png"
+  },
+  {
+   "start": "2026-05-30",
+   "end": "2026-06-11",
+   "days": 12,
+   "speed": "speed/2026-05-30_2026-06-11.png"
+  },
+  {
+   "start": "2026-06-11",
+   "end": "2026-06-23",
+   "days": 12,
+   "speed": "speed/2026-06-11_2026-06-23.png"
+  },
+  {
+   "start": "2026-06-23",
+   "end": "2026-07-05",
+   "days": 12,
+   "speed": "speed/2026-06-23_2026-07-05.png"
+  },
+  {
+   "start": "2026-07-05",
+   "end": "2026-07-17",
+   "days": 12,
+   "speed": "speed/2026-07-05_2026-07-17.png"
+  },
+  {
+   "start": "2026-07-17",
+   "end": "2026-07-29",
+   "days": 12,
+   "speed": "speed/2026-07-17_2026-07-29.png"
+  },
+  {
+   "start": "2026-07-29",
+   "end": "2026-08-10",
+   "days": 12,
+   "speed": "speed/2026-07-29_2026-08-10.png"
+  },
+  {
+   "start": "2026-08-10",
+   "end": "2026-08-22",
+   "days": 12,
+   "speed": "speed/2026-08-10_2026-08-22.png"
+  },
+  {
+   "start": "2026-08-22",
+   "end": "2026-09-03",
+   "days": 12,
+   "speed": "speed/2026-08-22_2026-09-03.png"
+  },
+  {
+   "start": "2026-09-03",
+   "end": "2026-09-15",
+   "days": 12,
+   "speed": "speed/2026-09-03_2026-09-15.png"
+  },
+  {
+   "start": "2026-09-15",
+   "end": "2026-09-27",
+   "days": 12,
+   "speed": "speed/2026-09-15_2026-09-27.png"
+  },
+  {
+   "start": "2026-09-27",
+   "end": "2026-10-09",
+   "days": 12,
+   "speed": "speed/2026-09-27_2026-10-09.png"
+  },
+  {
+   "start": "2026-10-09",
+   "end": "2026-10-21",
+   "days": 12,
+   "speed": "speed/2026-10-09_2026-10-21.png"
+  },
+  {
+   "start": "2026-10-21",
+   "end": "2026-11-02",
+   "days": 12,
+   "speed": "speed/2026-10-21_2026-11-02.png"
+  }
+ ],
+ "probes": [
+  {
+   "id": "front",
+   "label": "Near the front",
+   "lon": -49.5187,
+   "lat": 69.154
+  },
+  {
+   "id": "upstream",
+   "label": "20 km upstream",
+   "lon": -49.0762,
+   "lat": 69.1647
+  }
+ ]
+}
