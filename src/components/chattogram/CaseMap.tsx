@@ -9,6 +9,7 @@ import { WATER, stripeTile } from "@/lib/chattogram/palette";
 
 import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme, mapError, cameraDuration } from "@/lib/mapbox";
 import { MapUnavailable } from "@/components/maps/MapUnavailable";
+import type { ProcessedImage } from "@/lib/chattogram/processed";
 
 /** Orientation landmarks (approximate centres), labelled in our own style above the basemap. */
 export const LANDMARKS: { name: string; lonLat: [number, number] }[] = [
@@ -38,6 +39,8 @@ type Props = {
   onMove?: (v: View) => void;
   /** The quicklook drawn on the map (null: none). */
   image: Acquisition | null;
+  processed?: ProcessedImage | null;
+  allowTerrain?: boolean;
   imageOpacity?: number;
   /** Footprints to outline; `selected` is drawn brighter. */
   footprints?: Acquisition[];
@@ -58,6 +61,8 @@ export function CaseMap({
   view,
   onMove,
   image,
+  processed = null,
+  allowTerrain = true,
   imageOpacity = 0.9,
   footprints = [],
   selected = null,
@@ -70,8 +75,12 @@ export function CaseMap({
   selectedFinding = null,
 }: Props) {
   const el = useRef<HTMLDivElement>(null);
+  const initialView = useRef(view);
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
+  const [terrain, setTerrain] = useState(false);
+  const [rasterError, setRasterError] = useState<string | null>(null);
+  const [rasterShown, setRasterShown] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // load state of the quicklook, keyed by acquisition so a new date reads as "loading" until its own result lands
   const [img, setImg] = useState<{ id: string; state: "shown" | "failed" } | null>(null);
@@ -100,15 +109,15 @@ export function CaseMap({
         zoom: view.zoom,
         attributionControl: false,
         fadeDuration: reduced ? 0 : 200,
-        dragRotate: false,
-        pitchWithRotate: false,
+        dragRotate: true,
+        pitchWithRotate: true,
       });
       m.addControl(new ml.AttributionControl({ compact: true }));
       map.current = m;
       disposeTheme = followMapTheme(m);
       m.touchZoomRotate.disableRotation();
       if (controls) {
-        m.addControl(new ml.NavigationControl({ showCompass: false }), "top-right");
+        m.addControl(new ml.NavigationControl({ showCompass: true, visualizePitch: true }), "top-right");
         m.addControl(new ml.ScaleControl({ unit: "metric", maxWidth: 120 }), "bottom-left");
       }
       m.on("error", (e) => {
@@ -116,6 +125,7 @@ export function CaseMap({
       });
       m.on("load", () => {
         if (dead) return;
+        m.addSource("terrain-dem", { type: "raster-dem", url: "mapbox://mapbox.mapbox-terrain-dem-v1", tileSize: 512, maxzoom: 14 });
         m.addSource("boundary", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
         m.addLayer({ id: "boundary-glow", type: "line", source: "boundary", paint: { "line-color": "#1686b0", "line-width": 6, "line-opacity": 0.12 } });
         m.addLayer({ id: "boundary", type: "line", source: "boundary", paint: { "line-color": "#1686b0", "line-width": 1.4, "line-opacity": 0.9 } });
@@ -272,14 +282,55 @@ export function CaseMap({
     if (m?.getLayer("browse")) m.setPaintProperty("browse", "raster-opacity", imageOpacity);
   }, [imageOpacity, ready]);
 
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    let live = true;
+    if (!processed) {
+      if (m.getLayer("processed")) m.removeLayer("processed");
+      if (m.getSource("processed")) m.removeSource("processed");
+      return;
+    }
+    // Preload so failed requests cannot silently leave an old date/layer visible.
+    const controller = new AbortController();
+    let objectUrl: string | undefined;
+    if (m.getLayer("processed")) m.removeLayer("processed");
+    if (m.getSource("processed")) m.removeSource("processed");
+    fetch(processed.url, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) }).then(r => {
+      if (!r.ok) throw new Error("Layer unavailable");
+      return r.blob();
+    }).then(blob => {
+      if (!live) return;
+      objectUrl = URL.createObjectURL(blob);
+        m.addSource("processed", { type: "image", url: objectUrl, coordinates: processed.corners });
+        m.addLayer({ id: "processed", type: "raster", source: "processed", paint: { "raster-opacity": imageOpacity, "raster-emissive-strength": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" } }, "boundary-glow");
+      m.once("idle", () => { if (live) setRasterShown(processed.url); });
+      setRasterError(null);
+    }).catch(() => { if (live) setRasterError("The processed layer could not load. Retry or select another layer."); });
+    return () => { live = false; controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [processed, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (map.current?.getLayer("processed")) map.current.setPaintProperty("processed", "raster-opacity", imageOpacity);
+  }, [imageOpacity, ready]);
+
+  const setPerspective = (enabled: boolean) => {
+    const m = map.current;
+    if (!m || !ready) return;
+    setTerrain(enabled);
+    m.setTerrain(enabled ? { source: "terrain-dem", exaggeration: 1 } : null);
+    m.easeTo({ pitch: enabled ? 58 : 0, bearing: enabled ? -24 : 0, duration: cameraDuration() });
+  };
+
   if (!MAPBOX_CONFIGURED) return <div className="c-map"><MapUnavailable /></div>;
 
   return (
     <div className="c-map" aria-label={label} role="region">
       <div ref={el} className="c-map-canvas" />
       {controls && <div className="map-view-tools">
-        <button type="button" onClick={() => map.current?.easeTo({ center: [view.lon, view.lat], zoom: view.zoom, pitch: 0, bearing: 0, duration: cameraDuration() })}>2D view</button>
-        <button type="button" onClick={() => map.current?.easeTo({ pitch: 50, duration: cameraDuration() })}>Tilt view</button>
+        <button type="button" aria-pressed={!terrain} onClick={() => setPerspective(false)}>2D analysis</button>
+        {allowTerrain && <button type="button" aria-pressed={terrain} onClick={() => setPerspective(true)}>3D terrain</button>}
+        <button type="button" onClick={() => map.current?.easeTo({ center: [initialView.current.lon, initialView.current.lat], zoom: initialView.current.zoom, duration: cameraDuration() })}>Recenter</button>
       </div>}
       {hover && (
         <div className="c-map-tip" style={{ left: hover.x, top: hover.y }} aria-hidden="true">
@@ -295,6 +346,8 @@ export function CaseMap({
       {imgState === "loading" && <p className="c-map-note">Loading the NISAR quicklook from ASF…</p>}
       {imgState === "failed" && <p className="c-map-note is-bad">The quicklook for this date couldn’t be loaded from ASF. Footprints and dates are still accurate.</p>}
       {error && <p className="c-map-note is-bad">{error}</p>}
+      {rasterError && <p className="c-map-note is-bad">{rasterError}</p>}
+      {processed && rasterShown !== processed.url && !rasterError && <p className="c-map-note" role="status">Loading calibrated layer…</p>}
     </div>
   );
 }

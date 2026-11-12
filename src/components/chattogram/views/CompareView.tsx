@@ -72,6 +72,7 @@ export function CompareView() {
           </Link>
         }
       />
+      <p className="c-compare-foot"><Link href="/chattogram/processed">Compare calibrated radar layers →</Link> · The processed pilot has a shared dB scale, coverage masks and downloadable measurements.</p>
     <div className="c-compare">
       <div className="c-compare-bar">
         <label className="c-field">
@@ -97,10 +98,10 @@ export function CompareView() {
 
       <div className="c-reveal" ref={frame} style={{ "--pos": `${pos}%` } as CSSProperties}>
         <div className="c-reveal-layer">
-          <CaseMap label={`NISAR quicklook of ${fmtDate(after.start)}`} view={view} onMove={onMove} image={after} imageOpacity={1} onReady={ready(1)} controls={false} />
+          <CaseMap allowTerrain={false} label={`NISAR quicklook of ${fmtDate(after.start)}`} view={view} onMove={onMove} image={after} imageOpacity={1} onReady={ready(1)} controls={false} />
         </div>
         <div className="c-reveal-layer c-reveal-before">
-          <CaseMap label={`NISAR quicklook of ${fmtDate(before.start)}`} view={view} onMove={onMove} image={before} imageOpacity={1} onReady={ready(0)} />
+          <CaseMap allowTerrain={false} label={`NISAR quicklook of ${fmtDate(before.start)}`} view={view} onMove={onMove} image={before} imageOpacity={1} onReady={ready(0)} />
         </div>
         <span className="c-badge c-badge-l">
           <strong>Before</strong> {fmtDate(before.start)} · {fmtTime(before.start)}
