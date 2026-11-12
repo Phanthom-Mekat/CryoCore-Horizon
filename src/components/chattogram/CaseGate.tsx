@@ -43,7 +43,7 @@ export function CaseGate({ children }: { children: ReactNode }) {
         <p>{t.gate.emptyBody}</p>
       ) : (
         // the technical detail is for whoever runs the servers, so it stays as the service reported it
-        <p className="c-state-detail" lang="en">
+        <p className="c-state-detail" lang="en" translate="no">
           {load.reason}
         </p>
       )}

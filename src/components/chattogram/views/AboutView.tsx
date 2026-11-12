@@ -63,7 +63,7 @@ export function AboutView() {
       <ul>
         <li>
           {ab.srcNisar}{" "}
-          <a href="https://nisar-docs.asf.alaska.edu/gcov/" target="_blank" rel="noreferrer">
+          <a href="https://nisar-docs.asf.alaska.edu/gcov/" target="_blank" rel="noreferrer" lang="en" translate="no">
             Alaska Satellite Facility DAAC <ExternalLink size={12} aria-hidden="true" />
           </a>
           {ab.srcNisarVia}{" "}

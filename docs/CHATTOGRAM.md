@@ -68,8 +68,8 @@ refer to the recipient's own development server.
 Shared views open in 2D; terrain, camera tilt and bearing are not recorded.
 Invalid controls fall back to safe defaults. An invalid or unavailable case ID
 shows an error rather than opening another case. Pixel coordinates retain full
-precision. Run `node --experimental-strip-types --test tests/processed-state.test.mjs`
-to check parsing, precision and round-trip restoration.
+precision. `pnpm test` (or `node --experimental-strip-types --test tests/processed-state.test.mjs` alone) checks
+parsing, precision and round-trip restoration.
 
 ## Inspect a native radar pixel
 
@@ -157,6 +157,12 @@ Evidence, About, Calibrated radar), the sidebar, the frozen-case notice, map lab
 - Mission, product and unit names stay as published (NISAR, GCOV, NASA, ASF, HH/HV, dB, γ⁰, SHA-256).
 - Map place names: in English the basemap's labels; in Bangla our landmark labels instead, drawn as HTML because the
   map's WebGL text can't shape Bengali conjuncts.
+- A translation guard keeps it that way: `tests/i18n-guard.test.mjs` lists the components that are fully translated,
+  and `pnpm test` fails, naming the file and line, if one of them shows English text instead of a message. Published
+  names are allowed; the one list of them is `PUBLISHED` in `tests/support/hardcoded-text.mjs`. Other English kept on
+  purpose (source citations, technical error details, proper names) goes inside an element marked
+  `lang="en" translate="no"`. A plain `lang="en"` only tells screen readers the language, so untranslated text marked
+  that way still fails. Translate a component, then add it to the list.
 - Still English on purpose: the downloaded brief (JSON, CSV, GeoJSON: data files whose field names must stay
   stable), identifiers, and technical error details. Not yet translated: the Scene catalogue, the Jakobshavn sample
   pages and the landing page.

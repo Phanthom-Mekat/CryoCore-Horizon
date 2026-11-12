@@ -60,6 +60,7 @@ pnpm build      # production check
 
 ```bash
 pnpm lint
+pnpm test                                                      # frontend tests: share links, translation guard
 node --experimental-strip-types scripts/check-sun.mts          # sun position behind the 3D view
 ```
 

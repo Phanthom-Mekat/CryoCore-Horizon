@@ -67,7 +67,7 @@ export function RainCard({ mode }: { mode: "stack" | "pair" }) {
       </div>
       <RainChart series={rain} from={from} to={to} marks={marks} label={r.label(fmtDate(from), fmtDate(to))} />
       <p className="c-rain-note">{r.caveat}</p>
-      <p className="c-rain-source" lang="en">
+      <p className="c-rain-source" lang="en" translate="no">
         {r.sourceLead} {rain.provider} {rain.apiVersion}, {rain.parameter} ({rain.longname}, {rain.units}) from {rain.sources.join(" + ")}; {rain.resolution};
         days in {rain.timeStandard}; retrieved {fmtDate(rain.retrievedAt)}.
       </p>
