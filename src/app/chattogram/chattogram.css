@@ -685,6 +685,9 @@
 
 /* ---------- evidence / observation brief ---------- */
 .c-evidence {
+  /* fill the grid track, so wide content (the findings table) scrolls inside it instead of widening the page */
+  width: 100%;
+  min-width: 0;
   max-width: 1180px;
   margin: 0 auto;
   padding: 32px 24px 56px;
@@ -827,10 +830,20 @@
   font-size: 0.8rem;
   word-break: break-all;
 }
+/* the backend's quality reason is a sentence: let it wrap in the findings table */
+.c-ev-sources .d-table td:last-child {
+  min-width: 16em;
+  white-space: normal;
+}
+/* granule names are one long word: let them wrap instead of widening the page */
+.c-ev-card li .c-mono,
+.c-prep .c-mono {
+  overflow-wrap: anywhere;
+}
 @media (max-width: 900px) {
   .c-ev-grid,
   .c-ev-pair {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .c-ev-head h1 {
     font-size: 1.6rem;
