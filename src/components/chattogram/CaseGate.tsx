@@ -13,13 +13,26 @@ export function CaseGate({ children }: { children: ReactNode }) {
   if (load.status === "ready" || (load.status === "empty" && path === "/chattogram/catalogue")) return children;
   if (load.status === "loading")
     return (
-      <div className="d-state d-loading" aria-busy="true">
-        <span className="d-spinner" aria-hidden="true" />
-        <p>Loading NISAR acquisitions over Chattogram…</p>
+      // a skeleton in the shape of the case pages (heading, map, side panel), not a spinner
+      <div className="c-skel" role="status" aria-busy="true">
+        <div className="c-skel-head" aria-hidden="true">
+          <i />
+          <i />
+        </div>
+        <div className="c-skel-body">
+          <div className="c-skel-map">
+            <p>Loading NISAR acquisitions over Chattogram…</p>
+          </div>
+          <div className="c-skel-side" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </div>
+        </div>
       </div>
     );
   return (
-    <div className="d-state" role="alert">
+    <div className="d-state c-gate-error" role="alert">
       <h2>{load.status === "empty" ? "No NISAR scenes stored yet" : load.status === "unavailable" ? "The data service isn’t running" : "The data service returned an error"}</h2>
       <p>{load.reason}</p>
       <div className="c-state-actions">

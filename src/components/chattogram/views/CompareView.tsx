@@ -5,9 +5,11 @@ import type { Map as MlMap } from "maplibre-gl";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeftRight, Check, FileSearch } from "lucide-react";
 import { compatibility, fmtDate, fmtTime, type Acquisition } from "@/lib/chattogram/acquisitions";
-import { CaseMap, browseUrl } from "../CaseMap";
+import { CASE_ID, assetUrl, fmtDb, type CaseLayer } from "@/lib/chattogram/case-api";
+import { CaseMap, browseUrl, type Overlay } from "../CaseMap";
 import { CaseBar } from "../CaseBar";
 import { useCase, type View } from "../CaseProvider";
+import { DbKey } from "../MapKey";
 
 /** Keeps two maps on the same centre and zoom, so both sides of the divider always show the same extent and scale. */
 function useSyncedMaps() {
@@ -26,7 +28,7 @@ function useSyncedMaps() {
 }
 
 export function CompareView() {
-  const { load, stack, before, after, view, set, href } = useCase();
+  const { load, stack, before, after, view, set, href, processed, isCasePair, caseHref } = useCase();
   const [pos, setPos] = useState(50);
   const frame = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -46,6 +48,17 @@ export function CompareView() {
         <p>A comparison needs two acquisitions from the same track and frame. Pick another stack under Explore.</p>
       </div>
     );
+
+  // the processed case's pair gets its calibrated layers instead of the quicklooks; any other pair keeps the quicklooks
+  const detail = processed.status === "ready" ? processed.data.detail : null;
+  const pc = detail?.status === "ready" && processed.status === "ready" ? processed.data : null;
+  const lb = pc?.layers.find((l) => l.id === "before_db");
+  const la = pc?.layers.find((l) => l.id === "after_db");
+  const calibrated = isCasePair && lb && la ? { before: lb, after: la } : null;
+  const sameScale = calibrated && calibrated.before.scale.min === calibrated.after.scale.min && calibrated.before.scale.max === calibrated.after.scale.max;
+  const overlay = (l: CaseLayer): Overlay => ({ url: assetUrl(CASE_ID, l, pc!.detail.updated_at), corners: l.corners, label: l.label });
+  const toCase = pc && !isCasePair ? caseHref("/chattogram/compare") : null;
+  const kind = calibrated ? "Calibrated γ⁰" : "NISAR quicklook";
 
   const dates = [...stack.items].sort((a, b) => a.start.localeCompare(b.start));
   const checks = compatibility(before, after);
@@ -97,10 +110,31 @@ export function CompareView() {
 
       <div className="c-reveal" ref={frame} style={{ "--pos": `${pos}%` } as CSSProperties}>
         <div className="c-reveal-layer">
-          <CaseMap label={`NISAR quicklook of ${fmtDate(after.start)}`} view={view} onMove={onMove} image={after} imageOpacity={1} onReady={ready(1)} controls={false} />
+          <CaseMap
+            label={`${kind} of ${fmtDate(after.start)}`}
+            view={view}
+            onMove={onMove}
+            image={calibrated ? null : after}
+            overlay={calibrated && overlay(calibrated.after)}
+            area={detail?.analysis_area ?? null}
+            areaName={detail ? `${detail.title} · analysis area` : undefined}
+            imageOpacity={1}
+            onReady={ready(1)}
+            controls={false}
+          />
         </div>
         <div className="c-reveal-layer c-reveal-before">
-          <CaseMap label={`NISAR quicklook of ${fmtDate(before.start)}`} view={view} onMove={onMove} image={before} imageOpacity={1} onReady={ready(0)} />
+          <CaseMap
+            label={`${kind} of ${fmtDate(before.start)}`}
+            view={view}
+            onMove={onMove}
+            image={calibrated ? null : before}
+            overlay={calibrated && overlay(calibrated.before)}
+            area={detail?.analysis_area ?? null}
+            areaName={detail ? `${detail.title} · analysis area` : undefined}
+            imageOpacity={1}
+            onReady={ready(0)}
+          />
         </div>
         <span className="c-badge c-badge-l">
           <strong>Before</strong> {fmtDate(before.start)} · {fmtTime(before.start)}
@@ -150,10 +184,31 @@ export function CompareView() {
         </ul>
       </div>
 
-      <p className="c-compare-foot">
-        Both sides are NISAR GCOV browse quicklooks (colour composite of polarizations) from ASF, on the same map extent and scale. Dark is smooth surface such as
-        open water; bright is rough or vegetated ground. These pictures are for looking, not measuring: a measured change map needs the calibrated γ⁰ layers.
-      </p>
+      {calibrated ? (
+        <div className="c-compare-foot">
+          <p>
+            <strong>Calibrated layers.</strong> This is the processed case’s pair, so both sides show calibrated backscatter (γ⁰, {calibrated.before.units}) computed
+            from the full GCOV files, clipped to the analysis rectangle, on the same map extent and{" "}
+            {sameScale
+              ? `one shared contrast scale (${fmtDb(calibrated.before.scale.min)} to ${fmtDb(calibrated.before.scale.max)}). Darker is a weaker return, such as smooth water.`
+              : "contrast scales that differ between the two dates, so compare brightness with care."}{" "}
+            No-data pixels are transparent. {calibrated.before.crs_note}
+          </p>
+          <DbKey min={calibrated.before.scale.min} max={calibrated.before.scale.max} />
+        </div>
+      ) : (
+        <p className="c-compare-foot">
+          Both sides are NISAR GCOV browse quicklooks (colour composite of polarizations) from ASF, on the same map extent and scale. Dark is smooth surface such as
+          open water; bright is rough or vegetated ground. These pictures are for looking, not measuring: a measured change map needs the calibrated γ⁰ layers.
+          {toCase && pc && (
+            <>
+              {" "}
+              Calibrated layers exist for the processed pair, {fmtDate(pc.detail.before.date)} → {fmtDate(pc.detail.after.date)}:{" "}
+              <Link href={toCase}>compare that pair</Link>.
+            </>
+          )}
+        </p>
+      )}
     </div>
     </>
   );

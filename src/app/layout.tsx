@@ -27,7 +27,8 @@ export const viewport: Viewport = { themeColor: "#050B14", colorScheme: "dark" }
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" data-scroll-behavior="smooth" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      {/* browser extensions (Grammarly, ColorZilla) add attributes to <body> before hydration */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

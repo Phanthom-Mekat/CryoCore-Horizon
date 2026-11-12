@@ -5,12 +5,13 @@ import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from . import cases, jobs
 from .config import Settings
-from .database import Database
+from .database import LATEST_VERSION, Database
 from .explorer import build_explorer
 from .nasa import CMR_URL, CatalogError, NasaCatalog
 from .region import PRODUCTS, REGION
-from .schemas import Product, Scene, ScenePage, SearchRequest, SearchResponse
+from .schemas import Product, Region, Scene, ScenePage, SearchRequest, SearchResponse
 
 
 def create_app(settings: Settings | None = None, transport: httpx.BaseTransport | None = None):
@@ -27,7 +28,7 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
 
     app = FastAPI(
         title="CryoCore Horizon — Chattogram API", version="0.1.0",
-        description="NISAR-first scene discovery and provenance. No synthetic observations or computed change products.",
+        description="NISAR-first scene discovery, provenance, and frozen case bundles (observed radar change). No synthetic observations.",
         lifespan=lifespan,
     )
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
@@ -37,9 +38,9 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
     def health():
         with database.connect() as db:
             db.execute("SELECT 1").fetchone()
-        return {"status": "ok", "database": "sqlite", "schema_version": 1}
+        return {"status": "ok", "database": "sqlite", "schema_version": LATEST_VERSION}
 
-    @app.get("/api/v1/region", tags=["Study area"])
+    @app.get("/api/v1/region", response_model=Region, tags=["Study area"])
     def region():
         return REGION
 
@@ -64,7 +65,7 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
             "primary": {"mission": "NASA-ISRO NISAR", "catalog": CMR_URL,
                         "distributor": "ASF DAAC", "products": PRODUCTS,
                         "documentation": "https://nisar-docs.asf.alaska.edu/"},
-            "status": "Metadata discovery only; raster downloads and analysis are not implemented.",
+            "status": "Metadata discovery is live. Curated cases are processed offline by the worker and served from frozen bundles.",
             "download_authentication": "Protected data downloads require NASA Earthdata Login.",
         }
 
@@ -91,6 +92,8 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
             raise HTTPException(status_code=404, detail="Scene not found in the local catalog.")
         return result
 
+    app.include_router(cases.router(database, settings))
+    app.include_router(jobs.router(database, settings))
     return app
 
 

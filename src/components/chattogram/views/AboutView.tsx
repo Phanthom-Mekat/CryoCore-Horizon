@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { useCase } from "../CaseProvider";
-import { ChangeKey, WaterKey } from "../MapKey";
+import { ChangeKey, FindingKey, WaterKey } from "../MapKey";
+import { PrepStatus } from "../PrepStatus";
 
 export function AboutView() {
-  const { load, explorer } = useCase();
+  const { load, explorer, processed } = useCase();
+  const ready = processed.status === "ready" && processed.data.detail.status === "ready";
   const region = explorer?.region;
   const n = load.status === "ready" ? load.data.acquisitions.length : 0;
 
@@ -37,21 +39,30 @@ export function AboutView() {
         )}
       </ul>
 
+      <h2>Data preparation</h2>
+      <div className="c-ev-card">
+        <PrepStatus />
+      </div>
+
       <h2>What is not done yet</h2>
       <ul>
-        <li>Calibrated backscatter (γ⁰ in dB), quality masks and a common grid from the full GCOV files: the processing worker is next on the backend.</li>
-        <li>Signed backscatter change and any water classification. Until reference checks support it, a change is “observed radar change”, never a flood.</li>
-        <li>Area statistics. They need the boundary’s suitability confirmed and an equal-area projection.</li>
+        {!ready && (
+          <li>Calibrated backscatter (γ⁰ in dB), quality masks and a common grid from the full GCOV files, for the processed case’s pair.</li>
+        )}
+        <li>Any water classification. Until reference checks support it, a change is “observed radar change”, never a flood.</li>
+        <li>Division-wide statistics. Areas are only given inside the team-drawn analysis rectangle, which is not an administrative boundary.</li>
       </ul>
 
-      <h2>How processed results will look</h2>
+      <h2>How processed results look</h2>
       <p>
-        Water-change candidates and signed backscatter change are separate layers with separate legends, never shown together, so a measured change is
-        never mistaken for a classification.
+        Signed backscatter change has its own diverging scale; areas of observed change take its two poles, each with its own stripe and icon. Water-change
+        candidates, if a validated classifier ever supports them, get separate colours and are never shown with the change layer, so a measured change is never
+        mistaken for a classification.
       </p>
       <div className="c-keys">
-        <WaterKey />
         <ChangeKey />
+        <FindingKey />
+        <WaterKey />
       </div>
 
       <h2>Sources</h2>
