@@ -72,7 +72,7 @@ Updated 13 November 2026 after the PR #2 merge (`f8c6197`). "Partial" includes i
 | F01 | Verified study area | Partial | 2018 BBS/HDX boundary with provenance; scenes filtered by the polygon; drawn on every map; curated analysis polygon: team-drawn lower Karnaphuli/port rectangle (≈175.7 km² equal-area, provenance recorded) in `backend/app/assets/analysis-areas.geojson`, documented in [docs/curated-case.md](docs/curated-case.md) | Confirm the boundary's current suitability; about 16.7 km² of the rectangle (the river channel) lies outside the 2018 polygon, which the docs explain |
 | F02 | Real NISAR case selection | Partial | Pilot: real July/October HDF5 metadata inspected, frequency-A gate passes. Curated case: pair (stack `069_A_013`, 18 Jun vs 16 Oct 2026, provisional v1.0.11, HH+HV) processed from the real files: layout, masks and common coverage confirmed (only 0.0002 km² of 175.71 km² excluded) | Mixed-mode implications for the pilot; reference observations (tide heights at both pass times) |
 | F03 | Reliable data preparation | Done except cancellation | Resumable authenticated downloads (host allowlist incl. ASF's pinned CloudFront, MD5/size and disk-space checks); durable SQLite job queue with atomic claim, stale-job requeue, retries, `needs_credentials`; `app.worker` and `app.cli prepare-case`; `PrepStatus` panel. Real run 13 Nov: 12.4 GB downloaded, job 2 succeeded and published | A cancel action (`cancelled` exists only as a schema state) |
-| F04 | Processed radar layers | Partial | Pilot: real frequency-A HH/HV GeoTIFFs with masks and hashes. Curated case: real HH γ⁰ before/after/change PNGs on the native 10 m UTM grid (1158 × 1571 px), boxcar 5×5, fixed −25..0 dB and ±6 dB scales | Static terrain quality (layover/shadow not separately masked); HV for the curated case; mixed-mode review |
+| F04 | Processed radar layers | Partial | Pilot: real frequency-A HH/HV GeoTIFFs with masks and hashes. Curated case: real HH γ⁰ before/after/change PNGs on the native 10 m UTM grid (1158 × 1571 px), boxcar 5×5, fixed −25..0 dB and ±6 dB scales | Static terrain quality (layover/shadow not separately masked); process HV for the curated case (already in the committed extracts); mixed-mode review |
 | F05 | Defensible change map | Partial | Pilot: signed dB change with coverage statistics. Curated case (real): 4.91 km² brighter and 0.20 km² darker by ≥ 3 dB over 175.71 km², 92 regions (40 largest listed), each labelled "Observed radar change" with categorical quality | Confounder assessment (tide, river stage, ships, crops, wind); threshold sensitivity; independent validation; no water classification |
 | F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB scale at `/chattogram/processed`; Compare switches to the curated case's calibrated layers when that case is ready | Extend to additional validated acquisitions |
 | F07 | Click-to-explain evidence | Partial | Pilot: native HH/HV pixel inspection and JSON. Curated case: 40 real finding polygons on Explore, `FindingPanel` (what changed, why, what is uncertain, sources, method), selection in the URL (`f`); works in the frozen replay | Reference checks (`validation_records` is empty); translate `FindingPanel` |
@@ -182,6 +182,13 @@ Merged from `feat/chattogram-home` and documented in [docs/curated-case.md](docs
 - [x] Processed `karnaphuli-estuary` from the real NISAR files (2 × ≈6.2 GB, MD5 checked) into `backend/data/cases/karnaphuli-estuary/`.
 - [x] `pnpm freeze-case` also freezes the curated case when it is ready and real (never a synthetic QA bundle): detail, layers, findings with per-finding evidence, timeseries and the three exports in `public/data/chattogram/case/curated/`, each with SHA-256.
 - [x] Replay uses them: Overview and Evidence numbers, Explore layers and finding panel, Compare layers, Evidence exports. Checked with 0 `/api/` requests and all 6 files matching their hashes; the map drawing itself was not seen (browser pane hidden).
+
+### Committed NISAR extracts — 13 November 2026
+
+- [x] Processing reads one window per file; `python -m app.cli extract-case <case>` copies exactly that window (HH, HV, mask, coordinates, projection, identification and RTC metadata, same HDF5 paths) into `backend/data/extracts/<case>/` with `extracts.json` (SHA-256, source granule, concept ID, collection, version, full-file MD5, window in the full grid).
+- [x] `karnaphuli-estuary`: 2 × 9.7 MB committed instead of 12.4 GB; `prepare-case --from-extracts` needs no download or credentials and reproduces the published bundle byte for byte (metrics, findings, timeseries, 3 PNGs), checked end to end against an empty data folder.
+- [x] Refuses a subset whose SHA-256 changed or whose concept IDs differ from the case's pinned pair; `tests/test_extract.py` proves full-file and subset processing give identical outputs.
+- [ ] Delete the 12.4 GB of full files in `backend/data/raw/` on the processing machine once nobody needs to re-extract (they are not committed).
 
 ### Two processed tracks — team decision needed
 
@@ -315,8 +322,8 @@ Priority definitions:
 - [x] Choose a manageable analysis subset with actual overlapping NISAR coverage.
 - [x] Inspect real files and record acquisition times, product versions, maturity,
   orbit/track, frequency, polarization, and relevant quality metadata.
-- [ ] Confirm a compatible before/after pair; three or more dates unlock playback.
-  _Pilot pair confirmed from real files (frequency A). Curated pair pinned from CMR metadata only; its real files are not inspected yet._
+- [x] Confirm a compatible before/after pair; three or more dates unlock playback.
+  _Pilot pair confirmed from real files (frequency A). Curated pair processed from its real files on 13 Nov 2026 (same track, frame, collection and version; exact pixel lattice; 175.71 km² valid on both dates). Playback still needs a third processed date._
 - [ ] Identify reference observations appropriate to those dates and the phenomenon.
 - [x] Record file sizes and an achievable storage/processing budget before bulk downloads.
 - [x] Write `case-selection.md` with chosen location/dates, rejected alternatives,
@@ -522,13 +529,15 @@ counts, and labels such as “live” on historical observations.
 
 - [ ] One complete real NISAR case is the central demo, not an optional tab.
 - [ ] Every visible number is derived from the frozen case and has units/dates.
-- [ ] Full pipeline can be rerun from documented inputs, parameters, and versions.
+- [x] Full pipeline can be rerun from documented inputs, parameters, and versions.
+  _`prepare-case karnaphuli-estuary --from-extracts` reruns from the committed subsets with the parameters recorded in the bundle manifest (byte-identical, 13 Nov 2026); the full-file path is `prepare-case` with an Earthdata login._
 - [ ] Scientific limitations are readable and consistent in UI, brief, and narration.
 - [ ] A reviewer can distinguish measured radar change from interpreted water change.
 - [ ] At least one independent person completes the user journey; record actual feedback.
 - [ ] All public assets and datasets have source/license attribution.
 - [ ] Select an appropriate repository license and document third-party attribution.
-- [ ] No credentials, large raw downloads, or local databases are committed.
+- [x] No credentials, large raw downloads, or local databases are committed.
+  _Checked 13 Nov 2026: only `backend/.env.example`; no `.sqlite3`, `.h5` downloads or `.part` files. The committed `*.subset.h5` files are 9.7 MB extracts, not raw downloads._
 - [ ] API tests, raster checks, frontend build, and end-to-end demo checks pass.
 - [ ] Public demo is reachable; job endpoints are protected; data persists across restarts.
 - [x] Frozen assets replay without upstream access; cached/replayed observations are labeled honestly.

@@ -4,7 +4,10 @@ Selected 12 November 2026 from NASA CMR metadata synced into the local catalog
 (`python -m app.cli sync --start 2026-01-01 --end 2026-11-12`: 181 GCOV records, 128 intersecting the division polygon).
 Every value below comes from that metadata. The pair was processed from the real files on 13 November 2026 (job 2):
 175.71 km² valid on both dates (0.0002 km² excluded), 4.91 km² brighter and 0.20 km² darker by at least 3 dB, 92 change
-regions of which the 40 largest are listed. See [What is still unverified](#what-is-still-unverified).
+regions of which the 40 largest are listed. The window of each file that processing reads is committed in
+`backend/data/extracts/karnaphuli-estuary/` (2 × 9.7 MB, HH + HV + mask); `python -m app.cli prepare-case
+karnaphuli-estuary --from-extracts` reproduces the result without the 12.4 GB download. See
+[What is still unverified](#what-is-still-unverified).
 
 ## Chosen area
 

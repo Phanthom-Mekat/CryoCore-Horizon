@@ -75,7 +75,9 @@ Run from `backend/` (PowerShell: `.\.venv\Scripts\python.exe`, below `python` fo
 
 ```powershell
 python -m app.cli sync --start 2026-01-01                 # pages all GCOV metadata from NASA CMR (public, no login)
-python -m app.cli prepare-case karnaphuli-estuary         # queue + run the case now in this process
+python -m app.cli prepare-case karnaphuli-estuary --from-extracts   # reprocess from the committed subsets: no download
+python -m app.cli prepare-case karnaphuli-estuary         # queue + run the case now in this process (downloads 12.4 GB)
+python -m app.cli extract-case karnaphuli-estuary         # cut the downloaded files to the subsets processing reads
 python -m app.worker                                      # or: long-running worker that processes queued jobs
 python -m app.cli migrate                                 # apply schema migrations and print the version
 ```
@@ -90,7 +92,8 @@ A job resolves both scenes from the local catalog, downloads the two HDF5 files 
 bundle is never served. Downloads:
 
 - authenticate with `CRYO_EARTHDATA_TOKEN` (bearer), otherwise `~/.netrc` / `~/_netrc` for `urs.earthdata.nasa.gov`;
-- follow redirects by hand, only to https hosts on an allowlist (URS, `*.earthdatacloud.nasa.gov`, `*.asf.alaska.edu`, S3).
+- follow redirects by hand, only to https hosts on an allowlist (URS, `*.earthdatacloud.nasa.gov`, ASF's pinned
+  CloudFront distribution `d1mv8zhcvry6x4.cloudfront.net`, `*.asf.alaska.edu`, S3).
   Authorization goes only to URS/earthdatacloud, and a password only to URS;
 - resume through `<file>.part` with HTTP Range, then check the CMR size and MD5. Free disk space is checked first;
 - never log credentials or signed URLs.
@@ -101,6 +104,20 @@ Without credentials the job fails with `error_code: needs_credentials` and says 
 requeues the current job without counting it as an attempt. Jobs are claimed atomically
 (`UPDATE … WHERE state='queued' RETURNING`), and a partial unique index allows only one active job per case, so a
 duplicate `POST /jobs` returns the existing job. Run one worker per database.
+
+### Committed extracts: reprocess without the 12.4 GB download
+
+Processing reads one window of each 6 GB file: the analysis rectangle plus a margin, frequency A. `extract-case` copies
+exactly that window into `data/extracts/<case>/<granule>.subset.h5`, keeping the original HDF5 paths and attributes
+(HHHH, HVHV, mask, the window's coordinates, projection, the identification group and the RTC convention), so
+`app.processing` reads a subset unchanged. `extracts.json` records each subset's SHA-256, its source granule, concept
+ID, collection, version and full-file MD5, and the window's rows and columns in the full grid.
+
+For `karnaphuli-estuary` the two subsets are 9.7 MB each (0.16% of the downloads) and are committed. Re-processing from
+them reproduces the published bundle byte for byte (metrics, findings, timeseries and all three PNGs; checked 13 Nov
+2026), and `tests/test_extract.py` checks the same on synthetic files. `--from-extracts` refuses a subset whose SHA-256
+has changed or whose concept IDs differ from the case's pinned pair. After cloning, run it once so the backend serves
+the case.
 
 ## Scope and next steps
 

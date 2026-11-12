@@ -27,14 +27,15 @@ class JobFailure(Exception):
         self.code, self.retryable = code, retryable
 
 
-def run_job(database: Database, settings: Settings, job_id: int | None = None) -> dict | None:
-    """Run one job to completion. With job_id, keep retrying it (with backoff) until it stops being queued."""
+def run_job(database: Database, settings: Settings, job_id: int | None = None, from_extracts: bool = False) -> dict | None:
+    """Run one job to completion. With job_id, keep retrying it (with backoff) until it stops being queued.
+    from_extracts: process the committed subsets in data/extracts/<case>/ instead of downloading the full files."""
     while True:
         job = jobs.claim(database, job_id)
         if job is None:
             return jobs.get(database, job_id) if job_id is not None else None
         try:
-            _execute(database, settings, job)
+            _execute(database, settings, job, from_extracts)
             jobs.update(database, job["id"], state="succeeded", stage="published", progress=1.0, finished_at=now_iso())
         except (JobFailure, DownloadError) as exc:
             jobs.fail(database, settings, job, exc.code, str(exc), exc.retryable)
@@ -51,7 +52,7 @@ def run_job(database: Database, settings: Settings, job_id: int | None = None) -
         time.sleep(min(60, 5 * result["attempts"]))
 
 
-def _execute(database: Database, settings: Settings, job: dict):
+def _execute(database: Database, settings: Settings, job: dict, from_extracts: bool = False):
     case_id, job_id = job["case_id"], job["id"]
     jobs.update(database, job_id, stage="resolve", progress=0.0)
     with database.connect() as db:
@@ -65,6 +66,18 @@ def _execute(database: Database, settings: Settings, job: dict):
                                  "'python -m app.cli sync --start 2026-01-01' from backend/ first.")
             scenes[key] = json.loads(row["payload"])
     definition = json.loads(case["definition"])
+
+    if from_extracts:
+        from .extract import case_files
+        try:
+            files, sources = case_files(case_id)
+        except (FileNotFoundError, ValueError) as exc:
+            raise JobFailure("extracts_missing", str(exc)) from exc
+        pinned = [scenes["before"]["concept_id"], scenes["after"]["concept_id"]]
+        if [s["concept_id"] for s in sources] != pinned:
+            raise JobFailure("extracts_mismatch", f"The extracts are of {[s['concept_id'] for s in sources]}, "
+                             f"but the case pins {pinned}; extract the case again.")
+        return process_files(database, settings, job, definition, files, sources)
 
     # Download (resumable). Credentials are checked before any network call.
     jobs.update(database, job_id, stage="download", progress=0.02)

@@ -1,0 +1,81 @@
+{
+  "case_id": "karnaphuli-estuary",
+  "method": "app/extract.py subset: original HDF5 paths, gzip level 9",
+  "margin_px": 22,
+  "before": {
+    "file": "NISAR_L2_PR_GCOV_023_069_A_013_4005_DHDH_A_20260618T232102_20260618T232136_P05023_N_F_J_001.subset.h5",
+    "sha256": "7e0fac18879d16ab26b0b38c7f5eae00bf5bdbce84c00ca227a15798642a646f",
+    "bytes": 9720433,
+    "source": {
+      "granule": "NISAR_L2_PR_GCOV_023_069_A_013_4005_DHDH_A_20260618T232102_20260618T232136_P05023_N_F_J_001",
+      "concept_id": "G4240317293-ASF",
+      "collection": "NISAR_L2_GCOV_PROVISIONAL_V1",
+      "version": "1.0.11",
+      "md5": "a52536ee1ab75b4267b4cf74871ff22f",
+      "size_bytes": 6136266752,
+      "qa_url": "https://nisar.asf.earthdatacloud.nasa.gov/NISAR/NISAR_L2_GCOV_PROVISIONAL_V1/NISAR_L2_PR_GCOV_023_069_A_013_4005_DHDH_A_20260618T232102_20260618T232136_P05023_N_F_J_001/NISAR_L2_PR_GCOV_023_069_A_013_4005_DHDH_A_20260618T232102_20260618T232136_P05023_N_F_J_001_QA_REPORT.pdf"
+    },
+    "window": {
+      "terms": [
+        "HHHH",
+        "HVHV"
+      ],
+      "frequency": "A",
+      "rows": [
+        21215,
+        22818
+      ],
+      "cols": [
+        25988,
+        27178
+      ],
+      "full_shape": [
+        33552,
+        34200
+      ],
+      "epsg": 32646,
+      "posting_m": [
+        10.0,
+        10.0
+      ]
+    }
+  },
+  "after": {
+    "file": "NISAR_L2_PR_GCOV_033_069_A_013_4005_DHDH_A_20261016T232058_20261016T232133_P05023_N_F_J_001.subset.h5",
+    "sha256": "55eef095f770ca7c19766a7fe885cec6de679804eef48fc74d766747a74ec94e",
+    "bytes": 9711290,
+    "source": {
+      "granule": "NISAR_L2_PR_GCOV_033_069_A_013_4005_DHDH_A_20261016T232058_20261016T232133_P05023_N_F_J_001",
+      "concept_id": "G4376150332-ASF",
+      "collection": "NISAR_L2_GCOV_PROVISIONAL_V1",
+      "version": "1.0.11",
+      "md5": "898782011736a8ea15df9d361170a71e",
+      "size_bytes": 6253707264,
+      "qa_url": "https://nisar.asf.earthdatacloud.nasa.gov/NISAR/NISAR_L2_GCOV_PROVISIONAL_V1/NISAR_L2_PR_GCOV_033_069_A_013_4005_DHDH_A_20261016T232058_20261016T232133_P05023_N_F_J_001/NISAR_L2_PR_GCOV_033_069_A_013_4005_DHDH_A_20261016T232058_20261016T232133_P05023_N_F_J_001_QA_REPORT.pdf"
+    },
+    "window": {
+      "terms": [
+        "HHHH",
+        "HVHV"
+      ],
+      "frequency": "A",
+      "rows": [
+        21215,
+        22818
+      ],
+      "cols": [
+        25988,
+        27178
+      ],
+      "full_shape": [
+        33552,
+        34200
+      ],
+      "epsg": 32646,
+      "posting_m": [
+        10.0,
+        10.0
+      ]
+    }
+  }
+}
