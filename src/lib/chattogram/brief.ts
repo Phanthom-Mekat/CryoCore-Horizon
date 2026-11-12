@@ -52,13 +52,13 @@ export function briefJson(region: Region, before: Acquisition, after: Acquisitio
     compared: { before: source(before), after: source(after), days_apart: Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5) },
     compatibility: compatibility(before, after),
     rainfall_context: rain && rainfallContext(rain, before, after),
-    calibrated_pilot: pilot && pilotEvidence(pilot, measured, shareUrl),
+    calibrated_pilot: pilot && pilotEvidence(pilot, measured, origin.mode === "live" ? shareUrl : null),
     attribution: "NISAR data: NASA and ISRO, distributed by the Alaska Satellite Facility DAAC (nisar-docs.asf.alaska.edu); discovered through NASA Earthdata CMR.",
   };
 }
 
 /** The backend's calibrated pilot as published; `covers_compared_pair` says whether its numbers belong to this brief's dates. */
-function pilotEvidence(p: ProcessedCase, covers: boolean, shareUrl: string) {
+function pilotEvidence(p: ProcessedCase, covers: boolean, liveUrl: string | null) {
   return {
     covers_compared_pair: covers,
     case_id: p.id,
@@ -73,7 +73,8 @@ function pilotEvidence(p: ProcessedCase, covers: boolean, shareUrl: string) {
     statistics: { note: "change = after minus before, dB; percentiles are 5th, 50th, 95th; area is projected grid area", ...p.statistics },
     assets: p.assets,
     limitations: p.limitations,
-    manifest_url: shareUrl && new URL(`/api/earth/cases/${p.id}`, shareUrl).toString(),
+    // a replay has no backend to link to; its values come from the snapshot named in data_source
+    manifest_url: liveUrl ? new URL(`/api/earth/cases/${p.id}`, liveUrl).toString() : null,
   };
 }
 

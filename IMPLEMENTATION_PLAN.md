@@ -76,14 +76,14 @@ Updated 13 November 2026. "Partial" includes implemented pilots with remaining s
 | F05 | Defensible change map | Partial | Signed after-minus-before dB change over common valid pilot pixels; coverage/exclusion statistics | Confounder assessment, independent validation and frontend map; no water classification yet |
 | F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB display scale at `/chattogram/processed` | Extend to additional validated acquisitions |
 | F07 | Click-to-explain evidence | Partial | Native HH/HV pixel inspection, map pin, source-linked JSON and explicit exclusions; evidence page | `/cases/{id}/findings` polygons, area statistics and reference validation |
-| F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison | Observed area, eligible comparison area, change summaries |
-| F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying | Add processed layers, findings and the selected finding to the snapshot once they exist; refresh with `pnpm freeze-case` before recording |
+| F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison; calibrated pilot strip (dates, 21.82 km² compared, 4.40 km² excluded, HH/HV median and middle-90% change) from the backend, English and Bangla | Division-wide observed area and change summaries once processing extends beyond the pilot; pilot in the frozen case |
+| F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying; calibrated pilot frozen (manifest, 6 display PNGs, 8 GeoTIFFs checked against the published SHA-256) and replayed on Overview, Evidence, the brief and Calibrated radar | Pixel inspection in a replay (needs the rasters read client-side or pre-sampled); findings and the selected finding once they exist; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
 | F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata; Evidence page and brief JSON carry the calibrated pilot (median/5–95% HH/HV change, coverage, sources, asset hashes, limitations) and switch the claim only when the brief's dates are the pilot's | Add findings polygons; pilot window in GeoJSON |
 | F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
-| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
+| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
 | F16 | Terrain storytelling | Not started | – | P2 |
 | F17 | Evidence-based narration | Not started | – | P2 |
 
@@ -147,8 +147,8 @@ this pilot cannot demonstrate river-water change. See `docs/case-selection.md`.
 
 ### Next up
 
-- **Backend:** resolve mixed-mode and static terrain quality; select a water-suitable ROI and dated reference evidence; complete queued-worker lifecycle and frozen replay assets.
-- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; translate the Calibrated radar page into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
+- **Backend:** resolve mixed-mode and static terrain quality; select a water-suitable ROI and dated reference evidence; complete queued-worker lifecycle.
+- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission

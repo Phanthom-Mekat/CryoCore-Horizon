@@ -13,7 +13,14 @@ export function CaseGate({ children }: { children: ReactNode }) {
   const { load, reload, source } = useCase();
   const t = useT();
   const path = usePathname();
-  if (path === "/chattogram/processed") return children;
+  // the calibrated page doesn't need the catalogue, but it does need to know whether this is a replay
+  if (path === "/chattogram/processed")
+    return (
+      <>
+        {source.mode === "frozen" && <FrozenNotice source={source} />}
+        {children}
+      </>
+    );
   if (load.status === "ready" || (load.status === "empty" && path === "/chattogram/catalogue"))
     return (
       <>

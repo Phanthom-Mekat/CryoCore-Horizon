@@ -97,7 +97,7 @@ export function CaseMap({
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
   const [terrain, setTerrain] = useState(false);
-  const [rasterError, setRasterError] = useState<string | null>(null);
+  const [rasterError, setRasterError] = useState(false);
   const [rasterShown, setRasterShown] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // load state of the quicklook, keyed by acquisition so a new date reads as "loading" until its own result lands
@@ -356,8 +356,8 @@ export function CaseMap({
         m.addSource("processed", { type: "image", url: objectUrl, coordinates: processed.corners });
         m.addLayer({ id: "processed", type: "raster", source: "processed", paint: { "raster-opacity": imageOpacity, "raster-emissive-strength": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" } }, "boundary-glow");
       m.once("idle", () => { if (live) setRasterShown(processed.url); });
-      setRasterError(null);
-    }).catch(() => { if (live) setRasterError("The processed layer could not load. Retry or select another layer."); });
+      setRasterError(false);
+    }).catch(() => { if (live) setRasterError(true); });
     return () => { live = false; controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [processed, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -398,8 +398,8 @@ export function CaseMap({
       {imgState === "failed" && <p className="c-map-note is-bad">{t.map.failed}</p>}
       {imgState === "absent" && <p className="c-map-note is-bad">{t.map.absent}</p>}
       {error && <p className="c-map-note is-bad">{error}</p>}
-      {rasterError && <p className="c-map-note is-bad">{rasterError}</p>}
-      {processed && rasterShown !== processed.url && !rasterError && <p className="c-map-note" role="status">Loading calibrated layer…</p>}
+      {rasterError && <p className="c-map-note is-bad">{t.map.calibratedFailed}</p>}
+      {processed && rasterShown !== processed.url && !rasterError && <p className="c-map-note" role="status">{t.map.calibratedLoading}</p>}
     </div>
   );
 }

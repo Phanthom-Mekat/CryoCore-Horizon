@@ -12,4 +12,6 @@ export const fmtDateTime = (iso: string) => `${fmtDate(iso)}, ${fmtTime(iso)}`;
 /** Whole numbers, or `digits` decimals. Identifiers such as track, frame and orbit numbers go through this too. */
 export const fmtNum = (n: number, digits?: number) =>
   n.toLocaleString(loc(), digits === undefined ? { useGrouping: false } : { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false });
+/** Like fmtNum, with a leading + on positive values (signed dB change). */
+export const fmtSigned = (n: number, digits = 2) => `${n > 0 ? "+" : ""}${fmtNum(n, digits)}`;
 export const fmtSize = (b: number | null) => (b === null ? "–" : b > 1e9 ? `${fmtNum(b / 1e9, 1)} GB` : `${fmtNum(Math.round(b / 1e6))} MB`);

@@ -5,8 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { allScenes, api, toLoadError, type Load, type Region } from "@/lib/chattogram/api";
 import type { ExplorerData } from "@/lib/explorer-data";
 import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "@/lib/chattogram/acquisitions";
-import { FOCUS, loadFrozen } from "@/lib/chattogram/frozen";
+import { FOCUS, loadFrozen, type FrozenPilot } from "@/lib/chattogram/frozen";
 import { publishCaseSource } from "@/lib/chattogram/sourceStore";
+import { pilotOf, type ProcessedCase } from "@/lib/chattogram/processed";
 import { loadRain, type RainSeries } from "@/lib/chattogram/rain";
 
 export { FOCUS };
@@ -30,6 +31,8 @@ type Ctx = {
   source: CaseSource;
   /** Rainfall context (plan F13), a static file, so it is the same live or frozen. Null if not shipped. */
   rain: RainSeries | null;
+  /** The calibrated pilot in the shipped snapshot, if it has one; pages use it while replaying. */
+  frozenPilot: FrozenPilot | null;
   reload: () => void;
   /** Selection, all of it mirrored in the URL so any view can be shared as a link. */
   stack: Stack | null;
@@ -51,6 +54,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const [source, setSource] = useState<CaseSource>({ mode: "live", frozenAt: null, fallback: false });
   const [tick, setTick] = useState(0);
   const [rain, setRain] = useState<RainSeries | null>(null);
+  const [frozenPilot, setFrozenPilot] = useState<FrozenPilot | null>(null);
   useEffect(() => {
     loadRain().then(setRain);
   }, []);
@@ -72,6 +76,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     (async () => {
       const frozen = await loadFrozen();
       if (!live) return;
+      setFrozenPilot(frozen?.pilot ?? null);
       const replay = (fallback: boolean) => {
         if (!frozen) return false;
         apply(frozen.explorer, frozen.acquisitions, { mode: "frozen", frozenAt: frozen.frozenAt, fallback });
@@ -135,7 +140,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, []);
   const href = useCallback((p: string) => (params.size ? `${p}?${params}` : p), [params]);
 
-  const value: Ctx = { load, explorer, source, rain, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };
+  const value: Ctx = { load, explorer, source, rain, frozenPilot, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };
   return <CaseContext.Provider value={value}>{children}</CaseContext.Provider>;
 }
 
@@ -143,6 +148,26 @@ export function useCase() {
   const c = useContext(CaseContext);
   if (!c) throw new Error("useCase must be used inside CaseProvider");
   return c;
+}
+
+/** The calibrated pilot: from the backend's /cases API, or from the snapshot while replaying (no live request then). */
+export function usePilot(): Load<ProcessedCase> {
+  const { source, frozenPilot } = useCase();
+  const replaying = source.mode === "frozen";
+  const [pilot, setPilot] = useState<Load<ProcessedCase>>({ status: "loading" });
+  useEffect(() => {
+    if (replaying) return;
+    api.cases().then(
+      (c) => {
+        const p = pilotOf(c);
+        setPilot(p ? { status: "ready", data: p } : { status: "empty", reason: "" });
+      },
+      (e) => setPilot(toLoadError(e)),
+    );
+  }, [replaying]);
+  // a live result fetched before switching to the frozen case must not show in the replay
+  if (!replaying) return pilot;
+  return frozenPilot ? { status: "ready", data: frozenPilot.case } : { status: "unavailable", reason: "" };
 }
 
 /**

@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Columns2, FileSearch, Layers, Map as MapIcon, Radar, ShieldCheck, Satellite } from "lucide-react";
+import { ArrowRight, CalendarDays, Columns2, FileSearch, Layers, Map as MapIcon, Radar, Ruler, ScanLine, ShieldCheck, Satellite, Activity } from "lucide-react";
 import { Kpi, KpiStrip } from "@/components/dashboard/ui";
 import { compatibility, covers } from "@/lib/chattogram/acquisitions";
-import { fmtDate, fmtNum } from "@/lib/i18n/format";
+import { fmtDate, fmtDayMonth, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { CaseMap, quicklookSrc } from "../CaseMap";
-import { FOCUS, useCase } from "../CaseProvider";
+import { FOCUS, useCase, usePilot } from "../CaseProvider";
 
 const OVERVIEW_VIEW = { lon: 91.95, lat: 22.75, zoom: 6.7 };
 const STEPS = [
@@ -21,6 +21,7 @@ export function OverviewView() {
   const { load, explorer, stack, before, after, href, source } = useCase();
   const t = useT();
   const o = t.overview;
+  const pilotLoad = usePilot();
   if (load.status !== "ready" || !stack || !before || !after) return null;
 
   const all = load.data.acquisitions;
@@ -31,6 +32,8 @@ export function OverviewView() {
   const starts = all.map((a) => a.start).sort();
   const differs = compatibility(before, after).filter((c) => !c.ok);
   const year = fmtNum(load.data.region.provenance.year);
+  const pilot = pilotLoad.status === "ready" ? pilotLoad.data : null;
+  const hh = pilot?.statistics.HHHH;
 
   return (
     <div className="c-overview">
@@ -77,6 +80,15 @@ export function OverviewView() {
         <Kpi label={o.kpiStacks} value={fmtNum(overCity.length)} sub={o.kpiStacksSub} icon={Satellite} />
         <Kpi label={o.kpiProvisional} value={o.kpiProvisionalValue(fmtNum(provisional), fmtNum(all.length))} sub={o.kpiProvisionalSub} icon={ShieldCheck} />
       </KpiStrip>
+
+      {pilot && hh && (
+        <KpiStrip label={o.pilotKpis}>
+          <Kpi label={o.kpiPilot} value={o.kpiPilotValue(fmtDayMonth(pilot.sources[0].acquisition), fmtDate(pilot.sources[1].acquisition))} sub={o.kpiPilotSub} icon={Radar} />
+          <Kpi label={o.kpiArea} value={fmtNum(hh.common_area_km2, 2)} unit="km²" sub={o.kpiAreaSub(fmtNum(hh.outside_roi_area_km2, 2))} icon={ScanLine} />
+          <Kpi label={o.kpiMedian} value={fmtSigned(hh.median_change_db)} unit="dB" sub={o.kpiMedianSub(fmtSigned(pilot.statistics.HVHV.median_change_db))} icon={Activity} />
+          <Kpi label={o.kpiSpread} value={o.kpiSpreadValue(fmtSigned(hh.change_percentiles_db[0]), fmtSigned(hh.change_percentiles_db[2]))} unit="dB" sub={o.kpiSpreadSub} icon={Ruler} />
+        </KpiStrip>
+      )}
 
       <section className="c-steps" aria-label={o.stepsLabel}>
         {STEPS.map(({ n, icon: Icon, link }, i) => (
@@ -134,7 +146,7 @@ export function OverviewView() {
       <section className="c-honest" aria-label={o.honestLabel}>
         <Radar size={18} aria-hidden="true" />
         <p>
-          <strong>{o.realNow}</strong> {o.realNowBody} <strong>{o.next}</strong> {o.nextBody} <Link href={href("/chattogram/about")}>{o.canCant}</Link>
+          <strong>{o.realNow}</strong> {o.realNowBody} <Link href={href("/chattogram/processed")}>{o.openPilot}</Link>. <strong>{o.next}</strong> {o.nextBody} <Link href={href("/chattogram/about")}>{o.canCant}</Link>
         </p>
       </section>
     </div>

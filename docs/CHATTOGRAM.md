@@ -61,6 +61,9 @@ Plan F09. `pnpm freeze-case` (`scripts/freeze-case.mts`) reads the stored catalo
 - `img/<granule>.webp`: the processed quicklook for every date in the stacks over Chattogram city (3 stacks, 29 dates
   at the first capture), each with its SHA-256, size, corners, and whether the corners came from ASF's KML or the
   CMR footprint. The images are made by `src/lib/chattogram/browse.ts`, the same code as the live proxy.
+- `pilot/`: the calibrated pilot as the backend published it: the 8 GeoTIFFs (each checked against the manifest's
+  SHA-256 while freezing) and the 6 dB display PNGs the map draws. `case.json` holds the pilot manifest, the layer
+  corners and every file's SHA-256 under `pilot`; snapshots taken before the pilot existed have none.
 
 How the pages use it (`CaseProvider`):
 
@@ -74,7 +77,8 @@ The header of every case page has a **Live | Frozen · <date>** switch: it chang
 reload, keeping the chosen stack, dates and map view (it writes `?source=live` or `?source=frozen`). It hides itself
 when there is no choice: no snapshot shipped, or the backend is down so the snapshot is all there is.
 
-While replaying, NASA search in the catalogue is off, a scene outside the frozen stacks shows its footprint with a note
+While replaying, the calibrated pilot comes from `pilot/` (Overview, Evidence, the brief and Calibrated radar; pixel
+inspection is off, because it reads the rasters on the backend), NASA search in the catalogue is off, a scene outside the frozen stacks shows its footprint with a note
 instead of fetching its image, and Evidence offers **Copy replay link**: the same dates and map view, opened from the
 snapshot. The brief's JSON records `data_source`, `replay_url` and each quicklook's checksum.
 
@@ -96,7 +100,7 @@ the rain in the 7 days up to each compared date, Evidence lists it per acquisiti
 ## Languages: English and বাংলা
 
 Plan F15. The **EN | বাংলা** switch in the header changes the whole case journey (Overview, Explore map, Compare,
-Evidence, About), the sidebar, the frozen-case notice, map labels and legends.
+Evidence, About, Calibrated radar), the sidebar, the frozen-case notice, map labels and legends.
 
 - All text lives in `src/lib/i18n/messages.ts`. `bn` is typed as the English `Messages`, so the build fails if any
   Bangla entry is missing; another language is one more object there.

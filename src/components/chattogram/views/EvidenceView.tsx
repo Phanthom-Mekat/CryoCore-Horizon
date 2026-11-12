@@ -1,38 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
-import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
-import { pilotCovers, pilotOf, type ProcessedCase } from "@/lib/chattogram/processed";
+import { pilotCovers } from "@/lib/chattogram/processed";
 import { rainBefore } from "@/lib/chattogram/rain";
 import { METHOD_VERSION, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
-import { fmtDate, fmtDateTime, fmtNum, fmtSize } from "@/lib/i18n/format";
+import { fmtDate, fmtDateTime, fmtNum, fmtSigned, fmtSize } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
-import { useCase } from "../CaseProvider";
+import { useCase, usePilot } from "../CaseProvider";
 
 // The page follows the interface language; the downloaded brief (JSON, CSV, GeoJSON) stays in English, since it is a data
 // file for other tools and its field names must not change with the reader's language.
 export function EvidenceView() {
-  const { load, before, after, source, rain } = useCase();
+  const { load, before, after, source, rain, href } = useCase();
   const t = useT();
   const ev = t.evidence;
-  const [findings, setFindings] = useState<Load<ProcessedCase>>({ status: "loading" });
+  const findings = usePilot();
   const [copied, setCopied] = useState<"view" | "replay" | null>(null);
-
-  // the calibrated pilot comes from the backend's /cases API; a frozen replay asks nothing live and the snapshot holds no pilot yet.
   const replaying = source.mode === "frozen";
-  useEffect(() => {
-    if (replaying) return;
-    api.cases().then(
-      (c) => {
-        const pilot = pilotOf(c);
-        setFindings(pilot ? { status: "ready", data: pilot } : { status: "empty", reason: "" });
-      },
-      (e) => setFindings(toLoadError(e)),
-    );
-  }, [replaying]);
 
   if (load.status !== "ready" || !before || !after) return null;
   const region = load.data.region;
@@ -50,7 +37,6 @@ export function EvidenceView() {
   const pilot = findings.status === "ready" ? findings.data : null;
   const measured = pilot !== null && pilotCovers(pilot, before.conceptId, after.conceptId);
   const pilotDates = pilot ? ([fmtDate(pilot.sources[0].acquisition), fmtDate(pilot.sources[1].acquisition)] as const) : null;
-  const signed = (n: number) => `${n > 0 ? "+" : ""}${fmtNum(n, 2)}`;
   const replayable = Boolean(source.frozenAt && before.frozen && after.frozen);
   const copy = (text: string, which: "view" | "replay") => navigator.clipboard?.writeText(text).then(() => setCopied(which), () => setCopied(null));
 
@@ -105,7 +91,7 @@ export function EvidenceView() {
             <div>
               <dt>{ev.measured}</dt>
               {measured ? (
-                <dd>{ev.measuredPilot(signed(pilot.statistics.HHHH.median_change_db), signed(pilot.statistics.HVHV.median_change_db), fmtNum(pilot.statistics.HHHH.common_area_km2, 2))}</dd>
+                <dd>{ev.measuredPilot(fmtSigned(pilot.statistics.HHHH.median_change_db), fmtSigned(pilot.statistics.HVHV.median_change_db), fmtNum(pilot.statistics.HHHH.common_area_km2, 2))}</dd>
               ) : (
                 <dd className="is-missing">{pilotDates ? ev.measuredOther(...pilotDates) : ev.measuredBody}</dd>
               )}
@@ -134,7 +120,7 @@ export function EvidenceView() {
 
         <div className="c-ev-card c-ev-pilot">
           <h2>{ev.findings}</h2>
-          {replaying ? (
+          {replaying && !pilot ? (
             <p className="is-missing">{ev.findingsFrozen}</p>
           ) : findings.status === "loading" ? (
             <p>{ev.checking}</p>
@@ -158,7 +144,7 @@ export function EvidenceView() {
                     <div key={k}>
                       <dt>{ev.pilotMedian(k.slice(0, 2))}</dt>
                       <dd>
-                        {signed(st.median_change_db)} dB <small>{ev.pilotRange(signed(st.change_percentiles_db[0]), signed(st.change_percentiles_db[2]))}</small>
+                        {fmtSigned(st.median_change_db)} dB <small>{ev.pilotRange(fmtSigned(st.change_percentiles_db[0]), fmtSigned(st.change_percentiles_db[2]))}</small>
                       </dd>
                     </div>
                   );
@@ -173,7 +159,7 @@ export function EvidenceView() {
                   ))}
                 </ul>
               </details>
-              <Link className="c-btn c-noprint" href="/chattogram/processed">
+              <Link className="c-btn c-noprint" href={href("/chattogram/processed")}>
                 {ev.pilotOpen} <ArrowUpRight size={14} aria-hidden="true" />
               </Link>
             </>
