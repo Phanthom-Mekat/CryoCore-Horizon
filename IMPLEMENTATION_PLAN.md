@@ -77,13 +77,13 @@ Updated 13 November 2026 after the PR #2 merge (`f8c6197`). "Partial" includes i
 | F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB scale at `/chattogram/processed`; Compare switches to the curated case's calibrated layers when that case is ready | Extend to additional validated acquisitions |
 | F07 | Click-to-explain evidence | Partial | Pilot: native HH/HV pixel inspection, map pin, source-linked JSON. Curated case: finding polygons on the Explore map, `FindingPanel` (what changed, quality, sources, method), `/api/v1/findings/{id}` evidence, selection kept in the URL (`f`) | Real findings (needs the real run); reference checks (`validation_records` is empty); translate `FindingPanel` |
 | F08 | Chattogram overview | Partial | Real catalogue numbers and a featured comparison; curated-case section (valid km², observed increase/decrease km² once ready, else preparation status); calibrated pilot strip (dates, 21.82 km² compared, 4.40 km² excluded, HH/HV median and middle-90% change), English and Bangla | Curated numbers appear only after the real run; translate the curated section |
-| F09 | Reproducible case replay | Done for catalogue and pilot | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, zero live requests; calibrated pilot frozen (manifest, 6 display PNGs, 8 GeoTIFFs checked against the published SHA-256) and replayed on Overview, Evidence, the brief and Calibrated radar | Freeze the curated case (layers, findings, timeseries) once processed; pixel inspection in a replay; sidebar links drop `?source=frozen`; refresh with `pnpm freeze-case` before recording |
+| F09 | Reproducible case replay | Done for catalogue and pilot | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, zero live requests; calibrated pilot frozen (manifest, 6 display PNGs, 8 GeoTIFFs checked against the published SHA-256) and replayed on Overview, Evidence, the brief and Calibrated radar | Freeze the curated case (layers, findings, timeseries) once processed; pixel inspection in a replay; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level in About and Evidence; `validation_records` table and `reference_checks` field in finding evidence; categorical finding quality (strong/moderate/weak with a reason) | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible; `/api/v1/curated-cases/{id}/timeseries` per-date dB statistics shown under the Explore timeline once the curated case is ready | Three or more processed dates for real playback; a synced chart from real values |
 | F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; brief JSON carries `processed_case` (curated metrics, findings, method, sources) and `calibrated_pilot` (statistics, asset hashes, limitations) and changes its claim only for the matching pair; backend export `/api/v1/curated-cases/{id}/export?format=json\|csv\|geojson` | Real curated findings; the pilot window in GeoJSON |
 | F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
-| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | Translate the PR #2 additions (curated section on Overview, Evidence "Processed" section, `FindingPanel`, `PrepStatus`, synthetic-data banner); a native speaker's review; the Scene catalogue, landing page and glacier sample if they stay in the demo |
+| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | Translate the PR #2 additions (curated section on Overview, Evidence "Processed" section, `FindingPanel`, `PrepStatus`, synthetic-data banner); a native speaker's review; the Scene catalogue and landing page |
 | F16 | Terrain storytelling | Not started | – | P2 |
 | F17 | Evidence-based narration | Not started | – | P2 |
 
@@ -169,6 +169,14 @@ Merged from `feat/chattogram-home` and documented in [docs/curated-case.md](docs
 - [ ] Add a cancel action (`cancelled` is allowed by the schema but nothing sets it).
 - [ ] Translate the new UI into Bangla (F15).
 
+### Cleanup — 13 November 2026
+
+- [x] Removed the Jakobshavn glacier sample dashboard: `/dashboard/*` pages, its data loader, charts, speed map, settings, 1.8 MB of sample data, `scripts/make-sample-data.mjs`, the glacier pipeline (`scripts/nisar_pipeline.py`, `test_pipeline.py`) and `docs/DATA_CONTRACT.md`; the sidebar, landing navigation and About no longer link to it.
+- [x] Removed unused components and styles: `DaylightChart`, `FjordIllustration`, `Card`/`Toggle`/`Meter` helpers, and 837 lines of CSS that only styled deleted pages (`dashboard.css` now lives in `src/app/chattogram/`).
+- [x] Fixed the merge's lint error (frozen state is derived instead of set in an effect) and unused imports; lint, TypeScript, build and 82 backend tests pass.
+- [x] Curated downloads may follow ASF's pinned CloudFront distribution (the same host the pilot inspector allows); no credentials are sent to it. Without this the real run stopped at the first redirect.
+- [x] README, backend README route table and docs updated to the case-only app.
+
 ### Two processed tracks — team decision needed
 
 | | Calibrated pilot | Curated case |
@@ -186,7 +194,7 @@ and whether the pilot stays as a secondary view.
 ### Next up
 
 - **Backend:** run `python -m app.cli prepare-case karnaphuli-estuary` with Earthdata credentials and review its real coverage, findings and caveats; static terrain quality and mixed-mode review; dated reference evidence (tide heights at both pass times); a job cancel action.
-- **Frontend:** translate the PR #2 views (curated sections, `FindingPanel`, `PrepStatus`, banner) into Bangla; freeze the curated case once processed; keep `?source=frozen` in the sidebar links; fix the lint error in `CaseProvider.tsx` (synchronous `setState` in an effect) and the unused `WATER` import in `CaseMap.tsx`; finish inspector mobile/export checks; swap the modelled rainfall for GPM IMERG; rework the landing page around the Chattogram case (needs a team decision).
+- **Frontend:** translate the PR #2 views (curated sections, `FindingPanel`, `PrepStatus`, banner) into Bangla; freeze the curated case once processed; finish inspector mobile/export checks; swap the modelled rainfall for GPM IMERG; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** choose the central processed case (above); make the GitHub repository public before submission; fill in the team names on the landing page; choose a repository licence.
 - **Setup after pulling `main`:** `pip install -e .` in `backend/` (new `scipy` and `pillow` dependencies), then restart the backend so `/api/v1/curated-cases` exists.
 
