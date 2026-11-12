@@ -13,8 +13,9 @@ require each developer's own `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` in `.env.local`.
   Approximately 1.2 MB. SHA-256 hashes and byte counts are in the manifest.
 - `inspection-july.json` and `inspection-october.json`: source HDF5 metadata
   inspections. These are metadata records, not complete raw satellite files.
-- `bgd-adm1.geojson`: unchanged Bangladesh division reference boundaries,
-  approximately 12 MB, used by the backend boundary cache.
+- `bgd-adm1.geojson`: downloaded Bangladesh division reference boundaries,
+  approximately 12 MB. The backend uses the extracted Chattogram feature already
+  tracked at `../app/assets/chattogram.geojson`.
 
 ## Sources and attribution
 
@@ -30,7 +31,9 @@ Boundary: Bangladesh Bureau of Statistics / HDX, distributed through
 geoBoundaries gbHumanitarian, 2018 reference, CC BY 3.0 IGO:
 https://data.humdata.org/dataset/cod-ab-bgd and
 https://creativecommons.org/licenses/by/3.0/igo/.
-The exact download URL and checksum are recorded in the case manifest.
+The exact download URL and extracted Chattogram feature checksum are recorded
+in the case manifest. The full Bangladesh file bundled here has SHA-256
+`673afd9b39de3fd238beaa9a5c3b93bc5f693a5b7b5bfac23dff1558d9ab6e83`.
 This is not verified as the current legal boundary.
 
 The pilot measures backscatter change, not flooding or damage. Geographic
