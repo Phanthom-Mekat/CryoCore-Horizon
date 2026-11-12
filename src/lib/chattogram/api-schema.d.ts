@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/explorer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Explorer */
+        get: operations["explorer_api_v1_explorer_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources": {
         parameters: {
             query?: never;
@@ -89,6 +106,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cases */
+        get: operations["cases_api_v1_cases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cases/{case_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Case */
+        get: operations["case_api_v1_cases__case_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cases/{case_id}/sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Case Sample */
+        get: operations["case_sample_api_v1_cases__case_id__sample_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cases/{case_id}/display/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Case Display */
+        get: operations["case_display_api_v1_cases__case_id__display__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cases/{case_id}/assets/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Case Asset */
+        get: operations["case_asset_api_v1_cases__case_id__assets__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pairs/assess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pair Assessment */
+        get: operations["pair_assessment_api_v1_pairs_assess_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scenes/{concept_id}/downloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Downloads */
+        get: operations["downloads_api_v1_scenes__concept_id__downloads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scenes/{concept_id}/inspection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inspection */
+        get: operations["inspection_api_v1_scenes__concept_id__inspection_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/scenes/{concept_id}": {
         parameters: {
             query?: never;
@@ -106,14 +259,501 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/curated-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cases */
+        get: operations["cases_api_v1_curated_cases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curated-cases/{case_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Case */
+        get: operations["case_api_v1_curated_cases__case_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curated-cases/{case_id}/layers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Layers */
+        get: operations["layers_api_v1_curated_cases__case_id__layers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curated-cases/{case_id}/assets/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Asset */
+        get: operations["asset_api_v1_curated_cases__case_id__assets__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curated-cases/{case_id}/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Findings */
+        get: operations["findings_api_v1_curated_cases__case_id__findings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curated-cases/{case_id}/timeseries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Timeseries */
+        get: operations["timeseries_api_v1_curated_cases__case_id__timeseries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/findings/{finding_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Finding */
+        get: operations["finding_api_v1_findings__finding_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curated-cases/{case_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export */
+        get: operations["export_api_v1_curated_cases__case_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Job */
+        post: operations["create_job_api_v1_jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Job */
+        get: operations["job_api_v1_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CaseDetail */
+        CaseDetail: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Place */
+            place: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "not_processed" | "queued" | "running" | "failed" | "needs_credentials";
+            /** Stack */
+            stack: string;
+            before: components["schemas"]["GranuleRef"];
+            after: components["schemas"]["GranuleRef"];
+            /**
+             * Analysis Area
+             * @description GeoJSON Feature (Polygon, EPSG:4326); properties.provenance
+             */
+            analysis_area: {
+                [key: string]: unknown;
+            };
+            /** Updated At */
+            updated_at: string;
+            /**
+             * Synthetic Fixture
+             * @description True only for a QA bundle made from synthetic test fixtures, served only with CRYO_ALLOW_SYNTHETIC_QA=1. Never NISAR data.
+             * @default false
+             */
+            synthetic_fixture: boolean;
+            method: components["schemas"]["Method"] | null;
+            metrics: components["schemas"]["Metrics"] | null;
+            /** Caveats */
+            caveats: string[];
+            /** Sources */
+            sources: components["schemas"]["SourceRef"][];
+            job: components["schemas"]["JobInfo"] | null;
+        };
+        /** CaseSummary */
+        CaseSummary: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Place */
+            place: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "not_processed" | "queued" | "running" | "failed" | "needs_credentials";
+            /** Stack */
+            stack: string;
+            before: components["schemas"]["GranuleRef"];
+            after: components["schemas"]["GranuleRef"];
+            /**
+             * Analysis Area
+             * @description GeoJSON Feature (Polygon, EPSG:4326); properties.provenance
+             */
+            analysis_area: {
+                [key: string]: unknown;
+            };
+            /** Updated At */
+            updated_at: string;
+            /**
+             * Synthetic Fixture
+             * @description True only for a QA bundle made from synthetic test fixtures, served only with CRYO_ALLOW_SYNTHETIC_QA=1. Never NISAR data.
+             * @default false
+             */
+            synthetic_fixture: boolean;
+        };
+        /** Evidence */
+        Evidence: {
+            /** Sources */
+            sources: components["schemas"]["SourceRef"][];
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Method Version */
+            method_version: string | null;
+            /** Reference Checks */
+            reference_checks: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** Finding */
+        Finding: {
+            /**
+             * Type
+             * @default Feature
+             * @constant
+             */
+            type: "Feature";
+            /** Id */
+            id?: string | number | null;
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            };
+            properties: components["schemas"]["FindingProperties"];
+        };
+        /** FindingCollection */
+        FindingCollection: {
+            /**
+             * Type
+             * @default FeatureCollection
+             * @constant
+             */
+            type: "FeatureCollection";
+            /** Features */
+            features: components["schemas"]["Finding"][];
+        };
+        /** FindingDetail */
+        FindingDetail: {
+            /**
+             * Type
+             * @default Feature
+             * @constant
+             */
+            type: "Feature";
+            /** Id */
+            id?: string | number | null;
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            };
+            properties: components["schemas"]["FindingProperties"];
+            /** Case Id */
+            case_id: string;
+            evidence: components["schemas"]["Evidence"];
+        };
+        /** FindingProperties */
+        FindingProperties: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "increase" | "decrease";
+            /** Label */
+            label: string;
+            /** Area Km2 */
+            area_km2: number;
+            /** Mean Delta Db */
+            mean_delta_db: number;
+            /** Median Before Db */
+            median_before_db: number;
+            /** Median After Db */
+            median_after_db: number;
+            /** Valid Fraction */
+            valid_fraction: number;
+            /**
+             * Quality
+             * @enum {string}
+             */
+            quality: "strong" | "moderate" | "weak";
+            /** Quality Reason */
+            quality_reason: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** GranuleRef */
+        GranuleRef: {
+            /** Granule */
+            granule: string;
+            /** Concept Id */
+            concept_id: string;
+            /** Date */
+            date: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** Job */
+        Job: {
+            /** Id */
+            id: number;
+            /** Case Id */
+            case_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+            /** Stage */
+            stage: string | null;
+            /** Progress */
+            progress: number;
+            /** Error */
+            error: string | null;
+            /** Error Code */
+            error_code: string | null;
+            /** Retryable */
+            retryable: boolean;
+            /** Attempts */
+            attempts: number;
+        };
+        /** JobCreate */
+        JobCreate: {
+            /** Case Id */
+            case_id: string;
+        };
+        /** JobCreated */
+        JobCreated: {
+            /** Job Id */
+            job_id: number;
+        };
+        /** JobInfo */
+        JobInfo: {
+            /** Id */
+            id: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+            /** Stage */
+            stage: string | null;
+            /** Progress */
+            progress: number;
+            /** Error */
+            error: string | null;
+            /** Retryable */
+            retryable: boolean;
+        };
+        /** Layer */
+        Layer: {
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "before_db" | "after_db" | "change_db";
+            /** Label */
+            label: string;
+            /** Date */
+            date?: string | null;
+            /** Url */
+            url: string;
+            /**
+             * Corners
+             * @description [lon, lat]: TL, TR, BR, BL
+             */
+            corners: [
+                number,
+                number
+            ][];
+            /** Crs Note */
+            crs_note: string;
+            /** Units */
+            units: string;
+            scale: components["schemas"]["Scale"];
+            /**
+             * Palette
+             * @enum {string}
+             */
+            palette: "gray" | "diverging";
+            /**
+             * Nodata
+             * @constant
+             */
+            nodata: "transparent";
+        };
+        /** Method */
+        Method: {
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+        };
+        /** Metrics */
+        Metrics: {
+            /** Analysis Km2 */
+            analysis_km2: number;
+            /** Valid Common Km2 */
+            valid_common_km2: number;
+            /** Excluded Km2 */
+            excluded_km2: number;
+            /** Increase Km2 */
+            increase_km2: number;
+            /** Decrease Km2 */
+            decrease_km2: number;
+            /** Threshold Db */
+            threshold_db: number;
+        };
+        /** Region */
+        Region: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Country */
+            country: string;
+            /** Bbox */
+            bbox: number[];
+            /** Crs */
+            crs: string;
+            /** Boundary Type */
+            boundary_type: string;
+            /** Boundary Note */
+            boundary_note: string;
+            /** Research Themes */
+            research_themes: string[];
+            /** Primary Mission */
+            primary_mission: string;
+        };
+        /** Scale */
+        Scale: {
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
         };
         /** Scene */
         Scene: {
@@ -221,6 +861,49 @@ export interface components {
             /** Scenes */
             scenes: components["schemas"]["Scene"][];
         };
+        /** SourceRef */
+        SourceRef: {
+            /** Granule */
+            granule: string;
+            /** Concept Id */
+            concept_id: string;
+            /** Collection */
+            collection: string | null;
+            /** Version */
+            version: string | null;
+            /** Md5 */
+            md5: string | null;
+            /** Size Bytes */
+            size_bytes: number | null;
+            /** Qa Url */
+            qa_url: string | null;
+        };
+        /** Timeseries */
+        Timeseries: {
+            /**
+             * Units
+             * @default dB
+             * @constant
+             */
+            units: "dB";
+            /** Points */
+            points: components["schemas"]["TimeseriesPoint"][];
+        };
+        /** TimeseriesPoint */
+        TimeseriesPoint: {
+            /** Date */
+            date: string;
+            /** Granule */
+            granule: string;
+            /** Mean Db */
+            mean_db: number;
+            /** P10 Db */
+            p10_db: number;
+            /** P90 Db */
+            p90_db: number;
+            /** Valid Km2 */
+            valid_km2: number;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -278,7 +961,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["Region"];
+                };
+            };
+        };
+    };
+    explorer_api_v1_explorer_get: {
+        parameters: {
+            query?: {
+                product?: "GCOV" | "GUNW" | "GOFF";
+                start_date?: string | null;
+                end_date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -369,6 +1085,251 @@ export interface operations {
             };
         };
     };
+    cases_api_v1_cases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    case_api_v1_cases__case_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    case_sample_api_v1_cases__case_id__sample_get: {
+        parameters: {
+            query: {
+                longitude: number;
+                latitude: number;
+            };
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    case_display_api_v1_cases__case_id__display__name__get: {
+        parameters: {
+            query?: {
+                bounds?: boolean;
+            };
+            header?: never;
+            path: {
+                case_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    case_asset_api_v1_cases__case_id__assets__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pair_assessment_api_v1_pairs_assess_get: {
+        parameters: {
+            query: {
+                before: string;
+                after: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    downloads_api_v1_scenes__concept_id__downloads_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                concept_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inspection_api_v1_scenes__concept_id__inspection_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                concept_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     scene_api_v1_scenes__concept_id__get: {
         parameters: {
             query?: never;
@@ -387,6 +1348,314 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Scene"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cases_api_v1_curated_cases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseSummary"][];
+                };
+            };
+        };
+    };
+    case_api_v1_curated_cases__case_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    layers_api_v1_curated_cases__case_id__layers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Layer"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    asset_api_v1_curated_cases__case_id__assets__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    findings_api_v1_curated_cases__case_id__findings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingCollection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    timeseries_api_v1_curated_cases__case_id__timeseries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Timeseries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finding_api_v1_findings__finding_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_api_v1_curated_cases__case_id__export_get: {
+        parameters: {
+            query?: {
+                format?: string;
+            };
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "text/csv": unknown;
+                    "application/geo+json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_job_api_v1_jobs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-admin-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_api_v1_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
                 };
             };
             /** @description Validation Error */

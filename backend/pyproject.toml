@@ -17,6 +17,8 @@ dependencies = [
   "numpy>=2,<3",
   "rasterio>=1.4,<2",
   "pyproj>=3.7,<4",
+  "scipy>=1.14,<2",
+  "pillow>=11,<14",
 ]
 
 [project.optional-dependencies]

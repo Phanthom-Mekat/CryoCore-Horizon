@@ -38,7 +38,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* the saved interface language, applied before paint like the theme (src/lib/i18n/locale.ts) */}
         <script dangerouslySetInnerHTML={{ __html: LANG_BOOT_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      {/* browser extensions (Grammarly, ColorZilla) add attributes to <body> before hydration */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

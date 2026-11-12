@@ -4,13 +4,19 @@ import { CHANGE, WATER, changeColor, type WaterCategory } from "@/lib/chattogram
 import { fmtNum } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 
+type Swatch = { label: string; color: string; stripe: number; icon: string };
+
 /** Legend for water-change candidates: colour, stripe direction and an icon, so no category depends on colour alone. */
 export function WaterKey() {
   const t = useT();
-  const label: Record<WaterCategory, string> = { new_water_candidate: t.keys.newWater, recession_candidate: t.keys.receding };
+  const labels: Record<WaterCategory, string> = { new_water_candidate: t.keys.newWater, recession_candidate: t.keys.receding };
+  return <StripeKey label={t.keys.water} items={WATER} labels={labels} />;
+}
+
+function StripeKey({ label, items, labels }: { label: string; items: Record<string, Swatch>; labels?: Record<string, string> }) {
   return (
-    <ul className="c-key-list" aria-label={t.keys.water}>
-      {(Object.entries(WATER) as [WaterCategory, (typeof WATER)[WaterCategory]][]).map(([id, w]) => (
+    <ul className="c-key-list" aria-label={label}>
+      {Object.entries(items).map(([id, w]) => (
         <li key={id}>
           <i
             className="c-key c-key-stripe"
@@ -20,7 +26,7 @@ export function WaterKey() {
           <span aria-hidden="true" className="c-key-icon" style={{ color: w.color }}>
             {w.icon}
           </span>
-          {label[id]}
+          {labels?.[id] ?? w.label}
         </li>
       ))}
     </ul>
@@ -28,12 +34,12 @@ export function WaterKey() {
 }
 
 /** Separate diverging legend for signed backscatter change, so it never reads as a water classification. */
-export function ChangeKey() {
+export function ChangeKey({ limit = CHANGE.limitDb }: { limit?: number }) {
   const t = useT();
-  const ticks = [-CHANGE.limitDb, -CHANGE.limitDb / 2, 0, CHANGE.limitDb / 2, CHANGE.limitDb];
+  const ticks = [-limit, -limit / 2, 0, limit / 2, limit];
   const stops = Array.from({ length: 13 }, (_, i) => changeColor(-CHANGE.limitDb + (i * CHANGE.limitDb) / 6));
   return (
-    <figure className="c-change-key" aria-label={t.keys.changeAria(fmtNum(CHANGE.limitDb))}>
+    <figure className="c-change-key" aria-label={t.keys.changeAria(fmtNum(limit))}>
       <p className="c-change-title">{t.keys.changeTitle}</p>
       <div className="c-change-ramp" style={{ background: `linear-gradient(90deg, ${stops.join(", ")})` }} />
       <div className="c-change-ticks" aria-hidden="true">
@@ -48,3 +54,34 @@ export function ChangeKey() {
     </figure>
   );
 }
+
+/** Calibrated backscatter on one gray scale (the same for both dates), no-data transparent. */
+export function DbKey({ min, max, title = "Backscatter γ⁰, dB" }: { min: number; max: number; title?: string }) {
+  const f = (v: number) => (v < 0 ? `−${-v}` : String(v));
+  return (
+    <figure className="c-change-key" aria-label={`${title}, from ${f(min)} dB (black) to ${f(max)} dB (white); no data is transparent`}>
+      <p className="c-change-title">{title}</p>
+      <div className="c-change-ramp" style={{ background: "linear-gradient(90deg, #000, #fff)" }} />
+      <div className="c-change-ticks" aria-hidden="true">
+        <span>{f(min)}</span>
+        <span>{f((min + max) / 2)}</span>
+        <span>{f(max)}</span>
+      </div>
+      <figcaption>
+        <span>← darker: smoother surface</span>
+        <span>no data: clear</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+/**
+ * Findings are areas of signed backscatter change, so they take the diverging scale's poles (never the water colours),
+ * each with its own stripe direction and icon so the two kinds never depend on colour alone.
+ */
+export const FINDING = {
+  increase: { label: "Observed increase (brighter)", color: CHANGE.pos, stripe: 45, icon: "▲" },
+  decrease: { label: "Observed decrease (darker)", color: CHANGE.neg, stripe: 135, icon: "▼" },
+} as const;
+
+export const FindingKey = () => <StripeKey label="Observed radar change areas" items={FINDING} />;

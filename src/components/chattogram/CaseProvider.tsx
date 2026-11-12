@@ -5,6 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { allScenes, api, toLoadError, type Load, type Region } from "@/lib/chattogram/api";
 import type { ExplorerData } from "@/lib/explorer-data";
 import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "@/lib/chattogram/acquisitions";
+import { CASE_ID, isBusy, type ProcessedCase } from "@/lib/chattogram/case-api";
+
+const POLL_MS = 3000;
 import { FOCUS, loadFrozen } from "@/lib/chattogram/frozen";
 import { publishCaseSource } from "@/lib/chattogram/sourceStore";
 import { loadRain, type RainSeries } from "@/lib/chattogram/rain";
@@ -37,7 +40,15 @@ type Ctx = {
   after: Acquisition | null;
   view: View;
   pick: string | null; // the acquisition highlighted on the map
-  set: (patch: Partial<{ stack: string; a: string; b: string; view: View; pick: string | null }>) => void;
+  /** The selected processed finding (URL `f`). */
+  finding: string | null;
+  set: (patch: Partial<{ stack: string; a: string; b: string; view: View; pick: string | null; f: string | null }>) => void;
+  /** The processed case from the backend: its status always, layers/findings/timeseries once it is ready (else empty). */
+  processed: Load<ProcessedCase>;
+  /** True when the selected before/after are exactly the processed case's pair. */
+  isCasePair: boolean;
+  /** A page opened on the processed case's stack and pair (null until both its scenes are in the catalogue). */
+  caseHref: (path: string) => string | null;
   /** Same page with the current selection, for nav links. */
   href: (path: string) => string;
 };
@@ -50,6 +61,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const [explorer, setExplorer] = useState<ExplorerData | null>(null);
   const [source, setSource] = useState<CaseSource>({ mode: "live", frozenAt: null, fallback: false });
   const [tick, setTick] = useState(0);
+  const [processed, setProcessed] = useState<Load<ProcessedCase>>({ status: "loading" });
   const [rain, setRain] = useState<RainSeries | null>(null);
   useEffect(() => {
     loadRain().then(setRain);
@@ -105,6 +117,41 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     };
   }, [tick, wanted]);
 
+  // The processed case loads on its own, so a backend without /cases (or a case still processing) never blocks the
+  // catalogue views. While the backend is working on it, the case (with its job) is polled every few seconds.
+  useEffect(() => {
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const empty = { layers: [], findings: { type: "FeatureCollection" as const, features: [] }, timeseries: { units: "dB" as const, points: [] } };
+    if (wanted === "frozen") {
+      setProcessed({ status: "unavailable", reason: "The frozen case replays without the backend, so the processed case is not loaded" });
+      return;
+    }
+    const poll = () =>
+      api
+        .case(CASE_ID)
+        .then(async (detail) => {
+          if (!live) return;
+          if (detail.status !== "ready") {
+            setProcessed({ status: "ready", data: { detail, ...empty } });
+            if (isBusy(detail)) timer = setTimeout(poll, POLL_MS);
+            return;
+          }
+          const [layers, findings, timeseries] = await Promise.all([
+            api.layers(CASE_ID),
+            api.findings(CASE_ID),
+            api.timeseries(CASE_ID).catch(() => empty.timeseries), // the chart is optional; the case is not
+          ]);
+          if (live) setProcessed({ status: "ready", data: { detail, layers, findings, timeseries } });
+        })
+        .catch((e) => live && setProcessed(toLoadError(e)));
+    poll();
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [tick, wanted]);
+
   const data = load.status === "ready" ? load.data : null;
   const q = (k: string) => params.get(k);
 
@@ -131,12 +178,57 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (patch.view) next.set("v", `${patch.view.lon.toFixed(4)},${patch.view.lat.toFixed(4)},${patch.view.zoom.toFixed(2)}`);
     if (patch.pick) next.set("pick", patch.pick);
     else if (patch.pick === null) next.delete("pick");
+    if (patch.f) next.set("f", patch.f);
+    else if (patch.f === null) next.delete("f");
     if (next.toString() !== window.location.search.slice(1)) window.history.replaceState(null, "", `?${next}`);
   }, []);
   const href = useCallback((p: string) => (params.size ? `${p}?${params}` : p), [params]);
 
-  const value: Ctx = { load, explorer, source, rain, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };
-  return <CaseContext.Provider value={value}>{children}</CaseContext.Provider>;
+  const pd = processed.status === "ready" ? processed.data.detail : null;
+  const isCasePair = !!pd && before?.granule === pd.before.granule && after?.granule === pd.after.granule;
+  const caseHref = useCallback(
+    (p: string) => {
+      const a = pd && data?.acquisitions.find((x) => x.granule === pd.before.granule);
+      const b = pd && data?.acquisitions.find((x) => x.granule === pd.after.granule);
+      if (!a || !b || a.stack !== b.stack) return null;
+      const next = new URLSearchParams(params);
+      next.set("stack", a.stack);
+      next.set("a", a.day);
+      next.set("b", b.day);
+      return `${p}?${next}`;
+    },
+    [pd, data, params],
+  );
+
+  const value: Ctx = {
+    load,
+    explorer,
+    source,
+    rain,
+    reload: () => setTick((t) => t + 1),
+    stack,
+    before,
+    after,
+    view,
+    pick: q("pick"),
+    finding: q("f"),
+    set,
+    href,
+    processed,
+    isCasePair,
+    caseHref,
+  };
+  return (
+    <CaseContext.Provider value={value}>
+      {pd?.synthetic_fixture && (
+        <div className="c-synthetic" role="alert">
+          <strong>SYNTHETIC QA DATA — NOT NISAR</strong>
+          <span>This case was processed from generated test fixtures to check the pipeline. Every layer, number and finding on these pages is made up.</span>
+        </div>
+      )}
+      {children}
+    </CaseContext.Provider>
+  );
 }
 
 export function useCase() {

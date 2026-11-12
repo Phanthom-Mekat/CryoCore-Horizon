@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import type { Acquisition } from "@/lib/chattogram/acquisitions";
+import type { Timeseries } from "@/lib/chattogram/case-api";
 import { fmtDate, fmtDayMonth, fmtNum } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { browseUrl, quicklookSrc } from "./CaseMap";
@@ -12,9 +13,21 @@ const FRAME_MS = 1400;
 
 /**
  * Actual acquisition dates on a true time axis, so gaps stay visible. Play steps through them in order;
- * nothing is interpolated between dates.
+ * nothing is interpolated between dates. With `summary`, processed per-date values sit on the same axis below.
  */
-export function Timeline({ items, current, onPick, marks = {} }: { items: Acquisition[]; current: string | null; onPick: (a: Acquisition) => void; marks?: Record<string, string> }) {
+export function Timeline({
+  items,
+  current,
+  onPick,
+  marks = {},
+  summary,
+}: {
+  items: Acquisition[];
+  current: string | null;
+  onPick: (a: Acquisition) => void;
+  marks?: Record<string, string>;
+  summary?: Timeseries["points"];
+}) {
   const sorted = useMemo(() => [...items].sort((a, b) => a.start.localeCompare(b.start)), [items]);
   const [playing, setPlaying] = useState(false);
   const replaying = useCase().source.mode === "frozen";
@@ -48,6 +61,9 @@ export function Timeline({ items, current, onPick, marks = {} }: { items: Acquis
   }, [idx, sorted, replaying]);
 
   if (!sorted.length) return null;
+  // the compared pair, drawn as a highlighted stretch of the axis
+  const marked = sorted.filter((a) => marks[a.conceptId]);
+  const pair = marked.length === 2 ? [pos(marked[0]), pos(marked[1])] : null;
   return (
     <div className="c-timeline">
       <button
@@ -65,6 +81,7 @@ export function Timeline({ items, current, onPick, marks = {} }: { items: Acquis
       </button>
       <div className="c-track" role="group" aria-label={t.timeline.group(fmtNum(sorted.length), fmtDate(sorted[0].start), fmtDate(sorted.at(-1)!.start))}>
         <span className="c-track-line" aria-hidden="true" />
+        {pair && <span className="c-track-span" style={{ left: `${pair[0]}%`, width: `${pair[1] - pair[0]}%` }} aria-hidden="true" />}
         {sorted.map((a) => (
           <button
             key={a.conceptId}
@@ -88,6 +105,83 @@ export function Timeline({ items, current, onPick, marks = {} }: { items: Acquis
         {fmtDate(sorted[idx].start)}
         <small>{t.timeline.position(fmtNum(idx + 1), fmtNum(sorted.length))}</small>
       </output>
+      {summary && <Summary sorted={sorted} points={summary} current={current} pos={pos} />}
     </div>
+  );
+}
+
+type Point = Timeseries["points"][number];
+const db = (v: number) => `${v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}`;
+
+/**
+ * Per-date backscatter summary on the timeline's own axis: mean γ⁰ (dot) with its 10th–90th percentile range (whisker).
+ * Only processed dates have a value; every other date shows a dash, and nothing is drawn between dates.
+ * Values are matched by granule, so a value is never shown against a different product of the same day.
+ */
+function Summary({ sorted, points, current, pos }: { sorted: Acquisition[]; points: Point[]; current: string | null; pos: (a: Acquisition) => number }) {
+  const by = new Map(points.map((p) => [p.granule, p]));
+  const shown = sorted.filter((a) => by.has(a.granule));
+  if (!shown.length) return null;
+  const vals = shown.flatMap((a) => [by.get(a.granule)!.p10_db, by.get(a.granule)!.p90_db]);
+  const [lo, hi] = [Math.floor(Math.min(...vals)), Math.ceil(Math.max(...vals))];
+  const y = (v: number) => (hi > lo ? ((hi - v) / (hi - lo)) * 100 : 50); // % from the top
+  const tip = (a: Acquisition, p: Point) =>
+    `${fmtDate(a.start)}: mean ${db(p.mean_db)} dB (10th–90th percentile ${db(p.p10_db)} to ${db(p.p90_db)} dB), ${p.valid_km2.toFixed(1)} km² valid`;
+
+  return (
+    <>
+      <p className="c-sum-axis" aria-hidden="true">
+        γ⁰ dB
+        <span>{db(hi)}</span>
+        <span>{db(lo)}</span>
+      </p>
+      <div className="c-sum" aria-hidden="true">
+        {sorted.map((a) => {
+          const p = by.get(a.granule);
+          return p ? (
+            <span key={a.conceptId} className={`c-sum-pt${a.conceptId === current ? " is-on" : ""}`} style={{ left: `${pos(a)}%` }} title={tip(a, p)}>
+              <i className="c-sum-whisker" style={{ top: `${y(p.p90_db)}%`, height: `${y(p.p10_db) - y(p.p90_db)}%` }} />
+              <i className="c-sum-dot" style={{ top: `${y(p.mean_db)}%` }} />
+            </span>
+          ) : (
+            <span key={a.conceptId} className="c-sum-gap" style={{ left: `${pos(a)}%` }} title={`${fmtDate(a.start)}: not processed`}>
+              –
+            </span>
+          );
+        })}
+      </div>
+      <table className="c-sr">
+        <caption>Mean calibrated backscatter (γ⁰) over the analysis area per processed date, dB</caption>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Mean</th>
+            <th>10th percentile</th>
+            <th>90th percentile</th>
+            <th>Valid area, km²</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((a) => {
+            const p = by.get(a.granule);
+            return (
+              <tr key={a.conceptId}>
+                <td>{fmtDate(a.start)}</td>
+                {p ? (
+                  <>
+                    <td>{db(p.mean_db)}</td>
+                    <td>{db(p.p10_db)}</td>
+                    <td>{db(p.p90_db)}</td>
+                    <td>{p.valid_km2.toFixed(1)}</td>
+                  </>
+                ) : (
+                  <td colSpan={4}>Not processed</td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </>
   );
 }
