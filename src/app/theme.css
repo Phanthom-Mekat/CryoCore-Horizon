@@ -10,6 +10,7 @@
   --muted: #526b80;
   --ice: #006c94;
   --radar: #147447;
+  --silt: #966010;
 }
 html:not([data-theme="dark"]) .d-shell {
   --d-bg: #f5f8fb;
@@ -75,6 +76,8 @@ html:not([data-theme="dark"]) .section-deep { background: var(--surface); }
 html:not([data-theme="dark"]) :is(.build li, .radar-list li:has(button[aria-expanded="true"])) { background: var(--surface); }
 html:not([data-theme="dark"]) .radar-stage { background: #eaf2f8; }
 html:not([data-theme="dark"]) .radar-bar { background: #ffffff; }
+html:not([data-theme="dark"]) .clouds-dates button { background: #ffffff; }
+html:not([data-theme="dark"]) .clouds-dates button[aria-pressed="true"] { background: #e2f2f7; border-color: var(--ice); }
 html:not([data-theme="dark"]) :is(.map-probe span, .map-tag, .map-readout, .map-error,
   .c-map-tip, .c-map-note, .c-badge, .c-hero-map-cap, .c-map .mapboxgl-ctrl-scale, .c-map .mapboxgl-ctrl-attrib) {
   background: rgb(255 255 255 / 0.95);

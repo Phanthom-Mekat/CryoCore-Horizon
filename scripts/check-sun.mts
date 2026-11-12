@@ -1,6 +1,6 @@
 // Self-check for the sun math behind the live globe. Run: node --experimental-strip-types scripts/check-sun.mts
 import assert from "node:assert/strict";
-import { subsolar, sunElevation } from "../src/lib/globe.ts";
+import { nextTargetPass, subsolar, sunElevation } from "../src/lib/globe.ts";
 
 const near = (a: number, b: number, tol: number, what: string) => assert.ok(Math.abs(a - b) <= tol, `${what}: got ${a.toFixed(2)}, want ${b} ±${tol}`);
 
@@ -12,4 +12,8 @@ near(dec.lat, -23.44, 0.1, "December solstice subsolar latitude");
 // Ilulissat (69.2° N, 51.1° W) at local solar noon: polar night in December, high sun in June
 near(sunElevation(69.2, -51.1, new Date("2026-12-21T15:24:00Z")), -2.6, 0.4, "Ilulissat noon elevation, 21 Dec");
 near(sunElevation(69.2, -51.1, new Date("2026-06-21T15:24:00Z")), 44.2, 0.4, "Ilulissat noon elevation, 21 Jun");
+// The simulated pass is the dawn (ascending) one: real NISAR passes over Chattogram are at about 05:20 Bangladesh time
+const pass = new Date(nextTargetPass(Date.parse("2026-07-12T00:00:00Z")));
+const bdHour = (pass.getUTCHours() + pass.getUTCMinutes() / 60 + 6) % 24;
+near(bdHour, 5.4, 1, "simulated pass time over Chattogram, Bangladesh time");
 console.log("sun math ok");

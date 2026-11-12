@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { Fragment } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { HeroGlobe } from "@/components/HeroGlobe";
-import { DaylightChart } from "@/components/DaylightChart";
 import { RadarSteps } from "@/components/RadarSteps";
-import { CompareSlider } from "@/components/CompareSlider";
-import { FjordIllustration } from "@/components/FjordIllustration";
+import { CloudCompare, type CloudPair } from "@/components/CloudCompare";
+import { CASE, CATALOG, PASSES, STACKS, TRACKS, day, dayYear, gaps, localTime, maturityLabel, mode } from "@/lib/chattogram/catalog";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -19,9 +20,25 @@ const LINKS = {
 const TEAM = [
   { name: "Add name", role: "Radar data and processing" },
   { name: "Add name", role: "Web app and visualisation" },
-  { name: "Add name", role: "Glacier science and story" },
+  { name: "Add name", role: "Delta science and story" },
   { name: "Add name", role: "Design and video" },
 ];
+
+// Everything below is computed from the frozen NISAR catalog snapshot (src/data/chattogram/catalog.json).
+const first = CASE[0];
+const last = CASE[CASE.length - 1];
+const [[W, N], , [E, S]] = first.browse.quad;
+const PAIRS: CloudPair[] = CASE.map((p) => ({
+  key: p.id,
+  day: day(p.start),
+  radarTime: localTime(p.start),
+  radar: p.browse.src,
+  optical: p.optical.src,
+}));
+const CLOUDY = Math.max(0, CASE.findIndex((p) => p.start.startsWith("2026-07-12"))); // a fully overcast morning
+const GAP_AFTER = new Map(gaps(CASE).map(([a]) => [a.id, day(new Date(Date.parse(a.start) + 12 * 864e5).toISOString())]));
+const MATURITY = [...new Set(CASE.map((p) => maturityLabel[p.maturity]))].join(" and ");
+const sortedStarts = PASSES.map((p) => p.start).sort();
 
 export default function Home() {
   return (
@@ -34,146 +51,145 @@ export default function Home() {
           <HeroGlobe />
           <div className="hero-copy">
             <p className="kicker">Team CryoCore Horizon, NASA Space Apps Challenge 2026</p>
-            <h1>It&rsquo;s polar night over Greenland&rsquo;s fastest glacier. Radar still sees it.</h1>
+            <h1>Monsoon cloud hides Chattogram for months. Radar still sees it.</h1>
             <p className="lede">
-              You&rsquo;re riding beside NISAR, the NASA–ISRO radar satellite, 747 km up. Its beam lights a 240 km strip of ice that no camera
-              could see in the dark. We turn those images into a live record of how fast Jakobshavn Glacier moves.
+              You&rsquo;re riding beside NISAR, the NASA–ISRO radar satellite, 747 km up. At dawn its beam images a 240 km strip of the Bengal
+              delta, straight through the cloud. We follow one monsoon of those images to see where the water spreads and pulls back.
             </p>
             <div className="actions">
-              <Link className="btn" href="/dashboard">
-                Open the ice dashboard
-                <span className="btn-arrow" aria-hidden="true">→</span>
+              <Link className="btn" href="/chattogram">
+                Explore the radar map
               </Link>
-              <a className="link" href="#radar">How radar sees ice</a>
+              <a className="link" href="#clouds">Why radar</a>
             </div>
-            <p className="hero-note">The pass is simulated from NISAR&rsquo;s real orbit, not its actual schedule. Spacecraft and Earth are to scale.</p>
+            <p className="hero-note">The pass is simulated from NISAR&rsquo;s orbit, not its actual schedule. Spacecraft and Earth are to scale.</p>
           </div>
-          <a className="hero-scroll" href="#dark">
+          <a className="hero-scroll" href="#clouds">
             <span>Scroll to story ↓</span>
             <span className="hero-scroll-line" aria-hidden="true" />
           </a>
         </section>
 
-        <section className="section" id="dark" aria-labelledby="dark-h">
+        <section className="section" id="clouds" aria-labelledby="clouds-h">
           <div className="wrap">
             <div className="intro">
-              <div className="intro-head">
-                <p className="section-kicker">01 / THE PROBLEM</p>
-                <h2 id="dark-h">For weeks each winter, the sun never rises over the glacier</h2>
-              </div>
+              <h2 id="clouds-h">Monsoon cloud hides the delta for months</h2>
               <div className="prose">
                 <p>
-                  Ilulissat sits about 300 km north of the Arctic Circle. From late November to mid-January there is no sunrise, and cloud
-                  covers the fjord for much of the rest of the year. Satellite cameras need sunlight and a clear sky.
+                  From June into October the southwest monsoon covers coastal Bangladesh in cloud, in the same months the rivers rise and fields
+                  flood. A camera in orbit sees the cloud tops.
                 </p>
-                <p>Radar brings its own signal. NISAR sees the ice on every pass, in the dark and through cloud.</p>
+                <p>NISAR brings its own microwave signal, which passes through cloud. Here is the same morning, seen both ways.</p>
               </div>
             </div>
-            <DaylightChart />
+            <CloudCompare pairs={PAIRS} aspect={(E - W) / (N - S)} initial={CLOUDY} track={first.track} frame={first.frame} />
           </div>
         </section>
 
         <section className="section" id="radar" aria-labelledby="radar-h">
           <div className="wrap">
             <div className="intro">
-              <div className="intro-head">
-                <p className="section-kicker">02 / HOW NISAR SEES</p>
-                <h2 id="radar-h">How NISAR measures a glacier it can&rsquo;t see</h2>
-              </div>
-              <p className="prose">Four steps turn microwave echoes into a map of moving ice. Pick a step to see it.</p>
+              <h2 id="radar-h">How NISAR sees the ground through cloud</h2>
+              <p className="prose">Four steps turn microwave echoes into a picture of land and water. Pick a step to see it.</p>
             </div>
             <RadarSteps />
           </div>
         </section>
 
-        <section className="section section-deep" id="glacier" aria-labelledby="glacier-h">
+        <section className="section section-deep" id="delta" aria-labelledby="delta-h">
           <div className="wrap">
             <div className="intro">
-              <div className="intro-head">
-                <p className="section-kicker">03 / THE GLACIER</p>
-                <h2 id="glacier-h">Sermeq Kujalleq, also called Jakobshavn Glacier</h2>
-              </div>
-              <p className="prose">69.2° N, 49.9° W. It drains the west of the Greenland Ice Sheet into the Ilulissat Icefjord and Disko Bay.</p>
+              <h2 id="delta-h">One monsoon, {CASE.length} radar passes</h2>
+              <p className="prose">
+                We follow one stack of images, track {first.track} frame {first.frame}. It covers Chattogram city, Feni, Sandwip and the
+                Meghna estuary. NISAR passed over every 12 days from {dayYear(first.start)} to {dayYear(last.start)}, always in the same radar
+                mode ({mode(first)}), so any two dates compare fairly.
+              </p>
             </div>
-            <div className="glacier-grid">
-              <figure>
-                <CompareSlider
-                  before={<FjordIllustration id="a" front={430} flow={0} />}
-                  after={<FjordIllustration id="b" front={452} flow={16} />}
-                  beforeLabel="Pass 1"
-                  afterLabel="Pass 2, 12 days later"
-                  badge="12-day baseline · ~480 m front advance"
-                />
-                <figcaption className="note">
-                  Illustration, not data. During the hackathon this becomes a pair of real NISAR radar images of the glacier front from the
-                  Alaska Satellite Facility.
-                </figcaption>
-              </figure>
+
+            <ol className="reel" aria-label="NISAR radar images of the case stack, in date order">
+              {CASE.map((p) => (
+                <Fragment key={p.id}>
+                  <li>
+                    <Image src={p.browse.src} alt={`NISAR radar image, ${day(p.start)}`} width={240} height={Math.round((240 * (N - S)) / (E - W))} sizes="180px" />
+                    <span>{day(p.start)}</span>
+                  </li>
+                  {GAP_AFTER.has(p.id) && (
+                    <li className="reel-gap">
+                      <span className="reel-gap-box">No image in the catalog</span>
+                      <span>{GAP_AFTER.get(p.id)}</span>
+                    </li>
+                  )}
+                </Fragment>
+              ))}
+            </ol>
+
+            <div className="delta-grid">
               <div>
                 <dl className="specs">
                   <div>
-                    <dt>Flow speed</dt>
-                    <dd>Up to 40 m a day</dd>
+                    <dt>NISAR scenes over the study area</dt>
+                    <dd>{PASSES.length}</dd>
                   </div>
                   <div>
-                    <dt>Ice calved each year</dt>
-                    <dd>Over 35 km³</dd>
+                    <dt>Orbit tracks</dt>
+                    <dd>{TRACKS.length}</dd>
                   </div>
                   <div>
-                    <dt>Share of Greenland&rsquo;s calf ice</dt>
-                    <dd>About 10%</dd>
+                    <dt>Track and frame stacks</dt>
+                    <dd>{STACKS.length}</dd>
                   </div>
                   <div>
-                    <dt>UNESCO World Heritage</dt>
-                    <dd>Since 2004</dd>
+                    <dt>Scenes from</dt>
+                    <dd>
+                      {day(sortedStarts[0])} to {dayYear(sortedStarts[sortedStarts.length - 1])}
+                    </dd>
                   </div>
                 </dl>
                 <p className="source">
-                  Source: <a href="https://whc.unesco.org/en/list/1149/">UNESCO World Heritage Centre, Ilulissat Icefjord</a>
+                  Source: NASA Earthdata CMR, NISAR L2 GCOV, snapshot taken {dayYear(CATALOG.retrievedAt)}. Our stack&rsquo;s products are{" "}
+                  {MATURITY.toLowerCase()}, so they can still be reprocessed.
                 </p>
+              </div>
+
+              <div className="build">
+                <h3>Where the project stands</h3>
+                <ul>
+                  <li data-state="done">
+                    <span className="build-tag">Done</span>
+                    <strong>Real NISAR catalog and pictures</strong>
+                    <span>
+                      {PASSES.length} scenes from NASA&rsquo;s catalog, and quick-look radar images for all {CASE.length} passes in our stack.
+                    </span>
+                  </li>
+                  <li data-state="next">
+                    <span className="build-tag">Next</span>
+                    <strong>Calibrated change between passes</strong>
+                    <span>Download the full GCOV files with a NASA Earthdata login, and measure how much the radar echo changed between dates.</span>
+                  </li>
+                  <li data-state="later">
+                    <span className="build-tag">After that</span>
+                    <strong>Candidate water-change map</strong>
+                    <span>Mark where water likely spread or pulled back, and check it against independent data before calling anything a flood.</span>
+                  </li>
+                </ul>
               </div>
             </div>
 
-            <div className="build">
-              <h3>What our app will measure</h3>
-              <ul>
-                <li>
-                  <span className="build-tag">VELOCITY · M/DAY</span>
-                  <strong>Flow speed</strong>
-                  <span>How fast the ice moves near the front, from pairs of NISAR passes 12 days apart.</span>
-                </li>
-                <li>
-                  <span className="build-tag">TERMINUS · ΔKM</span>
-                  <strong>Calving front</strong>
-                  <span>Where the glacier ends on each date, and how far it advances or retreats.</span>
-                </li>
-                <li>
-                  <span className="build-tag">ANNUAL CYCLE</span>
-                  <strong>Seasonal rhythm</strong>
-                  <span>Whether the glacier speeds up during summer melt and slows in winter.</span>
-                </li>
-              </ul>
-              <div className="actions build-cta">
-                <Link className="btn" href="/dashboard">
-                  Open the ice dashboard
-                  <span className="btn-arrow" aria-hidden="true">→</span>
-                </Link>
-                <span className="note">Running on sample data until the hackathon, 14–15 November 2026.</span>
-              </div>
+            <div className="actions delta-cta">
+              <Link className="btn" href="/chattogram">
+                Explore the radar map
+              </Link>
             </div>
           </div>
         </section>
 
         <section className="section" id="team" aria-labelledby="team-h">
           <div className="wrap intro">
-            <div className="intro-head">
-              <p className="section-kicker">04 / THE TEAM</p>
-              <h2 id="team-h">The team</h2>
-            </div>
+            <h2 id="team-h">The team</h2>
             <ul className="team">
               {TEAM.map((m, i) => (
                 <li key={i}>
-                  <span className="team-idx">{String(i + 1).padStart(2, "0")}</span>
                   <strong>{m.name}</strong>
                   <span className="team-role">{m.role}</span>
                 </li>
@@ -184,12 +200,11 @@ export default function Home() {
 
         <section className="final" aria-labelledby="final-h">
           <div className="wrap">
-            <h2 id="final-h">Follow the glacier with us</h2>
+            <h2 id="final-h">Follow the delta with us</h2>
             <p>Our code, data notes and results are open source.</p>
             <div className="actions">
               <a className="btn" href={LINKS.repo}>
                 See the code on GitHub
-                <span className="btn-arrow" aria-hidden="true">→</span>
               </a>
               <a className="link" href={LINKS.challenge}>Read the challenge</a>
             </div>
@@ -201,15 +216,16 @@ export default function Home() {
         <div className="wrap foot-grid">
           <div className="foot-copy">
             <p>
-              Radar data: NISAR, a joint mission of NASA and ISRO, distributed by the Alaska Satellite Facility. Earth imagery: NASA Blue Marble
-              and VIIRS Black Marble from NASA GIBS; cloud layer from the three.js examples. Glacier facts: UNESCO.
+              Radar data: NISAR, a joint mission of NASA and ISRO, distributed by the Alaska Satellite Facility; catalog from NASA Earthdata CMR.
+              Camera photos: MODIS Terra via NASA GIBS. Globe imagery: NASA Blue Marble and VIIRS Black Marble via NASA GIBS, clouds from the
+              three.js examples.
             </p>
             <p>Built by CryoCore Horizon for the NASA International Space Apps Challenge 2026. Not an official NASA or ISRO website.</p>
           </div>
           <nav className="foot-links" aria-label="Quick links">
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/chattogram">Chattogram case study</Link>
             <a href={LINKS.challenge}>Challenge</a>
-            <a href="https://whc.unesco.org/en/list/1149/">UNESCO</a>
+            <a href="https://nisar-docs.asf.alaska.edu/">NISAR data guide</a>
             <a href="#top">Back to top ↑</a>
           </nav>
         </div>

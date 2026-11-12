@@ -6,9 +6,9 @@ import { BrandMark } from "./BrandMark";
 import { ThemeToggle } from "./ThemeToggle";
 
 const SECTIONS = [
-  { id: "dark", label: "Why radar" },
+  { id: "clouds", label: "Why radar" },
   { id: "radar", label: "How it works" },
-  { id: "glacier", label: "The glacier" },
+  { id: "delta", label: "The delta" },
   { id: "team", label: "Team" },
 ] as const;
 
