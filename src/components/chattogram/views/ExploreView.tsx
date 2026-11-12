@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n/useT";
 import { CaseMap } from "../CaseMap";
 import { FOCUS, useCase } from "../CaseProvider";
 import { CaseBar } from "../CaseBar";
+import { RainCard } from "../RainCard";
 import { Timeline } from "../Timeline";
 
 export function ExploreView() {
@@ -136,6 +137,7 @@ export function ExploreView() {
         </div>
       </aside>
     </div>
+      <RainCard mode="stack" />
     </>
   );
 }

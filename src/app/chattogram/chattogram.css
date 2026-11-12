@@ -1162,3 +1162,164 @@
 .c-landmark[hidden] {
   display: none;
 }
+
+/* ---------- rainfall context (plan F13) ---------- */
+.c-rain-card {
+  min-width: 0; /* a grid item: let the plot scroll instead of widening the page */
+  margin-top: 18px;
+  padding: 18px 20px 14px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: var(--c-navy);
+}
+.c-rain-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 8px;
+}
+.c-rain-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 1rem var(--sans);
+  color: var(--c-text);
+}
+.c-rain-head h2 svg {
+  color: var(--ice);
+}
+.c-rain-head p {
+  margin-top: 4px;
+  color: var(--c-muted);
+  font-size: 0.86rem;
+}
+.c-rain-totals {
+  display: flex;
+  gap: 18px;
+}
+.c-rain-totals dt {
+  color: var(--c-dim);
+  font-size: 0.76rem;
+}
+.c-rain-totals dd {
+  color: var(--c-text);
+  font: 600 1.35rem/1.2 var(--sans);
+}
+.c-rain {
+  margin: 0;
+}
+.c-rain-plot {
+  overflow-x: auto;
+}
+.c-rain-canvas {
+  position: relative;
+}
+@media (max-width: 640px) {
+  .c-rain-canvas {
+    min-width: 620px;
+  }
+  .c-rain-card {
+    padding: 16px 14px 12px;
+  }
+}
+.c-rain-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.c-rain-bar {
+  fill: var(--ice);
+  opacity: 0.85;
+}
+.c-rain-bar.is-hover {
+  opacity: 1;
+}
+.c-rain-missing {
+  fill: var(--c-dim);
+  opacity: 0.4;
+}
+.c-rain-grid {
+  stroke: var(--c-line);
+}
+.c-rain-base {
+  stroke: var(--c-line-2);
+}
+.c-rain-axis {
+  fill: var(--c-dim);
+  font: 10px var(--mono);
+}
+.c-rain-pass line {
+  stroke: var(--c-muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.c-rain-pass.is-strong line {
+  stroke: #ffb454; /* the amber of the selected footprint on the map */
+  stroke-width: 1.5;
+  stroke-dasharray: none;
+}
+.c-rain-pass text {
+  fill: var(--c-text);
+  font: 600 10px var(--sans);
+}
+.c-rain-cursor {
+  stroke: var(--c-text);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+.c-rain-tip {
+  position: absolute;
+  top: 6px;
+  z-index: 2;
+  display: grid;
+  gap: 1px;
+  padding: 6px 9px;
+  border: 1px solid var(--c-line-2);
+  border-radius: 6px;
+  background: var(--c-panel);
+  color: var(--c-muted);
+  font: 0.78rem/1.35 var(--mono);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.c-rain-tip strong {
+  color: var(--c-text);
+  font: 600 0.84rem var(--sans);
+}
+.c-rain-tip-pass {
+  color: #c57d00;
+}
+.c-rain-table {
+  margin-top: 6px;
+  font-size: 0.82rem;
+}
+.c-rain-table summary {
+  color: var(--c-muted);
+  cursor: pointer;
+}
+.c-rain-table table {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 420px;
+  border-collapse: collapse;
+}
+.c-rain-table th,
+.c-rain-table td {
+  padding: 2px 8px 2px 0;
+  border-bottom: 1px solid var(--c-line);
+  text-align: left;
+  font-weight: 400;
+}
+.c-rain-note {
+  margin-top: 10px;
+  color: var(--c-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.c-rain-source {
+  margin-top: 4px;
+  color: var(--c-dim);
+  font: 0.72rem/1.45 var(--mono);
+  word-break: break-word;
+}

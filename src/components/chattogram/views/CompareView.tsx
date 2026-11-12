@@ -9,6 +9,7 @@ import { fmtDate, fmtNum, fmtTime } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { CaseMap, quicklookSrc } from "../CaseMap";
 import { CaseBar } from "../CaseBar";
+import { RainCard } from "../RainCard";
 import { useCase, type View } from "../CaseProvider";
 
 /** Keeps two maps on the same centre and zoom, so both sides of the divider always show the same extent and scale. */
@@ -157,6 +158,7 @@ export function CompareView() {
 
       <p className="c-compare-foot">{c.foot}</p>
     </div>
+      <RainCard mode="pair" />
     </>
   );
 }

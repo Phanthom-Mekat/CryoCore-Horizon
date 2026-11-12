@@ -29,6 +29,9 @@ use it automatically when the backend is unreachable, open it on purpose with `?
 page. For a deployment without the backend, set `NEXT_PUBLIC_CASE_SOURCE=frozen`. Refresh the snapshot with the
 backend running: `pnpm freeze-case`.
 
+**Rainfall context.** Daily rainfall at Chattogram city from the NASA POWER API (modelled, MERRA-2) is saved in
+`public/data/chattogram/rain.json`; refresh it with `pnpm fetch-rain`.
+
 Use pnpm for Node dependencies (`pnpm install`, `pnpm build`). See
 [the explorer implementation notes](docs/EXPLORER.md) for architecture, data
 provenance, library choices, validation, and remaining work.
@@ -92,6 +95,7 @@ node --experimental-strip-types scripts/check-sun.mts          # sun position be
 - `node scripts/make-sample-data.mjs <basemap-hls.png>`: the sample dataset
 - `node scripts/make-textures.mjs <folder>`: Earth textures for the 3D view (sources listed in the script)
 - `pnpm freeze-case`: the frozen Chattogram case (needs the backend running and network access to ASF)
+- `pnpm fetch-rain`: NASA POWER daily rainfall for the case (no login needed)
 
 ## Credits
 

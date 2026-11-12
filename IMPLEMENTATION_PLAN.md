@@ -54,9 +54,18 @@ surface-change findings. F01/F02 and the scientific milestones remain incomplete
 - [x] Map place names shaped correctly: Bangla landmark labels as HTML (WebGL map text can't shape Bengali), with the basemap's English place labels hidden in Bangla, so names never overlap.
 - [x] Checked in a browser: no untranslated English left on the five case pages (only the kept technical names), all six case pages fit 390 px in both languages, no console errors.
 
+### Completed rainfall increment (F13)
+
+- [x] Source checked before use: GPM IMERG needs an Earthdata login, so this increment uses the **NASA POWER Daily API** (no login), parameter `PRECTOTCORR`, which is modelled reanalysis precipitation (MERRA-2 / GEOS-IT) on a 0.5° × 0.625° grid. Labelled as modelled on every page; the file format is source-agnostic so an IMERG series can replace it.
+- [x] `pnpm fetch-rain` (`scripts/fetch-rain.mts`) saves the series at Chattogram city to `public/data/chattogram/rain.json` (1 Jun 2026 → yesterday) with provider, API version, sources, resolution, day boundaries (local solar time), retrieval time and the request URL. The pages read only this file, so the chart works in frozen mode and offline.
+- [x] Rainfall card on **Explore** (the stack's season with every NISAR pass marked, Before and After emphasised) and on **Compare** (the weeks around the pair, with the rain in the 7 days up to each date: 389 mm before 7 Jul, 8 mm before 11 Oct 2026).
+- [x] One-hue bar chart on a true time axis, hover readout, a “Show the numbers” table for screen readers, scrolls sideways on phones instead of shrinking; English and Bangla.
+- [x] Shown as context, never cause: a caveat under every chart; Evidence lists the 7-day rain per acquisition and the brief JSON carries `rainfall_context` with its full source.
+- [x] Checked in a browser: Explore and Compare in both languages, 1440 px and 390 px (no page overflow), frozen mode (0 backend/proxy requests), no new console errors.
+
 ### Progress tracker
 
-Updated 12 November 2026. "Partial" means the interface exists on real metadata and quicklooks, waiting for processed data.
+Updated 13 November 2026. "Partial" means the interface exists on real metadata and quicklooks, waiting for processed data.
 
 | ID | Feature | Status | Done | Still needed |
 | --- | --- | --- | --- | --- |
@@ -72,7 +81,7 @@ Updated 12 November 2026. "Partial" means the interface exists on real metadata 
 | F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
 | F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata | Add findings and statistics once they exist |
-| F13 | NASA rainfall context | Not started | – | Verify GPM/IMERG access, then a small contextual chart |
+| F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
 | F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
 | F16 | Terrain storytelling | Not started | – | P2 |

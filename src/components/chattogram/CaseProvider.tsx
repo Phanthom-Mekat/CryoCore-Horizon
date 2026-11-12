@@ -7,6 +7,7 @@ import type { ExplorerData } from "@/lib/explorer-data";
 import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { FOCUS, loadFrozen } from "@/lib/chattogram/frozen";
 import { publishCaseSource } from "@/lib/chattogram/sourceStore";
+import { loadRain, type RainSeries } from "@/lib/chattogram/rain";
 
 export { FOCUS };
 export const DEFAULT_VIEW = { lon: 91.85, lat: 22.4, zoom: 8.2 };
@@ -27,6 +28,8 @@ type Ctx = {
   /** The backend's division view (boundary, footprints, counts). Present even when no scene overlaps yet. */
   explorer: ExplorerData | null;
   source: CaseSource;
+  /** Rainfall context (plan F13), a static file, so it is the same live or frozen. Null if not shipped. */
+  rain: RainSeries | null;
   reload: () => void;
   /** Selection, all of it mirrored in the URL so any view can be shared as a link. */
   stack: Stack | null;
@@ -47,6 +50,10 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const [explorer, setExplorer] = useState<ExplorerData | null>(null);
   const [source, setSource] = useState<CaseSource>({ mode: "live", frozenAt: null, fallback: false });
   const [tick, setTick] = useState(0);
+  const [rain, setRain] = useState<RainSeries | null>(null);
+  useEffect(() => {
+    loadRain().then(setRain);
+  }, []);
   const wanted = params.get("source") ?? process.env.NEXT_PUBLIC_CASE_SOURCE ?? "live";
 
   useEffect(() => {
@@ -128,7 +135,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, []);
   const href = useCallback((p: string) => (params.size ? `${p}?${params}` : p), [params]);
 
-  const value: Ctx = { load, explorer, source, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };
+  const value: Ctx = { load, explorer, source, rain, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };
   return <CaseContext.Provider value={value}>{children}</CaseContext.Provider>;
 }
 

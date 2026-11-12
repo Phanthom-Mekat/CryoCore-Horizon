@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
+import { rainBefore } from "@/lib/chattogram/rain";
 import { METHOD_VERSION, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
 import { fmtDate, fmtDateTime, fmtNum, fmtSize } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
@@ -12,7 +13,7 @@ import { useCase } from "../CaseProvider";
 // The page follows the interface language; the downloaded brief (JSON, CSV, GeoJSON) stays in English, since it is a data
 // file for other tools and its field names must not change with the reader's language.
 export function EvidenceView() {
-  const { load, before, after, source } = useCase();
+  const { load, before, after, source, rain } = useCase();
   const t = useT();
   const ev = t.evidence;
   const [findings, setFindings] = useState<Load<unknown[]>>({ status: "loading" });
@@ -60,7 +61,7 @@ export function EvidenceView() {
             <Printer size={15} aria-hidden="true" />
             {ev.print}
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null), null, 2), "application/json")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null, rain), null, 2), "application/json")}>
             <Download size={15} aria-hidden="true" />
             JSON
           </button>
@@ -160,6 +161,8 @@ export function EvidenceView() {
 
 function Source({ role, a }: { role: string; a: Acquisition }) {
   const t = useT();
+  const { rain } = useCase();
+  const week = rain && rainBefore(rain, a.day, 7);
   const ev = t.evidence;
   const num = (v: number | null) => (v === null ? "–" : fmtNum(v));
   const rows: [string, string][] = [
@@ -171,6 +174,7 @@ function Source({ role, a }: { role: string; a: Acquisition }) {
     [t.explore.product, `GCOV v${a.version ?? "?"}${a.produced ? `, ${ev.produced(fmtDate(a.produced))}` : ""}`],
     ["HDF5", `${fmtSize(a.sizeBytes)}${a.md5 ? `, MD5 ${a.md5}` : ""}`],
     [ev.cmr, a.conceptId],
+    ...(week?.days ? [[t.rain.weekRow, t.rain.weekRowValue(fmtNum(week.mm, 0))] as [string, string]] : []),
     [ev.quicklook, a.frozen ? ev.quickFrozen(a.frozen.sha256.slice(0, 16), a.frozen.cornersFrom === "kml" ? ev.fromKml : ev.fromFootprint) : ev.quickLive],
   ];
   return (

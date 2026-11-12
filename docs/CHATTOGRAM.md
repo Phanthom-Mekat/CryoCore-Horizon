@@ -61,6 +61,21 @@ While replaying, NASA search in the catalogue is off, a scene outside the frozen
 instead of fetching its image, and Evidence offers **Copy replay link**: the same dates and map view, opened from the
 snapshot. The brief's JSON records `data_source`, `replay_url` and each quicklook's checksum.
 
+## Rainfall context
+
+Plan F13. Explore and Compare show daily rainfall at Chattogram city with the NISAR pass dates marked; Compare adds
+the rain in the 7 days up to each compared date, Evidence lists it per acquisition and the brief JSON carries it as
+`rainfall_context`.
+
+- Source: NASA POWER Daily API, `PRECTOTCORR`. It is **modelled** reanalysis (MERRA-2 / GEOS-IT, about 55 × 65 km),
+  not a rain gauge or GPM IMERG; the pages say so. Days are local solar days; NISAR passes over the city are around
+  12:26 UTC (18:26 local), so the pass day's rain mostly fell before the image.
+- `pnpm fetch-rain` (`scripts/fetch-rain.mts`) writes `public/data/chattogram/rain.json`. The pages read only that
+  file, so the chart also works when replaying the frozen case. Run it again before recording to extend the series.
+- Context, not cause: rain is one reason radar brightness changes; tide, wind and crops are others. The pages never
+  attribute a change to rain.
+- To use GPM IMERG instead, write the same `RainSeries` shape (`src/lib/chattogram/rain.ts`) with `kind: "observed"`.
+
 ## Languages: English and বাংলা
 
 Plan F15. The **EN | বাংলা** switch in the header changes the whole case journey (Overview, Explore map, Compare,
