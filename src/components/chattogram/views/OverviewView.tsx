@@ -6,6 +6,7 @@ import { Kpi, KpiStrip } from "@/components/dashboard/ui";
 import { compatibility, covers } from "@/lib/chattogram/acquisitions";
 import { fmtArea, fmtDate, fmtDayMonth, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
+import { BackendText } from "../BackendText";
 import { CaseMap, quicklookSrc } from "../CaseMap";
 import { FOCUS, useCase, usePilot } from "../CaseProvider";
 import { PrepStatus } from "../PrepStatus";
@@ -16,11 +17,6 @@ const STEPS = [
   { n: 2, icon: Columns2, link: "/chattogram/compare" },
   { n: 3, icon: FileSearch, link: "/chattogram/evidence" },
 ];
-
-/** Text the backend writes in English: the Bangla translation when we have one, else the original, marked as English. */
-function BackendText({ text, translated }: { text: string; translated?: string }) {
-  return translated ?? <span lang="en">{text}</span>;
-}
 
 /** The front door: the question, the numbers, the way through the case, and the comparison to start with. */
 export function OverviewView() {

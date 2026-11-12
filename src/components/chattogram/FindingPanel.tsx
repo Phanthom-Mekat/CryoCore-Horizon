@@ -3,29 +3,38 @@
 import { useEffect, useState } from "react";
 import { FileText, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
-import { fmtDate } from "@/lib/i18n/format";
-import { CASE_ID, fmtDb, fmtKm2, type CaseDetail, type Finding, type FindingDetail } from "@/lib/chattogram/case-api";
+import { fmtArea, fmtDate, fmtNum, fmtSigned } from "@/lib/i18n/format";
+import { useT } from "@/lib/i18n/useT";
+import { CASE_ID, type CaseDetail, type Finding, type FindingDetail } from "@/lib/chattogram/case-api";
+import { BackendText } from "./BackendText";
 import { FINDING } from "./MapKey";
 import { useCase } from "./CaseProvider";
 
-const QUALITY = { strong: "Strong", moderate: "Moderate", weak: "Weak" } as const;
-
-/** A reference check (backend validation_records row): label, source, observation date and notes; else the raw record. */
-const checkText = (c: unknown) => {
-  const r = c as { label?: string; reference_source?: string; observed_at?: string; notes?: string };
-  const parts = r && typeof r === "object" ? [r.label, r.reference_source, r.observed_at && fmtDate(r.observed_at), r.notes].filter(Boolean) : [];
-  return parts.length ? parts.join(" · ") : JSON.stringify(c);
-};
+/** A reference check (backend validation_records row): its label, source, date and notes, else the raw record. */
+function Check({ check }: { check: unknown }) {
+  const r = (check && typeof check === "object" ? check : {}) as { label?: string; reference_source?: string; observed_at?: string; notes?: string };
+  const parts = [
+    r.label && <BackendText key="label" text={r.label} />,
+    r.reference_source && <BackendText key="source" text={r.reference_source} />,
+    r.observed_at && fmtDate(r.observed_at),
+    r.notes && <BackendText key="notes" text={r.notes} />,
+  ].filter(Boolean);
+  if (!parts.length) return <span lang="en" translate="no">{JSON.stringify(check)}</span>;
+  return <>{parts.flatMap((p, i) => (i ? [" · ", p] : [p]))}</>;
+}
 
 /** Click-to-explain (F07): what changed, why we think so, what is uncertain, and where every number comes from. */
 export function FindingPanel({ finding, detail, onClose }: { finding: Finding; detail: CaseDetail; onClose: () => void }) {
   const p = finding.properties;
+  const t = useT();
+  const f = t.finding;
   const { source, frozenCurated } = useCase();
-  const frozenEv = source.mode === "frozen" ? frozenCurated?.findingDetails[p.id] : undefined;
+  const frozen = source.mode === "frozen";
+  const frozenEv = frozen ? frozenCurated?.findingDetails[p.id] : undefined;
   const [liveEv, setEv] = useState<Load<FindingDetail>>({ status: "loading" });
-  const ev: Load<FindingDetail> = source.mode !== "frozen" ? liveEv : frozenEv ? { status: "ready", data: frozenEv } : { status: "unavailable", reason: "Not in the frozen case" };
+  const ev: Load<FindingDetail> = !frozen ? liveEv : frozenEv ? { status: "ready", data: frozenEv } : { status: "unavailable", reason: "" };
   useEffect(() => {
-    if (source.mode === "frozen") return; // the snapshot holds every finding's evidence
+    if (frozen) return; // the snapshot holds every finding's evidence
     let live = true;
     api.finding(CASE_ID, p.id).then(
       (d) => live && setEv({ status: "ready", data: d }),
@@ -34,10 +43,12 @@ export function FindingPanel({ finding, detail, onClose }: { finding: Finding; d
     return () => {
       live = false;
     };
-  }, [p.id, source.mode]);
+  }, [p.id, frozen]);
 
   const k = FINDING[p.kind];
   const [b, a] = [fmtDate(detail.before.date), fmtDate(detail.after.date)];
+  const area = fmtArea(p.area_km2);
+  const delta = `${fmtSigned(p.mean_delta_db, 1)} dB`;
   const evidence = ev.status === "ready" ? ev.data.evidence : null;
   const sources = evidence?.sources ?? detail.sources;
   const checks = evidence?.reference_checks ?? [];
@@ -50,80 +61,106 @@ export function FindingPanel({ finding, detail, onClose }: { finding: Finding; d
           <span aria-hidden="true" style={{ color: k.color }}>
             {k.icon}
           </span>{" "}
-          {p.label} · {p.id}
+          <BackendText text={p.label} translated={f.labels[p.label]} /> ·{" "}
+          <span lang="en" translate="no">
+            {p.id}
+          </span>
         </p>
-        <button type="button" className="c-btn c-finding-close" onClick={onClose} aria-label="Close this finding">
+        <button type="button" className="c-btn c-finding-close" onClick={onClose} aria-label={f.close}>
           <X size={15} aria-hidden="true" />
         </button>
       </div>
       <h2 id="finding-h" className="c-acq-date">
-        {p.kind === "increase" ? "Brighter radar return" : "Darker radar return"}, {fmtKm2(p.area_km2)}
+        <BackendText text={p.kind} translated={f.kind[p.kind]} />, {area} km²
       </h2>
       <p className={`c-quality is-${p.quality}`}>
-        <strong>{QUALITY[p.quality]} evidence</strong> {p.quality_reason}
+        <strong>
+          <BackendText text={p.quality} translated={f.quality[p.quality]} />
+        </strong> <BackendText text={p.quality_reason} />
       </p>
 
-      <h3>What changed</h3>
+      <h3>{f.whatChanged}</h3>
       <p>
-        Between {b} and {a}, calibrated backscatter (γ⁰) over this {fmtKm2(p.area_km2)} area changed by a mean of <strong>{fmtDb(p.mean_delta_db, true)}</strong>.
+        {f.changedLead(b, a, area)} <strong>{delta}</strong>
+        {f.changedTail}
+        {t.stop}
       </p>
       <dl className="c-facts">
         <div>
-          <dt>Median γ⁰, {b}</dt>
-          <dd>{fmtDb(p.median_before_db)}</dd>
+          <dt>{f.medianOn(b)}</dt>
+          <dd>{fmtNum(p.median_before_db, 1)} dB</dd>
         </div>
         <div>
-          <dt>Median γ⁰, {a}</dt>
-          <dd>{fmtDb(p.median_after_db)}</dd>
+          <dt>{f.medianOn(a)}</dt>
+          <dd>{fmtNum(p.median_after_db, 1)} dB</dd>
         </div>
         <div>
-          <dt>Mean change</dt>
-          <dd>{fmtDb(p.mean_delta_db, true)}</dd>
+          <dt>{f.meanChange}</dt>
+          <dd>{delta}</dd>
         </div>
         <div>
-          <dt>Valid in both dates</dt>
-          <dd>{Math.round(p.valid_fraction * 100)}% of the area</dd>
+          <dt>{f.validBoth}</dt>
+          <dd>{f.validShare(fmtNum(Math.round(p.valid_fraction * 100)))}</dd>
         </div>
       </dl>
 
-      <h3>Why we think so</h3>
+      <h3>{f.why}</h3>
       <p>
-        Pixels were grouped into this area where the signed change {threshold !== undefined ? `passed ±${threshold} dB` : "passed the method’s threshold"}, using only
-        pixels valid in both acquisitions from the same orbit track and frame. Method {detail.method?.name ?? "not recorded"} v{evidence?.method_version ?? detail.method?.version ?? "?"}.
+        {f.whyBody(threshold !== undefined ? f.ruleThreshold(fmtNum(threshold)) : f.ruleUnknown)}{" "}
+        {f.method} {detail.method ? <BackendText text={detail.method.name} translated={f.methodNames[detail.method.name]} /> : f.methodNone}{" "}
+        <span lang="en" translate="no">
+          v{evidence?.method_version ?? detail.method?.version ?? "?"}
+        </span>
+        {t.stop}
       </p>
 
-      <h3>What is uncertain</h3>
+      <h3>{f.uncertain}</h3>
       <p>
-        This is observed radar change, not a confirmed flood, water change or damage. Tide, rain or wind on water, soil moisture, crops and speckle can all
-        change backscatter.{" "}
-        {ev.status === "loading"
-          ? "Loading reference checks…"
-          : ev.status === "ready"
-            ? checks.length
-              ? `${checks.length} reference check${checks.length > 1 ? "s" : ""} recorded:`
-              : "No independent reference check has been recorded for this area yet."
-            : `Reference checks couldn’t be loaded (${ev.reason}).`}
+        {f.uncertainBody}{" "}
+        {ev.status === "loading" ? (
+          f.checksLoading
+        ) : ev.status === "ready" ? (
+          checks.length ? (
+            f.checksRecorded(fmtNum(checks.length))
+          ) : (
+            f.checksNone
+          )
+        ) : frozen ? (
+          f.checksNotFrozen
+        ) : (
+          <>
+            {f.checksFailed} (
+            <span lang="en" translate="no">
+              {ev.reason}
+            </span>
+            ){t.stop}
+          </>
+        )}
       </p>
       {checks.length > 0 && (
         <ul className="c-finding-checks">
           {checks.map((c, i) => (
-            <li key={i}>{checkText(c)}</li>
+            <li key={i}>
+              <Check check={c} />
+            </li>
           ))}
         </ul>
       )}
 
-      <h3>Sources</h3>
+      <h3>{f.sources}</h3>
       <ul className="c-finding-sources">
         {sources.map((s) => (
           <li key={s.granule}>
-            <span className="c-mono">{s.granule}</span>
-            <small>
+            <span className="c-mono" lang="en" translate="no">
+              {s.granule}
+            </span>
+            <small lang="en" translate="no">
               {s.collection}
               {s.version ? `, v${s.version}` : ""}
             </small>
             {s.qa_url && (
               <a href={s.qa_url} target="_blank" rel="noreferrer">
-                <FileText size={13} aria-hidden="true" /> QA report
+                <FileText size={13} aria-hidden="true" /> {f.qaReport}
               </a>
             )}
           </li>

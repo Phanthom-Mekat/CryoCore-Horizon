@@ -5,7 +5,7 @@
 //
 // Not listed yet: English added with the processed case (13 Nov 2026) in MapKey, Timeline,
 // ExploreView, CompareView, EvidenceView, AboutView (Data preparation) and ProcessedView (share, area selection),
-// and the new FindingPanel, PrepStatus, AreaInspector and ProcessedBrief. Each goes on the list once translated.
+// and the new PrepStatus, AreaInspector and ProcessedBrief. Each goes on the list once translated.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -17,6 +17,7 @@ const TRANSLATED = [
   "src/components/chattogram/CaseGate.tsx",
   "src/components/chattogram/CaseMap.tsx",
   "src/components/chattogram/CaseSourceToggle.tsx",
+  "src/components/chattogram/FindingPanel.tsx",
   "src/components/chattogram/PixelInspector.tsx",
   "src/components/chattogram/RainCard.tsx",
   "src/components/chattogram/RainChart.tsx",

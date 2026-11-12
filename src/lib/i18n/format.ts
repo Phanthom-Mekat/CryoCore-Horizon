@@ -9,9 +9,11 @@ export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(loc(), 
 export const fmtDayMonth = (iso: string) => new Date(iso).toLocaleDateString(loc(), { day: "numeric", month: month(), timeZone: "UTC" });
 export const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(loc(), { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }) + " UTC";
 export const fmtDateTime = (iso: string) => `${fmtDate(iso)}, ${fmtTime(iso)}`;
-/** Whole numbers, or `digits` decimals. Identifiers such as track, frame and orbit numbers go through this too. */
+/** Whole numbers, or `digits` decimals, with a typographic minus (−). Track, frame and orbit numbers go through this too. */
 export const fmtNum = (n: number, digits?: number) =>
-  n.toLocaleString(loc(), digits === undefined ? { useGrouping: false } : { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false });
+  n
+    .toLocaleString(loc(), digits === undefined ? { useGrouping: false } : { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false })
+    .replace("-", "−");
 /** Like fmtNum, with a leading + on positive values (signed dB change). */
 export const fmtSigned = (n: number, digits = 2) => `${n > 0 ? "+" : ""}${fmtNum(n, digits)}`;
 /** An area in km², without the unit: two decimals below 10 km² and one above, so 4.91 and 175.7 both read naturally. */
