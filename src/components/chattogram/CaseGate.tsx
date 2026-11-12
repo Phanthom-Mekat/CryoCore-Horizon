@@ -10,7 +10,7 @@ import { useCase } from "./CaseProvider";
 export function CaseGate({ children }: { children: ReactNode }) {
   const { load, reload } = useCase();
   const path = usePathname();
-  if (load.status === "ready" || (load.status === "empty" && path === "/chattogram/catalogue")) return children;
+  if (path === "/chattogram/processed" || load.status === "ready" || (load.status === "empty" && path === "/chattogram/catalogue")) return children;
   if (load.status === "loading")
     return (
       <div className="d-state d-loading" aria-busy="true">

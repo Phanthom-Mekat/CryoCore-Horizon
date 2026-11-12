@@ -10,7 +10,8 @@ apart from the Jakobshavn sample: **Chattogram · NISAR** is tagged *Real data*,
 | Compare dates | `/chattogram/compare` | What changed between two passes of the same orbit, and whether the two dates are fair to compare |
 | Evidence & brief | `/chattogram/evidence` | Where every picture comes from, what is measured vs interpreted, and an exportable brief (JSON, CSV, GeoJSON, print) |
 | Scene catalogue | `/chattogram/catalogue` | Every stored scene over the division, NASA discovery search, and a link to open any scene on the map |
-| About & sources | `/chattogram/about` | Sources, licences, limitations, and the legends for processed results to come |
+| About & sources | `/chattogram/about` | Sources, licences, limitations, and legends |
+| Calibrated radar | `/chattogram/processed` | Real HH/HV pilot, synchronized comparison, signed dB change, 3D terrain context, coverage and downloads |
 
 ## Data flow
 

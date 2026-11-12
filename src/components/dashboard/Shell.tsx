@@ -18,6 +18,7 @@ const NAV: Group[] = [
       { href: "/chattogram", label: "Overview", icon: Home },
       { href: "/chattogram/explore", label: "Explore map", icon: Map },
       { href: "/chattogram/compare", label: "Compare dates", icon: Columns2 },
+      { href: "/chattogram/processed", label: "Calibrated radar", icon: Radar },
       { href: "/chattogram/evidence", label: "Evidence & brief", icon: FileSearch },
       { href: "/chattogram/catalogue", label: "Scene catalogue", icon: Layers },
       { href: "/chattogram/about", label: "About & sources", icon: Info },

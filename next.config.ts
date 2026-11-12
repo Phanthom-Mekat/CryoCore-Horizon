@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  // Keep React debug data in the RSC response: preview proxies may not forward
+  // the separate dev WebSocket, which otherwise leaves hydration waiting.
+  experimental: { reactDebugChannel: false },
   turbopack: {
     rules: {
       "*.css": {

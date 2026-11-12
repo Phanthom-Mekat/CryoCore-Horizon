@@ -61,9 +61,10 @@ observations are seeded.
   matching scenes can intersect only part of it. Add a verified, versioned
   administrative polygon before clipping rasters or reporting area statistics.
 - Public metadata search needs no credentials. Protected downloads need NASA
-  Earthdata Login. A download worker and credential handling are not implemented.
-- No rasters, flood classifications, forest-loss measurements, or deformation
-  estimates are produced yet. Implement separate download/processing jobs, keep
+  Earthdata Login. Bounded metadata inspection uses a server-side bearer token;
+  resumable operator downloads are implemented; queued processing workers remain planned.
+- Experimental radar-change GeoTIFFs are available for a small pilot; no flood
+  classifications, forest-loss measurements or deformation estimates are produced. Keep
   large rasters outside SQLite, and retain source IDs and processing parameters.
 - Check calibration maturity, polarization, quality masks, and matching viewing
   geometry before comparing observations. Backscatter changes alone do not prove
@@ -72,8 +73,96 @@ observations are seeded.
   original glacier dashboard and pipeline still use the Jakobshavn sample dataset.
 - This local development API has no user authentication. Bind to localhost until
   authentication and deployment controls are added.
-- Schema version 1 is initialized at startup. Future column changes need explicit
+- Schema version 3 adds durable download records through ordered transactional migrations, preserving existing scenes, searches and inspections. Future column changes need explicit
   migrations; `CREATE TABLE IF NOT EXISTS` does not migrate existing columns.
+
+## Inspect a real GCOV file
+
+Set `EARTHDATA_TOKEN` in the ignored `backend/.env`, then run from `backend/`:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.prepare G4405731724-ASF
+```
+
+The scene must already exist in the local catalog. This command reads HDF5 metadata
+through authenticated HTTP ranges, with a default 32 MiB download budget (adjust
+with `--budget-mib 1..128`). It does not download the entire file. Authorization is
+sent only to the NASA origin, never to the signed CDN redirect. Unknown redirect
+hosts, ignored ranges, incomplete responses, and changed ETags fail closed.
+Retry a failed inspection by rerunning the command; no partial report is published.
+Successful reports are stored by scene and CMR revision in SQLite. Fetch the current
+revision through `GET /api/v1/scenes/{concept_id}/inspection`; uninspected revisions
+return `status: not_inspected`. This endpoint never triggers remote downloads.
+
+The inspection lists layers, dimensions, units, projection, coordinate endpoints,
+and small identification fields. It does not validate full-file checksums, read
+raster arrays, establish mask coverage, or certify a compatible comparison pair.
+Reports deliberately retain `analysis_ready: false`. Raster processing, a queued
+worker and a frontend preparation view are still pending.
+
+## Resumable downloads and pair checks
+
+```powershell
+.\.venv\Scripts\python.exe -m app.prepare G4362350526-ASF --download --transfer-mib 64
+```
+
+This operator command transfers at most 64 MiB per invocation (the default),
+in 4 MiB chunks, and pauses at its budget. Rerun it to resume. Increase the budget
+explicitly for a full transfer after checking available storage. Set
+`CRYO_DOWNLOAD_DIRECTORY` to relocate assets (default `backend/data/downloads`).
+Keep that directory outside source control.
+
+An OS lock prevents duplicate writers and releases on process exit. SQLite stores
+durable `running`, `paused`, `failed`, or `succeeded` states, byte progress, ETag,
+attempt count and sanitized errors. A hard-killed process can leave `running`
+in the report; rerunning reclaims the OS lock and resumes the last checkpoint.
+There is no automatic queue, cancellation API or background retry loop yet.
+
+ETags pin the source across chunks and restarts. A failed transfer preserves its
+last durable chunk; uncheckpointed tail bytes are truncated on recovery. After
+the catalog MD5 matches, SHA-256 is recorded and the `.part` file is atomically
+renamed to `.h5`. Reusing a completed file rechecks integrity. Checksum mismatches
+discard the invalid partial file and require a fresh attempt. Failed or paused
+files are never served as completed assets. No raw-file serving endpoint exists.
+
+- `GET /api/v1/scenes/{concept_id}/downloads`: current-revision progress, no server paths.
+- `GET /api/v1/pairs/assess?before=...&after=...`: collection, acquisition settings,
+  footprint overlap, inspected product metadata, grids and required mask dimensions.
+
+Both endpoints are read-only and perform no remote requests. Pair compatibility
+is a metadata gate; `analysis_ready` stays false until pixel-level processing and
+quality evaluation exist. See [case-selection notes](../docs/case-selection.md).
+
+## Calibrated radar-window pilot
+
+```powershell
+.\.venv\Scripts\python.exe -m app.subset
+```
+
+This fixed, versioned pilot selects a 256 × 256 frequency-A window near
+91.845 E, 22.33 N in the inspected July/October pair. It caps transfers at 128 MiB
+per source, reads only the required HDF5 chunks, and pins each source to its
+inspected ETag. No full-file checksum is claimed for remote subsets.
+
+Positive finite HHHH/HVHV power is converted to gamma0 dB. Valid pixels must have
+a documented fully-focused subswath code, zero input exceptions, and lie inside
+the intersection of the reference division polygon and both catalog footprints.
+Signed change is **after minus before**, computed only over common valid pixels.
+Both grids must match exactly; this version rejects mismatches instead of resampling.
+Source no-data remains NaN in the float32 GeoTIFFs. Boolean common-coverage rasters
+use 1 for included pixels and 0 for all excluded pixels.
+
+Completed bundles are atomically published under ignored `backend/data/cases/`:
+four date/polarization dB GeoTIFFs, two signed-change GeoTIFFs, two common-coverage
+rasters and a manifest with source IDs, hashes, mask rules and coverage statistics.
+Only complete bundles appear at `GET /api/v1/cases` and
+`GET /api/v1/cases/{id}`. Download listed assets at
+`GET /api/v1/cases/{id}/assets/{name}`. No request handler initiates processing.
+
+These are experimental radar-change products, not flood or damage classifications.
+Mixed-mode/provisional calibration, static terrain-quality masking, seasonal/tidal
+confounders and independent validation remain unresolved. The calibrated pilot is integrated at `/chattogram/processed`; the broader scene
+explorer retains browse imagery for dates without processed products.
 
 ## Tests
 

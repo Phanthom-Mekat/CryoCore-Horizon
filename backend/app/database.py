@@ -26,30 +26,21 @@ class Database:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
             db.execute("PRAGMA journal_mode=WAL")
+            db.execute("BEGIN IMMEDIATE")
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1):
+            if version > 3:
                 raise RuntimeError(f"Unsupported database schema version: {version}")
-            db.executescript("""
-                CREATE TABLE IF NOT EXISTS scenes (
-                    concept_id TEXT PRIMARY KEY,
-                    region_id TEXT NOT NULL,
-                    product TEXT NOT NULL,
-                    start_time TEXT,
-                    revision_id INTEGER NOT NULL,
-                    payload TEXT NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS scenes_product_time ON scenes(product, start_time);
-                CREATE TABLE IF NOT EXISTS searches (
-                    id INTEGER PRIMARY KEY,
-                    region_id TEXT NOT NULL,
-                    request TEXT NOT NULL,
-                    bbox TEXT NOT NULL,
-                    total_hits INTEGER NOT NULL,
-                    returned_ids TEXT NOT NULL,
-                    retrieved_at TEXT NOT NULL
-                );
-                PRAGMA user_version=1;
-            """)
+            # Each migration and its version update commit together; preserve v1/v2 data.
+            if version < 1:
+                db.execute("CREATE TABLE scenes (concept_id TEXT PRIMARY KEY, region_id TEXT NOT NULL, product TEXT NOT NULL, start_time TEXT, revision_id INTEGER NOT NULL, payload TEXT NOT NULL)")
+                db.execute("CREATE INDEX scenes_product_time ON scenes(product, start_time)")
+                db.execute("CREATE TABLE searches (id INTEGER PRIMARY KEY, region_id TEXT NOT NULL, request TEXT NOT NULL, bbox TEXT NOT NULL, total_hits INTEGER NOT NULL, returned_ids TEXT NOT NULL, retrieved_at TEXT NOT NULL)")
+            if version < 2:
+                db.execute("CREATE TABLE inspections (concept_id TEXT NOT NULL, revision_id INTEGER NOT NULL, inspected_at TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY (concept_id, revision_id))")
+            if version < 3:
+                db.execute("CREATE TABLE downloads (asset_id TEXT PRIMARY KEY, concept_id TEXT NOT NULL, revision_id INTEGER NOT NULL, payload TEXT NOT NULL)")
+                db.execute("CREATE INDEX downloads_scene ON downloads(concept_id, revision_id)")
+            db.execute("PRAGMA user_version=3")
 
     def save_search(self, request: SearchRequest, scenes: list[Scene], hits: int, now: str) -> int:
         # Store the whole page atomically; repeated discovery does not duplicate scenes.
@@ -89,3 +80,30 @@ class Database:
         with self.connect() as db:
             row = db.execute("SELECT payload FROM scenes WHERE concept_id = ?", (concept_id,)).fetchone()
         return json.loads(row["payload"]) if row else None
+
+    def save_inspection(self, report):
+        with self.connect() as db:
+            db.execute("INSERT OR REPLACE INTO inspections VALUES (?, ?, ?, ?)",
+                       (report["concept_id"], report["revision_id"], report["inspected_at"],
+                        json.dumps(report, allow_nan=False)))
+
+    def get_inspection(self, concept_id, revision_id):
+        with self.connect() as db:
+            row = db.execute("SELECT payload FROM inspections WHERE concept_id=? AND revision_id=?",
+                             (concept_id, revision_id)).fetchone()
+        return json.loads(row["payload"]) if row else None
+
+    def save_download(self, report):
+        with self.connect() as db:
+            db.execute("INSERT OR REPLACE INTO downloads VALUES (?, ?, ?, ?)",
+                       (report["asset_id"], report["concept_id"], report["revision_id"], json.dumps(report, allow_nan=False)))
+
+    def get_download(self, asset_id):
+        with self.connect() as db:
+            row = db.execute("SELECT payload FROM downloads WHERE asset_id=?", (asset_id,)).fetchone()
+        return json.loads(row["payload"]) if row else None
+
+    def scene_downloads(self, concept_id, revision_id):
+        with self.connect() as db:
+            rows = db.execute("SELECT payload FROM downloads WHERE concept_id=? AND revision_id=?", (concept_id, revision_id)).fetchall()
+        return [json.loads(row["payload"]) for row in rows]
