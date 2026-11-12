@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
+import { pilotCovers, pilotOf, type ProcessedCase } from "@/lib/chattogram/processed";
 import { rainBefore } from "@/lib/chattogram/rain";
 import { METHOD_VERSION, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
 import { fmtDate, fmtDateTime, fmtNum, fmtSize } from "@/lib/i18n/format";
@@ -16,16 +18,18 @@ export function EvidenceView() {
   const { load, before, after, source, rain } = useCase();
   const t = useT();
   const ev = t.evidence;
-  const [findings, setFindings] = useState<Load<unknown[]>>({ status: "loading" });
+  const [findings, setFindings] = useState<Load<ProcessedCase>>({ status: "loading" });
   const [copied, setCopied] = useState<"view" | "replay" | null>(null);
 
-  // processed findings come from the backend's planned /cases API; until it exists this says so plainly.
-  // A frozen replay asks nothing live: the snapshot holds no processed findings yet.
+  // the calibrated pilot comes from the backend's /cases API; a frozen replay asks nothing live and the snapshot holds no pilot yet.
   const replaying = source.mode === "frozen";
   useEffect(() => {
     if (replaying) return;
     api.cases().then(
-      (c) => setFindings(c.length ? { status: "ready", data: c } : { status: "empty", reason: "" }),
+      (c) => {
+        const pilot = pilotOf(c);
+        setFindings(pilot ? { status: "ready", data: pilot } : { status: "empty", reason: "" });
+      },
       (e) => setFindings(toLoadError(e)),
     );
   }, [replaying]);
@@ -43,6 +47,10 @@ export function EvidenceView() {
     u.searchParams.set("source", "frozen");
     return u.toString();
   })();
+  const pilot = findings.status === "ready" ? findings.data : null;
+  const measured = pilot !== null && pilotCovers(pilot, before.conceptId, after.conceptId);
+  const pilotDates = pilot ? ([fmtDate(pilot.sources[0].acquisition), fmtDate(pilot.sources[1].acquisition)] as const) : null;
+  const signed = (n: number) => `${n > 0 ? "+" : ""}${fmtNum(n, 2)}`;
   const replayable = Boolean(source.frozenAt && before.frozen && after.frozen);
   const copy = (text: string, which: "view" | "replay") => navigator.clipboard?.writeText(text).then(() => setCopied(which), () => setCopied(null));
 
@@ -54,14 +62,14 @@ export function EvidenceView() {
           {t.place.region}: {t.vs(fmtDate(before.start), fmtDate(after.start))}
         </h1>
         <p className="c-ev-claim">
-          <strong>{ev.whatShows}</strong> {ev.claim}
+          <strong>{ev.whatShows}</strong> {measured ? ev.claimPilot : ev.claim}
         </p>
         <div className="c-links c-noprint">
           <button type="button" className="c-btn is-primary" onClick={() => window.print()}>
             <Printer size={15} aria-hidden="true" />
             {ev.print}
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null, rain), null, 2), "application/json")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null, rain, pilot), null, 2), "application/json")}>
             <Download size={15} aria-hidden="true" />
             JSON
           </button>
@@ -96,7 +104,11 @@ export function EvidenceView() {
             </div>
             <div>
               <dt>{ev.measured}</dt>
-              <dd className="is-missing">{ev.measuredBody}</dd>
+              {measured ? (
+                <dd>{ev.measuredPilot(signed(pilot.statistics.HHHH.median_change_db), signed(pilot.statistics.HVHV.median_change_db), fmtNum(pilot.statistics.HHHH.common_area_km2, 2))}</dd>
+              ) : (
+                <dd className="is-missing">{pilotDates ? ev.measuredOther(...pilotDates) : ev.measuredBody}</dd>
+              )}
             </div>
             <div>
               <dt>{ev.interpreted}</dt>
@@ -120,16 +132,53 @@ export function EvidenceView() {
           </ul>
         </div>
 
-        <div className="c-ev-card">
+        <div className="c-ev-card c-ev-pilot">
           <h2>{ev.findings}</h2>
           {replaying ? (
             <p className="is-missing">{ev.findingsFrozen}</p>
           ) : findings.status === "loading" ? (
             <p>{ev.checking}</p>
-          ) : findings.status === "ready" ? (
-            <p>{ev.findingsReady(fmtNum(findings.data.length))}</p>
+          ) : pilot && pilotDates ? (
+            <>
+              <p>
+                {ev.pilotFor(pilot.title, ...pilotDates)} {measured ? ev.pilotSame : ev.pilotOther}
+              </p>
+              <dl className="c-ev-levels">
+                <div>
+                  <dt>{ev.pilotArea}</dt>
+                  <dd>{fmtNum(pilot.statistics.HHHH.common_area_km2, 2)} km²</dd>
+                </div>
+                <div>
+                  <dt>{ev.pilotOutside}</dt>
+                  <dd>{fmtNum(pilot.statistics.HHHH.outside_roi_area_km2, 2)} km²</dd>
+                </div>
+                {(["HHHH", "HVHV"] as const).map((k) => {
+                  const st = pilot.statistics[k];
+                  return (
+                    <div key={k}>
+                      <dt>{ev.pilotMedian(k.slice(0, 2))}</dt>
+                      <dd>
+                        {signed(st.median_change_db)} dB <small>{ev.pilotRange(signed(st.change_percentiles_db[0]), signed(st.change_percentiles_db[2]))}</small>
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+              <p className="is-missing">{ev.pilotNoFindings}</p>
+              <details>
+                <summary>{ev.pilotLimits}</summary>
+                <ul lang="en">
+                  {pilot.limitations.map((l) => (
+                    <li key={l}>{l}</li>
+                  ))}
+                </ul>
+              </details>
+              <Link className="c-btn c-noprint" href="/chattogram/processed">
+                {ev.pilotOpen} <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            </>
           ) : (
-            <p className="is-missing">{findings.status === "unavailable" ? ev.findingsMissing : findings.status === "empty" ? ev.findingsNone : findings.reason}</p>
+            <p className="is-missing">{findings.status === "unavailable" ? ev.findingsMissing : findings.status === "failed" ? findings.reason : ev.findingsNone}</p>
           )}
         </div>
       </section>

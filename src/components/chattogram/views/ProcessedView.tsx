@@ -6,7 +6,7 @@ import { ArrowDownToLine, ArrowUpRight, Layers, ScanLine, ShieldCheck } from "lu
 import Link from "next/link";
 import { CaseMap } from "../CaseMap";
 import { PixelInspector } from "../PixelInspector";
-import type { ProcessedCase, ProcessedImage } from "@/lib/chattogram/processed";
+import { pilotOf, type ProcessedCase, type ProcessedImage } from "@/lib/chattogram/processed";
 
 type Mode = "before" | "after" | "change" | "swipe";
 const INITIAL = { lon: 91.845, lat: 22.33, zoom: 13 };
@@ -43,7 +43,7 @@ export function ProcessedView() {
       const response = await fetch("/api/earth/cases", { signal });
       if (!response.ok) throw new Error("Processed data is temporarily unavailable.");
       const payload = await response.json() as { cases: ProcessedCase[] };
-      const pilot = payload.cases.find(c => c.method === "gcov-window-v1");
+      const pilot = pilotOf(payload.cases);
       if (!pilot) { setEmpty(true); return; }
       const bounds = await fetch(`/api/earth/cases/${pilot.id}/display/after-HHHH.tif?bounds=true`, { signal });
       if (!bounds.ok) throw new Error("The published map layer is unavailable.");

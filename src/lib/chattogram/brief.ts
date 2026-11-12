@@ -1,13 +1,16 @@
 // The observation brief: what was compared, from which NASA products, and what is and isn't claimed.
-// Every value comes from the stored NASA metadata or the compatibility checks; nothing is computed from pixels yet.
+// Every value comes from the stored NASA metadata, the compatibility checks, or the backend's calibrated pilot manifest.
 import { compatibility, type Acquisition } from "./acquisitions";
 import type { Region } from "./api";
+import { pilotCovers, type ProcessedCase } from "./processed";
 import { rainBefore, type RainSeries } from "./rain";
 import type { CaseSource } from "@/components/chattogram/CaseProvider";
 
 export const METHOD_VERSION = "visual-quicklook-comparison/0.1";
 export const CLAIM =
   "Visual comparison of NISAR GCOV browse quicklooks only. No backscatter change has been measured and no water has been classified; any difference seen is observed radar change, not a confirmed flood or recession.";
+export const CLAIM_PILOT =
+  "Signed HH/HV backscatter change (dB) measured from calibrated NISAR GCOV pixels over one small pilot window; everywhere else the comparison is visual, from browse quicklooks. No water has been classified; no change is a confirmed flood or recession.";
 
 const source = (a: Acquisition) => ({
   granule: a.granule,
@@ -27,7 +30,8 @@ const source = (a: Acquisition) => ({
   quicklook: a.frozen ? { frozen_case_file: a.frozen.src, sha256: a.frozen.sha256, corners: a.frozen.corners, corners_from: a.frozen.cornersFrom } : "live from ASF",
 });
 
-export function briefJson(region: Region, before: Acquisition, after: Acquisition, shareUrl: string, origin: CaseSource, replayUrl: string | null, rain: RainSeries | null = null) {
+export function briefJson(region: Region, before: Acquisition, after: Acquisition, shareUrl: string, origin: CaseSource, replayUrl: string | null, rain: RainSeries | null = null, pilot: ProcessedCase | null = null) {
+  const measured = pilot !== null && pilotCovers(pilot, before.conceptId, after.conceptId);
   return {
     title: `Observed radar change, ${region.name}: ${before.day} vs ${after.day}`,
     generated_utc: new Date().toISOString(),
@@ -35,7 +39,7 @@ export function briefJson(region: Region, before: Acquisition, after: Acquisitio
     replay_url: replayUrl,
     data_source: origin.mode === "frozen" ? { mode: "frozen case", captured_utc: origin.frozenAt } : { mode: "live backend", frozen_case_captured_utc: origin.frozenAt },
     method_version: METHOD_VERSION,
-    claim: CLAIM,
+    claim: measured ? CLAIM_PILOT : CLAIM,
     region: {
       name: region.name,
       country: region.country,
@@ -48,7 +52,28 @@ export function briefJson(region: Region, before: Acquisition, after: Acquisitio
     compared: { before: source(before), after: source(after), days_apart: Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5) },
     compatibility: compatibility(before, after),
     rainfall_context: rain && rainfallContext(rain, before, after),
+    calibrated_pilot: pilot && pilotEvidence(pilot, measured, shareUrl),
     attribution: "NISAR data: NASA and ISRO, distributed by the Alaska Satellite Facility DAAC (nisar-docs.asf.alaska.edu); discovered through NASA Earthdata CMR.",
+  };
+}
+
+/** The backend's calibrated pilot as published; `covers_compared_pair` says whether its numbers belong to this brief's dates. */
+function pilotEvidence(p: ProcessedCase, covers: boolean, shareUrl: string) {
+  return {
+    covers_compared_pair: covers,
+    case_id: p.id,
+    title: p.title,
+    status: p.status,
+    method_version: p.method,
+    created_utc: p.created_at,
+    claim: p.claim,
+    sources: p.sources.map((s) => ({ cmr_concept_id: s.concept_id, revision_id: s.revision_id, granule: s.granule_id, acquired_utc: s.acquisition, etag: s.etag, full_file_checksum_verified: s.full_file_checksum_verified })),
+    grid: { crs: p.crs, bounds: p.bounds, pixel_size_m: Math.abs(p.transform[0]), alignment: p.alignment },
+    validity_rule: p.validity_rule,
+    statistics: { note: "change = after minus before, dB; percentiles are 5th, 50th, 95th; area is projected grid area", ...p.statistics },
+    assets: p.assets,
+    limitations: p.limitations,
+    manifest_url: shareUrl && new URL(`/api/earth/cases/${p.id}`, shareUrl).toString(),
   };
 }
 

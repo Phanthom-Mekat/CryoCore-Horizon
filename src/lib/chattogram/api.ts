@@ -3,6 +3,7 @@
 // backend's OpenAPI schema: regenerate with `pnpm api:types` while the backend runs on :8000.
 import type { components } from "./api-schema";
 import type { ExplorerData } from "@/lib/explorer-data";
+import type { ProcessedCase } from "./processed";
 
 export type Scene = components["schemas"]["Scene"];
 export type ScenePage = components["schemas"]["ScenePage"];
@@ -52,8 +53,8 @@ export const api = {
   explorer: () => call<ExplorerData>("/api/earth/explorer"),
   scenes: (product: Product = "GCOV", limit = 100, offset = 0) => call<ScenePage>(`/api/earth/scenes?product=${product}&limit=${limit}&offset=${offset}`),
   search: (req: SearchRequest) => call<SearchResponse>("/api/earth/search", { method: "POST", body: JSON.stringify(req) }),
-  /** Planned in IMPLEMENTATION_PLAN.md (B3); unavailable until the backend and proxy serve it. */
-  cases: () => call<unknown[]>("/api/earth/cases"),
+  /** Processed cases (backend/app/cases.py), through src/app/api/earth/cases. */
+  cases: () => call<{ cases: ProcessedCase[] }>("/api/earth/cases").then((r) => r.cases),
 };
 
 /** Every stored scene of one product (the API pages at 100). */

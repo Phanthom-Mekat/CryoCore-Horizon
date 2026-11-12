@@ -740,6 +740,16 @@
 .is-missing {
   color: var(--c-dim);
 }
+.c-ev-pilot {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  font-size: 0.88rem;
+}
+.c-ev-pilot small {
+  display: block;
+  color: var(--c-dim);
+}
 .c-ev-checks {
   display: grid;
   gap: 9px;

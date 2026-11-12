@@ -48,6 +48,8 @@ flooding or replace independent validation.
 - Before two dates are compared, their geometry, polarizations, data maturity (from the CMR collection name) and product
   version are checked, and any difference is shown. The default pair is the widest-spaced one that passes all four.
 - Until the processing worker publishes results, every difference is called observed radar change, not water change.
+- Evidence shows the calibrated pilot's numbers (and the brief JSON's `calibrated_pilot`) as measured only when the
+  compared dates are exactly the pilot's; for any other pair it says the pilot covers different dates.
 
 ## Frozen case (replay without the backend)
 

@@ -80,7 +80,7 @@ Updated 13 November 2026. "Partial" includes implemented pilots with remaining s
 | F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying | Add processed layers, findings and the selected finding to the snapshot once they exist; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
-| F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata | Add findings and statistics once they exist |
+| F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata; Evidence page and brief JSON carry the calibrated pilot (median/5–95% HH/HV change, coverage, sources, asset hashes, limitations) and switch the claim only when the brief's dates are the pilot's | Add findings polygons; pilot window in GeoJSON |
 | F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
 | F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
@@ -137,10 +137,18 @@ this pilot cannot demonstrate river-water change. See `docs/case-selection.md`.
 - [x] Pass 48 backend tests, TypeScript, lint and production build; verify real values and map selection on desktop in the in-app browser.
 - [ ] Finish inspector-specific mobile and browser-download verification: browser automation stopped responding during these checks.
 
+### Pilot evidence in the brief — 13 November 2026
+
+- [x] Evidence page "Calibrated pilot" card: common valid area, outside-area exclusion, HH/HV median and 5–95% change, link to Calibrated radar; English and Bangla.
+- [x] "Measured" level and the header claim use pilot numbers only when the compared dates are the pilot's (matched by CMR concept ID); other pairs say the pilot does not apply.
+- [x] Brief JSON `calibrated_pilot`: case ID, method, sources with revisions/ETags, grid, validity rule, statistics, asset SHA-256s, limitations, manifest URL, `covers_compared_pair`.
+- [x] Fixed the card always reporting "no processed cases" (it read `{cases: [...]}` as an array).
+- [x] Checked in the browser: matching and non-matching pairs, Bangla, JSON download contents, frozen replay (no live request).
+
 ### Next up
 
 - **Backend:** resolve mixed-mode and static terrain quality; select a water-suitable ROI and dated reference evidence; complete queued-worker lifecycle and frozen replay assets.
-- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; connect pilot evidence to the observation brief; translate the Calibrated radar page into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
+- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; translate the Calibrated radar page into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission
