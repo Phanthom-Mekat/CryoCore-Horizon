@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { History, Layers, RotateCw } from "lucide-react";
+import { useLang, useT } from "@/lib/i18n/useT";
 import { useCase, type CaseSource } from "./CaseProvider";
 
 /** Loading and failure states for every case page. The catalogue still opens with no scenes stored: that is where they are fetched. */
 export function CaseGate({ children }: { children: ReactNode }) {
   const { load, reload, source } = useCase();
+  const t = useT();
   const path = usePathname();
   if (load.status === "ready" || (load.status === "empty" && path === "/chattogram/catalogue"))
     return (
@@ -21,23 +23,31 @@ export function CaseGate({ children }: { children: ReactNode }) {
     return (
       <div className="d-state d-loading" aria-busy="true">
         <span className="d-spinner" aria-hidden="true" />
-        <p>Loading NISAR acquisitions over Chattogram…</p>
+        <p>{t.gate.loading}</p>
       </div>
     );
+  const title = load.status === "empty" ? t.gate.emptyTitle : load.status === "unavailable" ? t.gate.unavailableTitle : t.gate.failedTitle;
   return (
     <div className="d-state" role="alert">
-      <h2>{load.status === "empty" ? "No NISAR scenes stored yet" : load.status === "unavailable" ? "The data service isn’t running" : "The data service returned an error"}</h2>
-      <p>{load.reason}</p>
+      <h2>{title}</h2>
+      {load.status === "empty" ? (
+        <p>{t.gate.emptyBody}</p>
+      ) : (
+        // the technical detail is for whoever runs the servers, so it stays as the service reported it
+        <p className="c-state-detail" lang="en">
+          {load.reason}
+        </p>
+      )}
       <div className="c-state-actions">
         {load.status === "empty" ? (
           <Link className="d-btn is-primary" href="/chattogram/catalogue">
             <Layers size={16} aria-hidden="true" />
-            Open the scene catalogue
+            {t.gate.openCatalogue}
           </Link>
         ) : (
           <button type="button" className="d-btn is-primary" onClick={reload}>
             <RotateCw size={16} aria-hidden="true" />
-            Try again
+            {t.gate.tryAgain}
           </button>
         )}
       </div>
@@ -47,9 +57,19 @@ export function CaseGate({ children }: { children: ReactNode }) {
 
 /** Shown on every case page while the frozen case is replayed, so a snapshot is never mistaken for live data. */
 function FrozenNotice({ source }: { source: CaseSource }) {
+  const t = useT();
+  const lang = useLang();
   const when = source.frozenAt
-    ? new Date(source.frozenAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC"
-    : "an earlier date";
+    ? new Date(source.frozenAt).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", {
+        day: "numeric",
+        month: lang === "bn" ? "long" : "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "UTC",
+      }) + " UTC"
+    : "–";
   const live = () => {
     const q = new URLSearchParams(window.location.search);
     q.delete("source");
@@ -59,12 +79,10 @@ function FrozenNotice({ source }: { source: CaseSource }) {
     <p className="c-frozen" role="status">
       <History size={16} aria-hidden="true" />
       <span>
-        <strong>Frozen case, captured {when}.</strong>{" "}
-        {source.fallback ? "The live data service isn’t reachable, so this is the saved snapshot." : "Replaying the saved snapshot."} Scenes, dates and radar
-        images are exactly as NASA published them then; nothing here is fetched live.
+        <strong>{t.frozen.title(when)}</strong> {source.fallback ? t.frozen.fallback : t.frozen.chosen} {t.frozen.body}
       </span>
       <button type="button" className="c-frozen-live" onClick={live}>
-        {source.fallback ? "Try live data" : "Switch to live data"}
+        {source.fallback ? t.frozen.tryLive : t.frozen.switchLive}
       </button>
     </p>
   );

@@ -56,3 +56,21 @@ How the pages use it (`CaseProvider`):
 While replaying, NASA search in the catalogue is off, a scene outside the frozen stacks shows its footprint with a note
 instead of fetching its image, and Evidence offers **Copy replay link**: the same dates and map view, opened from the
 snapshot. The brief's JSON records `data_source`, `replay_url` and each quicklook's checksum.
+
+## Languages: English and বাংলা
+
+Plan F15. The **EN | বাংলা** switch in the header changes the whole case journey (Overview, Explore map, Compare,
+Evidence, About), the sidebar, the frozen-case notice, map labels and legends.
+
+- All text lives in `src/lib/i18n/messages.ts`. `bn` is typed as the English `Messages`, so the build fails if any
+  Bangla entry is missing; another language is one more object there.
+- Components read text with `useT()` and format dates and numbers with `src/lib/i18n/format.ts` (`bn-BD`: Bengali
+  digits and month names; times stay UTC).
+- The choice is kept in this browser (`localStorage`) and applied to `<html lang>` before the page paints, so screen
+  readers switch voice and nothing flickers. Bengali text uses Noto Sans/Serif Bengali, downloaded only when needed.
+- Mission, product and unit names stay as published (NISAR, GCOV, NASA, ASF, HH/HV, dB, γ⁰, SHA-256).
+- Map place names: in English the basemap's labels; in Bangla our landmark labels instead, drawn as HTML because the
+  map's WebGL text can't shape Bengali conjuncts.
+- Still English on purpose: the downloaded brief (JSON, CSV, GeoJSON: data files whose field names must stay
+  stable), identifiers, and technical error details. Not yet translated: the Scene catalogue, the Jakobshavn sample
+  pages and the landing page.

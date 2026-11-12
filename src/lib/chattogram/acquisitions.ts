@@ -131,17 +131,14 @@ export function stacks(list: Acquisition[]) {
     .sort((a, b) => b.items.length - a.items.length || a.id.localeCompare(b.id));
 }
 
-export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-export const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC";
-export const fmtSize = (b: number | null) => (b === null ? "–" : b > 1e9 ? `${(b / 1e9).toFixed(1)} GB` : `${Math.round(b / 1e6)} MB`);
 
 /** What could make two dates in a stack unfair to compare. Empty means none found in the metadata. */
 export function compatibility(a: Acquisition, b: Acquisition) {
   const same = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y);
   return [
-    { ok: a.stack === b.stack, label: "Same track, frame and pass direction", detail: `${a.stack} vs ${b.stack}` },
-    { ok: same(a.polarizations, b.polarizations), label: "Same polarizations", detail: `${a.polarizations.join("+")} vs ${b.polarizations.join("+")}` },
-    { ok: a.collection === b.collection, label: "Same data maturity and collection", detail: `${a.collection} vs ${b.collection}` },
-    { ok: a.version === b.version, label: "Same product version", detail: `v${a.version} vs v${b.version}` },
+    { key: "geometry", ok: a.stack === b.stack, label: "Same track, frame and pass direction", detail: `${a.stack} vs ${b.stack}` },
+    { key: "polarizations", ok: same(a.polarizations, b.polarizations), label: "Same polarizations", detail: `${a.polarizations.join("+")} vs ${b.polarizations.join("+")}` },
+    { key: "maturity", ok: a.collection === b.collection, label: "Same data maturity and collection", detail: `${a.collection} vs ${b.collection}` },
+    { key: "version", ok: a.version === b.version, label: "Same product version", detail: `v${a.version} vs v${b.version}` },
   ];
 }

@@ -44,6 +44,15 @@ surface-change findings. F01/F02 and the scientific milestones remain incomplete
 - [x] Evidence offers **Copy replay link** (same dates and map view from the snapshot); the brief records `data_source`, `replay_url` and each quicklook's checksum. NASA search is disabled while replaying.
 - [x] Live mode also serves quicklooks from the snapshot where it has them: 3 ms per image instead of 7.8 s through the proxy on a cold cache.
 
+### Completed Bangla increment (F15)
+
+- [x] Translation-ready text: every string of the case journey in `src/lib/i18n/messages.ts`; the Bangla object is type-checked against the English one, so a missing translation fails the build.
+- [x] Curated Bangla copy for Overview, Explore map, Compare, Evidence, About, the sidebar, the frozen-case notice, map notes, timeline and legends; mission, product and unit names kept as published.
+- [x] **EN | বাংলা** switch in the header, remembered per browser and applied to `<html lang>` before paint (no flash; screen readers switch voice); works by keyboard.
+- [x] Bengali dates and digits (`bn-BD`), Noto Sans/Serif Bengali loaded only for Bengali text, no letter-spacing or uppercase on Bengali labels.
+- [x] Map place names shaped correctly: Bangla landmark labels as HTML (WebGL map text can't shape Bengali), with the basemap's English place labels hidden in Bangla, so names never overlap.
+- [x] Checked in a browser: no untranslated English left on the five case pages (only the kept technical names), all six case pages fit 390 px in both languages, no console errors.
+
 ### Progress tracker
 
 Updated 12 November 2026. "Partial" means the interface exists on real metadata and quicklooks, waiting for processed data.
@@ -64,7 +73,7 @@ Updated 12 November 2026. "Partial" means the interface exists on real metadata 
 | F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata | Add findings and statistics once they exist |
 | F13 | NASA rainfall context | Not started | – | Verify GPM/IMERG access, then a small contextual chart |
 | F14 | Community context | Not started | – | Licensed overlays |
-| F15 | Local accessibility | Partial | Keyboard use, reduced motion, colour plus pattern, 390 px layouts | Bangla copy |
+| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
 | F16 | Terrain storytelling | Not started | – | P2 |
 | F17 | Evidence-based narration | Not started | – | P2 |
 

@@ -1136,3 +1136,29 @@
     margin-left: 26px;
   }
 }
+
+/* landmark names: HTML labels so Bengali shapes correctly (WebGL map text can't), styled like the old map text */
+.c-landmark {
+  color: #f3eee5;
+  font: 600 13px/1.2 var(--sans);
+  text-shadow: 0 0 2px #070b12, 0 0 2px #070b12, 0 0 3px #070b12, 0 0 4px #070b12;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.c-state-detail {
+  max-width: 640px;
+  margin-inline: auto;
+  font: 0.85rem/1.5 var(--mono);
+}
+
+/* headline numbers may be longer in Bangla ("১২৫টির মধ্যে ১১০টি"): let them wrap instead of pushing the icon off a phone */
+.d-body.is-case .d-kpi > div {
+  min-width: 0;
+}
+.d-body.is-case .d-kpi strong {
+  white-space: normal;
+  text-wrap: balance;
+}
+.c-landmark[hidden] {
+  display: none;
+}

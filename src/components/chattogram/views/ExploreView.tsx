@@ -3,7 +3,9 @@
 import { useCallback } from "react";
 import Link from "next/link";
 import { Columns2, ExternalLink, FileText } from "lucide-react";
-import { covers, fmtDate, fmtSize, fmtTime, type Acquisition } from "@/lib/chattogram/acquisitions";
+import { covers, type Acquisition } from "@/lib/chattogram/acquisitions";
+import { fmtDate, fmtNum, fmtSize, fmtTime } from "@/lib/i18n/format";
+import { useT } from "@/lib/i18n/useT";
 import { CaseMap } from "../CaseMap";
 import { FOCUS, useCase } from "../CaseProvider";
 import { CaseBar } from "../CaseBar";
@@ -11,6 +13,8 @@ import { Timeline } from "../Timeline";
 
 export function ExploreView() {
   const { load, stack, before, after, view, pick, set, href } = useCase();
+  const t = useT();
+  const e = t.explore;
   const onMove = useCallback((v: typeof view) => set({ view: v }), [set]);
   const onPick = useCallback((a: Acquisition) => set({ pick: a.conceptId }), [set]);
   if (load.status !== "ready" || !stack) return null;
@@ -18,24 +22,26 @@ export function ExploreView() {
   const shown = stack.items.find((a) => a.conceptId === pick) ?? after ?? stack.items[0];
   const overFocus = load.data.stacks.filter((s) => covers(s.items[0], FOCUS.lonLat));
   const marks: Record<string, string> = {};
-  if (before) marks[before.conceptId] = "Before";
-  if (after) marks[after.conceptId] = "After";
+  if (before) marks[before.conceptId] = t.before;
+  if (after) marks[after.conceptId] = t.after;
+  const num = (v: number | null) => (v === null ? "–" : fmtNum(v));
+  const prov = load.data.region.provenance;
 
   return (
     <>
       <CaseBar
-        title="Explore the radar"
+        title={e.title}
         actions={
           <Link className="c-btn is-primary" href={href("/chattogram/compare")}>
             <Columns2 size={16} aria-hidden="true" />
-            Compare two dates
+            {e.compare}
           </Link>
         }
       />
     <div className="c-explore">
-      <section className="c-stage" aria-label="Map">
+      <section className="c-stage" aria-label={e.mapRegion}>
         <CaseMap
-          label={`Map of ${FOCUS.name} with the NISAR quicklook of ${fmtDate(shown.start)}`}
+          label={e.mapLabel(t.place.focus, fmtDate(shown.start))}
           view={view}
           onMove={onMove}
           image={shown}
@@ -47,51 +53,51 @@ export function ExploreView() {
         <Timeline items={stack.items} current={shown.conceptId} onPick={onPick} marks={marks} />
       </section>
 
-      <aside className="c-panel" aria-label="Acquisition details">
+      <aside className="c-panel" aria-label={e.panel}>
         <div className="c-panel-block">
           <label className="c-label" htmlFor="stack">
-            Radar stack
+            {e.stack}
           </label>
           <select id="stack" className="c-select" value={stack.id} onChange={(e) => set({ stack: e.target.value })}>
             {overFocus.map((s) => (
               <option key={s.id} value={s.id}>
-                Track {s.items[0].track} · frame {s.items[0].frame} · {s.items[0].direction.toLowerCase()} · {s.items.length} dates
+                {e.stackOption(num(s.items[0].track), num(s.items[0].frame), t.direction[s.items[0].direction], fmtNum(s.items.length))}
               </option>
             ))}
           </select>
-          <p className="c-hint">Stacks share one orbit track, frame and direction, so their images are comparable. Listed: those covering {FOCUS.name}.</p>
+          <p className="c-hint">{e.stackHint(t.place.focus)}</p>
         </div>
 
         <div className="c-panel-block">
-          <p className="c-label">Shown on the map</p>
+          <p className="c-label">{e.shown}</p>
           <h2 className="c-acq-date">{fmtDate(shown.start)}</h2>
           <dl className="c-facts">
             <div>
-              <dt>Time</dt>
+              <dt>{e.time}</dt>
               <dd>{fmtTime(shown.start)}</dd>
             </div>
             <div>
-              <dt>Polarizations</dt>
+              <dt>{e.polarizations}</dt>
               <dd>{shown.polarizations.join(" + ") || "–"}</dd>
             </div>
             <div>
-              <dt>Frequencies</dt>
-              <dd>{shown.frequencies.length ? shown.frequencies.map((f) => (f === "A" ? "L-band A" : f === "B" ? "L-band B" : f)).join(", ") : "–"}</dd>
+              <dt>{e.frequencies}</dt>
+              <dd>{shown.frequencies.length ? shown.frequencies.map((f) => e.band(f)).join(", ") : "–"}</dd>
             </div>
             <div>
-              <dt>Orbit</dt>
-              <dd>{shown.orbit ?? "–"}</dd>
+              <dt>{e.orbit}</dt>
+              <dd>{num(shown.orbit)}</dd>
             </div>
             <div>
-              <dt>Product</dt>
+              <dt>{e.product}</dt>
               <dd>GCOV v{shown.version ?? "?"}</dd>
             </div>
             <div>
-              <dt>Data maturity</dt>
-              <dd className={shown.maturity ? "is-warn" : undefined}>{shown.maturity ?? "Not labelled beta/provisional"}</dd>
+              <dt>{e.maturity}</dt>
+              <dd className={shown.maturity ? "is-warn" : undefined}>{t.maturity[shown.maturity ?? "none"]}</dd>
             </div>
             <div>
-              <dt>File</dt>
+              <dt>{e.file}</dt>
               <dd>{fmtSize(shown.sizeBytes)} HDF5</dd>
             </div>
           </dl>
@@ -99,32 +105,32 @@ export function ExploreView() {
             {shown.qaReport && (
               <a className="c-btn" href={shown.qaReport} target="_blank" rel="noreferrer">
                 <FileText size={15} aria-hidden="true" />
-                NASA QA report
+                {e.qa}
               </a>
             )}
             {shown.dataUrl && (
-              <a className="c-btn" href={shown.dataUrl} target="_blank" rel="noreferrer" title="Needs a free NASA Earthdata login">
+              <a className="c-btn" href={shown.dataUrl} target="_blank" rel="noreferrer" title={e.hdf5Title}>
                 <ExternalLink size={15} aria-hidden="true" />
-                HDF5 file (Earthdata login)
+                {e.hdf5}
               </a>
             )}
           </div>
         </div>
 
         <div className="c-panel-block">
-          <p className="c-label">Legend</p>
+          <p className="c-label">{e.legend}</p>
           <ul className="c-legend">
             <li>
               <i className="c-key c-key-rgb" aria-hidden="true" />
-              NISAR browse quicklook, colour composite of polarizations. For looking, not measuring.
+              {e.legendRgb}
             </li>
             <li>
               <i className="c-key c-key-foot" aria-hidden="true" />
-              Footprint of each date in this stack; amber is the one shown.
+              {e.legendFoot}
             </li>
             <li>
               <i className="c-key c-key-env" aria-hidden="true" />
-              Chattogram Division ({load.data.region.provenance.year} reference boundary, {load.data.region.provenance.source}).
+              {e.legendDivision(fmtNum(prov.year), prov.source)}
             </li>
           </ul>
         </div>

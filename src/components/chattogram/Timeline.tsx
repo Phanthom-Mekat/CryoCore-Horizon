@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Pause, Play } from "lucide-react";
-import { fmtDate, type Acquisition } from "@/lib/chattogram/acquisitions";
+import type { Acquisition } from "@/lib/chattogram/acquisitions";
+import { fmtDate, fmtDayMonth, fmtNum } from "@/lib/i18n/format";
+import { useT } from "@/lib/i18n/useT";
 import { browseUrl, quicklookSrc } from "./CaseMap";
 import { useCase } from "./CaseProvider";
 
@@ -16,6 +18,7 @@ export function Timeline({ items, current, onPick, marks = {} }: { items: Acquis
   const sorted = useMemo(() => [...items].sort((a, b) => a.start.localeCompare(b.start)), [items]);
   const [playing, setPlaying] = useState(false);
   const replaying = useCase().source.mode === "frozen";
+  const t = useT();
   const idx = Math.max(0, sorted.findIndex((a) => a.conceptId === current));
   const t0 = Date.parse(sorted[0]?.start ?? "");
   const t1 = Date.parse(sorted.at(-1)?.start ?? "");
@@ -58,9 +61,9 @@ export function Timeline({ items, current, onPick, marks = {} }: { items: Acquis
         disabled={sorted.length < 2}
       >
         {playing ? <Pause size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
-        {playing ? "Pause" : "Replay"}
+        {playing ? t.timeline.pause : t.timeline.replay}
       </button>
-      <div className="c-track" role="group" aria-label={`${sorted.length} NISAR acquisitions from ${fmtDate(sorted[0].start)} to ${fmtDate(sorted.at(-1)!.start)}`}>
+      <div className="c-track" role="group" aria-label={t.timeline.group(fmtNum(sorted.length), fmtDate(sorted[0].start), fmtDate(sorted.at(-1)!.start))}>
         <span className="c-track-line" aria-hidden="true" />
         {sorted.map((a) => (
           <button
@@ -77,15 +80,13 @@ export function Timeline({ items, current, onPick, marks = {} }: { items: Acquis
           >
             <span className="c-tick-dot" />
             {marks[a.conceptId] && <span className="c-tick-mark">{marks[a.conceptId]}</span>}
-            <span className="c-tick-date">{fmtDate(a.start).replace(/ \d{4}$/, "")}</span>
+            <span className="c-tick-date">{fmtDayMonth(a.start)}</span>
           </button>
         ))}
       </div>
       <output className="c-timeline-now" aria-live="polite">
         {fmtDate(sorted[idx].start)}
-        <small>
-          {idx + 1} of {sorted.length}
-        </small>
+        <small>{t.timeline.position(fmtNum(idx + 1), fmtNum(sorted.length))}</small>
       </output>
     </div>
   );
