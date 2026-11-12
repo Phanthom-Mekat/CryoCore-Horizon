@@ -1,6 +1,6 @@
 # CryoCore Horizon: Chattogram implementation plan
 
-Status (12 Nov 2026): discovery catalogue and the frontend case journey use real NISAR metadata and browse quicklooks. A small backend pilot now produces calibrated HH/HV layers and signed radar change from real pixels; a dedicated processed Mapbox view is integrated, while terrain-quality checks and independent validation remain pending. See the progress tracker below.
+Status (13 Nov 2026): discovery catalogue and the frontend case journey use real NISAR metadata and browse quicklooks; the case replays from a frozen snapshot without the backend (F09), in English and Bangla (F15), with NASA rainfall context (F13). A small backend pilot now produces calibrated HH/HV layers and signed radar change from real pixels; a dedicated processed Mapbox view is integrated, while terrain-quality checks and independent validation remain pending. See the progress tracker below.
 
 Implementation update: the case lives at `/chattogram` (Overview, Explore map, Compare, Evidence, Scene catalogue, About; see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md)). The first discovery increment is its Scene catalogue.
 It includes an attributed 2018 BBS/HDX reference boundary, real NASA catalog
@@ -35,6 +35,34 @@ surface-change findings. F01/F02 and the scientific milestones remain incomplete
 - [x] Legends and map layers ready for processed results: water-change candidates (cyan/amber with stripes) and signed dB change (separate diverging scale), colours checked with a CVD/contrast validator.
 - [x] Lint, TypeScript and production build pass; all case pages checked at 1920×1080 and 390 px; backend-down and empty states tested.
 
+### Completed replay increment (F09)
+
+- [x] `pnpm freeze-case` (`scripts/freeze-case.mts`) writes a versioned snapshot to `public/data/chattogram/case/`: `case.json` (capture time, generator, display processing settings, sources, the backend's division view, all 125 intersecting scenes, the frozen stacks) and 29 processed quicklooks for the 3 stacks over Chattogram city, each with SHA-256, size, corners and corner method.
+- [x] Live proxy and freeze script share one implementation (`src/lib/chattogram/browse.ts`), so replayed images are processed exactly like live ones.
+- [x] The case pages use the snapshot automatically when the backend is unreachable, on purpose with `?source=frozen`, or for a whole deployment with `NEXT_PUBLIC_CASE_SOURCE=frozen`; every page then says “Frozen case, captured …” with a way back to live data.
+- [x] Replay makes no live request: tested with the backend stopped and `?source=frozen` across all six case pages — 0 requests to the backend, the image proxy, ASF or CMR, and no console errors.
+- [x] Evidence offers **Copy replay link** (same dates and map view from the snapshot); the brief records `data_source`, `replay_url` and each quicklook's checksum. NASA search is disabled while replaying.
+- [x] Live mode also serves quicklooks from the snapshot where it has them: 3 ms per image instead of 7.8 s through the proxy on a cold cache.
+- [x] **Live | Frozen** switch in the header of the case pages: changes source without a reload and keeps the selection; hidden when there is no snapshot or the backend is down. Checked by mouse and keyboard, in both languages and at 390 px.
+
+### Completed Bangla increment (F15)
+
+- [x] Translation-ready text: every string of the case journey in `src/lib/i18n/messages.ts`; the Bangla object is type-checked against the English one, so a missing translation fails the build.
+- [x] Curated Bangla copy for Overview, Explore map, Compare, Evidence, About, the sidebar, the frozen-case notice, map notes, timeline and legends; mission, product and unit names kept as published.
+- [x] **EN | বাংলা** switch in the header, remembered per browser and applied to `<html lang>` before paint (no flash; screen readers switch voice); works by keyboard.
+- [x] Bengali dates and digits (`bn-BD`), Noto Sans/Serif Bengali loaded only for Bengali text, no letter-spacing or uppercase on Bengali labels.
+- [x] Map place names shaped correctly: Bangla landmark labels as HTML (WebGL map text can't shape Bengali), with the basemap's English place labels hidden in Bangla, so names never overlap.
+- [x] Checked in a browser: no untranslated English left on the five case pages (only the kept technical names), all six case pages fit 390 px in both languages, no console errors.
+
+### Completed rainfall increment (F13)
+
+- [x] Source checked before use: GPM IMERG needs an Earthdata login, so this increment uses the **NASA POWER Daily API** (no login), parameter `PRECTOTCORR`, which is modelled reanalysis precipitation (MERRA-2 / GEOS-IT) on a 0.5° × 0.625° grid. Labelled as modelled on every page; the file format is source-agnostic so an IMERG series can replace it.
+- [x] `pnpm fetch-rain` (`scripts/fetch-rain.mts`) saves the series at Chattogram city to `public/data/chattogram/rain.json` (1 Jun 2026 → yesterday) with provider, API version, sources, resolution, day boundaries (local solar time), retrieval time and the request URL. The pages read only this file, so the chart works in frozen mode and offline.
+- [x] Rainfall card on **Explore** (the stack's season with every NISAR pass marked, Before and After emphasised) and on **Compare** (the weeks around the pair, with the rain in the 7 days up to each date: 389 mm before 7 Jul, 8 mm before 11 Oct 2026).
+- [x] One-hue bar chart on a true time axis, hover readout, a “Show the numbers” table for screen readers, scrolls sideways on phones instead of shrinking; English and Bangla.
+- [x] Shown as context, never cause: a caveat under every chart; Evidence lists the 7-day rain per acquisition and the brief JSON carries `rainfall_context` with its full source.
+- [x] Checked in a browser: Explore and Compare in both languages, 1440 px and 390 px (no page overflow), frozen mode (0 backend/proxy requests), no new console errors.
+
 ### Progress tracker
 
 Updated 13 November 2026. "Partial" includes implemented pilots with remaining scientific validation or broader product work.
@@ -49,13 +77,13 @@ Updated 13 November 2026. "Partial" includes implemented pilots with remaining s
 | F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB display scale at `/chattogram/processed` | Extend to additional validated acquisitions |
 | F07 | Click-to-explain evidence | Partial | Native HH/HV pixel inspection, map pin, source-linked JSON and explicit exclusions; evidence page | `/cases/{id}/findings` polygons, area statistics and reference validation |
 | F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison | Observed area, eligible comparison area, change summaries |
-| F09 | Reproducible case replay | Not started | Shareable URLs restore the view | Frozen case bundle (also fixes 8–11 s first loads of a new date) |
+| F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying | Add processed layers, findings and the selected finding to the snapshot once they exist; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
 | F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata | Add findings and statistics once they exist |
-| F13 | NASA rainfall context | Not started | – | Verify GPM/IMERG access, then a small contextual chart |
+| F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
-| F15 | Local accessibility | Partial | Keyboard use, reduced motion, colour plus pattern, 390 px layouts | Bangla copy |
+| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
 | F16 | Terrain storytelling | Not started | – | P2 |
 | F17 | Evidence-based narration | Not started | – | P2 |
 
@@ -112,7 +140,7 @@ this pilot cannot demonstrate river-water change. See `docs/case-selection.md`.
 ### Next up
 
 - **Backend:** resolve mixed-mode and static terrain quality; select a water-suitable ROI and dated reference evidence; complete queued-worker lifecycle and frozen replay assets.
-- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; connect pilot evidence to the observation brief.
+- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; connect pilot evidence to the observation brief; translate the Calibrated radar page into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission
@@ -368,7 +396,7 @@ observation dates, and data source above the map. Avoid a wall of small metric c
 - [x] Preload the curated demo case and next playback frame; lazy-load secondary content.
 - [x] Target a usable initial view within three seconds on the rehearsed setup,
   and cached date changes within 300 ms. Measure and report actual results.
-  _Measured on /chattogram (1920×1080, software-rendered test browser): panel and dates 1.3–1.4 s; first radar quicklook 2.8–3.3 s once the server has it cached; switching to an already-loaded date 31–276 ms (one 1.2 s outlier). A date never fetched before takes 8–11 s from ASF; the frozen replay bundle (F09) removes that._
+  _Measured on /chattogram (1920×1080, software-rendered test browser): panel and dates 1.3–1.4 s; first radar quicklook 2.8–3.3 s once the server has it cached; switching to an already-loaded date 31–276 ms (one 1.2 s outlier). A date never fetched before took 8–11 s from ASF; with the frozen case each quicklook file loads in about 3 ms (measured), and what remains of a date change is the map redraw._
 - [x] Keep interactions responsive on the recording laptop; test mobile at 390 px width.
   _Frontend: all four /chattogram views checked at 390 px: no sideways scroll, nav fits, the reveal works by touch._
 - [x] Handle unavailable tiles, no observations, partial coverage, and backend failure
@@ -437,7 +465,8 @@ counts, and labels such as “live” on historical observations.
 - [ ] No credentials, large raw downloads, or local databases are committed.
 - [ ] API tests, raster checks, frontend build, and end-to-end demo checks pass.
 - [ ] Public demo is reachable; job endpoints are protected; data persists across restarts.
-- [ ] Frozen assets replay without upstream access; cached/replayed observations are labeled honestly.
+- [x] Frozen assets replay without upstream access; cached/replayed observations are labeled honestly.
+  _Frontend: `?source=frozen` replays with no backend, NASA or ASF request; every page shows the capture time (see docs/CHATTOGRAM.md)._
 - [ ] Video is exactly within the verified submission limit, captioned, and legible on a laptop.
 - [ ] Submission explains the local problem, NASA data use, method, finding, limitations,
   team contributions, and future work. Awards or real-world adoption are not implied.

@@ -108,3 +108,106 @@ html:not([data-theme="dark"]) .atlas-place { color: #ffffff; }
   }
 }
 
+
+/* language switch (plan F15), styled like the theme toggle */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+  min-height: 44px;
+  padding: 3px 3px 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.lang-toggle svg {
+  margin-right: 4px;
+}
+.lang-toggle button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font: 500 0.8rem var(--sans);
+  cursor: pointer;
+}
+.lang-toggle button:hover {
+  color: var(--snow);
+}
+.lang-toggle button[aria-pressed="true"] {
+  background: var(--ice);
+  color: var(--surface);
+}
+.lang-toggle button:focus-visible {
+  outline: 2px solid var(--ice);
+  outline-offset: 1px;
+}
+/* Bengali script has no capitals and its conjuncts break apart under letter-spacing; it also needs taller lines */
+:lang(bn) .c-eyebrow,
+:lang(bn) .c-label,
+:lang(bn) .d-nav-group,
+:lang(bn) .d-nav-tag,
+:lang(bn) .c-tick-mark,
+:lang(bn) .c-step-n {
+  letter-spacing: 0;
+  text-transform: none;
+}
+:lang(bn) .c-hero h1,
+:lang(bn) .c-bar h1,
+:lang(bn) .c-doc h1,
+:lang(bn) .c-ev-head h1,
+:lang(bn) .c-feature h2 {
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+:lang(bn) .d-body.is-case {
+  line-height: 1.75;
+}
+
+/* Live | Frozen switch (case pages), same look as the language switch */
+.source-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 760px) {
+  /* phones: icons only, the full meaning stays in each button's label */
+  .source-toggle > svg,
+  .source-toggle button span {
+    display: none;
+  }
+  .source-toggle {
+    padding-left: 3px;
+  }
+}
+/* phones: the header holds menu, title and three switches, so it sheds decoration rather than overflow */
+@media (max-width: 760px) {
+  .d-top {
+    gap: 8px;
+  }
+  .d-top .d-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .d-top .d-avatar,
+  .d-top .lang-toggle > svg,
+  .d-top .theme-toggle span {
+    display: none;
+  }
+  .d-top .lang-toggle {
+    padding-left: 3px;
+  }
+  .d-top .lang-toggle button {
+    padding: 0 8px;
+  }
+  .d-top .theme-toggle {
+    padding: 0 10px;
+  }
+}

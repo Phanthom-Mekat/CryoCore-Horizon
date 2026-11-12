@@ -1,10 +1,16 @@
-import { CHANGE, WATER, changeColor } from "@/lib/chattogram/palette";
+"use client";
+
+import { CHANGE, WATER, changeColor, type WaterCategory } from "@/lib/chattogram/palette";
+import { fmtNum } from "@/lib/i18n/format";
+import { useT } from "@/lib/i18n/useT";
 
 /** Legend for water-change candidates: colour, stripe direction and an icon, so no category depends on colour alone. */
 export function WaterKey() {
+  const t = useT();
+  const label: Record<WaterCategory, string> = { new_water_candidate: t.keys.newWater, recession_candidate: t.keys.receding };
   return (
-    <ul className="c-key-list" aria-label="Water change candidates">
-      {Object.entries(WATER).map(([id, w]) => (
+    <ul className="c-key-list" aria-label={t.keys.water}>
+      {(Object.entries(WATER) as [WaterCategory, (typeof WATER)[WaterCategory]][]).map(([id, w]) => (
         <li key={id}>
           <i
             className="c-key c-key-stripe"
@@ -14,7 +20,7 @@ export function WaterKey() {
           <span aria-hidden="true" className="c-key-icon" style={{ color: w.color }}>
             {w.icon}
           </span>
-          {w.label}
+          {label[id]}
         </li>
       ))}
     </ul>
@@ -23,20 +29,21 @@ export function WaterKey() {
 
 /** Separate diverging legend for signed backscatter change, so it never reads as a water classification. */
 export function ChangeKey() {
+  const t = useT();
   const ticks = [-CHANGE.limitDb, -CHANGE.limitDb / 2, 0, CHANGE.limitDb / 2, CHANGE.limitDb];
   const stops = Array.from({ length: 13 }, (_, i) => changeColor(-CHANGE.limitDb + (i * CHANGE.limitDb) / 6));
   return (
-    <figure className="c-change-key" aria-label={`Signed backscatter change, from −${CHANGE.limitDb} dB (darker) to +${CHANGE.limitDb} dB (brighter)`}>
-      <p className="c-change-title">Signed backscatter change, dB</p>
+    <figure className="c-change-key" aria-label={t.keys.changeAria(fmtNum(CHANGE.limitDb))}>
+      <p className="c-change-title">{t.keys.changeTitle}</p>
       <div className="c-change-ramp" style={{ background: `linear-gradient(90deg, ${stops.join(", ")})` }} />
       <div className="c-change-ticks" aria-hidden="true">
-        {ticks.map((t) => (
-          <span key={t}>{t > 0 ? `+${t}` : t < 0 ? `−${-t}` : "0"}</span>
+        {ticks.map((v) => (
+          <span key={v}>{v > 0 ? `+${fmtNum(v)}` : v < 0 ? `−${fmtNum(-v)}` : fmtNum(0)}</span>
         ))}
       </div>
       <figcaption>
-        <span>← darker: smoother or wetter</span>
-        <span>brighter: rougher →</span>
+        <span>{t.keys.darker}</span>
+        <span>{t.keys.brighter}</span>
       </figcaption>
     </figure>
   );

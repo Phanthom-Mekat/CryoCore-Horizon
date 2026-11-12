@@ -48,3 +48,63 @@ flooding or replace independent validation.
 - Before two dates are compared, their geometry, polarizations, data maturity (from the CMR collection name) and product
   version are checked, and any difference is shown. The default pair is the widest-spaced one that passes all four.
 - Until the processing worker publishes results, every difference is called observed radar change, not water change.
+
+## Frozen case (replay without the backend)
+
+Plan F09. `pnpm freeze-case` (`scripts/freeze-case.mts`) reads the stored catalogue from the running backend and writes
+`public/data/chattogram/case/`:
+
+- `case.json`, version 1: capture time, generator, the display processing settings, sources, the backend's division
+  view (boundary with provenance, footprints, counts), every scene that intersects the division, and the stacks frozen.
+- `img/<granule>.webp`: the processed quicklook for every date in the stacks over Chattogram city (3 stacks, 29 dates
+  at the first capture), each with its SHA-256, size, corners, and whether the corners came from ASF's KML or the
+  CMR footprint. The images are made by `src/lib/chattogram/browse.ts`, the same code as the live proxy.
+
+How the pages use it (`CaseProvider`):
+
+| Situation | What loads | What the page says |
+| --- | --- | --- |
+| Backend up | Live catalogue; quicklooks from the frozen files where they exist, the proxy otherwise | Nothing extra; the brief records the snapshot date |
+| Backend down | The frozen case | “Frozen case, captured …” on every page, with *Try live data* |
+| `?source=frozen`, or `NEXT_PUBLIC_CASE_SOURCE=frozen` | The frozen case, with no backend, NASA or ASF request at all | Same notice, with *Switch to live data* |
+
+The header of every case page has a **Live | Frozen · <date>** switch: it changes source instantly, without a
+reload, keeping the chosen stack, dates and map view (it writes `?source=live` or `?source=frozen`). It hides itself
+when there is no choice: no snapshot shipped, or the backend is down so the snapshot is all there is.
+
+While replaying, NASA search in the catalogue is off, a scene outside the frozen stacks shows its footprint with a note
+instead of fetching its image, and Evidence offers **Copy replay link**: the same dates and map view, opened from the
+snapshot. The brief's JSON records `data_source`, `replay_url` and each quicklook's checksum.
+
+## Rainfall context
+
+Plan F13. Explore and Compare show daily rainfall at Chattogram city with the NISAR pass dates marked; Compare adds
+the rain in the 7 days up to each compared date, Evidence lists it per acquisition and the brief JSON carries it as
+`rainfall_context`.
+
+- Source: NASA POWER Daily API, `PRECTOTCORR`. It is **modelled** reanalysis (MERRA-2 / GEOS-IT, about 55 × 65 km),
+  not a rain gauge or GPM IMERG; the pages say so. Days are local solar days; NISAR passes over the city are around
+  12:26 UTC (18:26 local), so the pass day's rain mostly fell before the image.
+- `pnpm fetch-rain` (`scripts/fetch-rain.mts`) writes `public/data/chattogram/rain.json`. The pages read only that
+  file, so the chart also works when replaying the frozen case. Run it again before recording to extend the series.
+- Context, not cause: rain is one reason radar brightness changes; tide, wind and crops are others. The pages never
+  attribute a change to rain.
+- To use GPM IMERG instead, write the same `RainSeries` shape (`src/lib/chattogram/rain.ts`) with `kind: "observed"`.
+
+## Languages: English and বাংলা
+
+Plan F15. The **EN | বাংলা** switch in the header changes the whole case journey (Overview, Explore map, Compare,
+Evidence, About), the sidebar, the frozen-case notice, map labels and legends.
+
+- All text lives in `src/lib/i18n/messages.ts`. `bn` is typed as the English `Messages`, so the build fails if any
+  Bangla entry is missing; another language is one more object there.
+- Components read text with `useT()` and format dates and numbers with `src/lib/i18n/format.ts` (`bn-BD`: Bengali
+  digits and month names; times stay UTC).
+- The choice is kept in this browser (`localStorage`) and applied to `<html lang>` before the page paints, so screen
+  readers switch voice and nothing flickers. Bengali text uses Noto Sans/Serif Bengali, downloaded only when needed.
+- Mission, product and unit names stay as published (NISAR, GCOV, NASA, ASF, HH/HV, dB, γ⁰, SHA-256).
+- Map place names: in English the basemap's labels; in Bangla our landmark labels instead, drawn as HTML because the
+  map's WebGL text can't shape Bengali conjuncts.
+- Still English on purpose: the downloaded brief (JSON, CSV, GeoJSON: data files whose field names must stay
+  stable), identifiers, and technical error details. Not yet translated: the Scene catalogue, the Jakobshavn sample
+  pages and the landing page.

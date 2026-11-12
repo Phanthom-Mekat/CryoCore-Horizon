@@ -3,15 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import type { GeoJSONSource, ImageSource, Map as MlMap, MapMouseEvent } from "mapbox-gl";
 import type { Acquisition } from "@/lib/chattogram/acquisitions";
-import { fmtDate, fmtTime } from "@/lib/chattogram/acquisitions";
-import type { View } from "./CaseProvider";
+import { fmtDate, fmtNum, fmtTime } from "@/lib/i18n/format";
+import { useLang, useT } from "@/lib/i18n/useT";
+import { useCase, type View } from "./CaseProvider";
 import { WATER, stripeTile } from "@/lib/chattogram/palette";
 
 import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme, mapError, cameraDuration } from "@/lib/mapbox";
 import { MapUnavailable } from "@/components/maps/MapUnavailable";
 import type { ProcessedImage } from "@/lib/chattogram/processed";
 
-/** Orientation landmarks (approximate centres), labelled in our own style above the basemap. */
+/**
+ * Orientation landmarks (approximate centres), labelled in our own style above the basemap. The names are HTML labels,
+ * not a map text layer: WebGL map text can't shape Bengali conjuncts, the browser can.
+ */
 export const LANDMARKS: { name: string; lonLat: [number, number] }[] = [
   { name: "Chattogram", lonLat: [91.8317, 22.3569] },
   { name: "Cox’s Bazar", lonLat: [91.9794, 21.4272] },
@@ -24,7 +28,17 @@ export const LANDMARKS: { name: string; lonLat: [number, number] }[] = [
 ];
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
+/** Writes each landmark label in the interface language (labels keep their English key in data-name), shown or not. */
+function nameLandmarks(labels: HTMLSpanElement[], names: Record<string, string>, shown: boolean) {
+  for (const label of labels) {
+    label.textContent = names[label.dataset.name ?? ""] ?? label.dataset.name ?? "";
+    label.hidden = !shown;
+  }
+}
 const ring = (r: [number, number][]) => (r.length && (r[0][0] !== r.at(-1)![0] || r[0][1] !== r.at(-1)![1]) ? [...r, r[0]] : r);
+/** Where to load an acquisition's quicklook: the frozen case's static file when it has one, else the live proxy. */
+export const quicklookSrc = (a: Acquisition) => a.frozen?.src ?? browseUrl(a);
+
 /** Proxy URL for an acquisition's quicklook, or its corners (with the footprint extremes as a fallback source). */
 export function browseUrl(a: Acquisition, part?: "bounds") {
   const q = `/api/nisar-browse?granule=${encodeURIComponent(a.granule)}&collection=${encodeURIComponent(a.collection)}`;
@@ -87,9 +101,14 @@ export function CaseMap({
   const [rasterShown, setRasterShown] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // load state of the quicklook, keyed by acquisition so a new date reads as "loading" until its own result lands
-  const [img, setImg] = useState<{ id: string; state: "shown" | "failed" } | null>(null);
+  const { source } = useCase();
+  const replaying = source.mode === "frozen";
+  const [img, setImg] = useState<{ id: string; state: "shown" | "failed" | "absent" } | null>(null);
   const imgState = !image ? "none" : img?.id === image.conceptId ? img.state : "loading";
   const [hover, setHover] = useState<{ x: number; y: number; a: Acquisition } | null>(null);
+  const t = useT();
+  const lang = useLang();
+  const landmarkEls = useRef<HTMLSpanElement[]>([]);
   const latest = useRef({ onMove, onPick, footprints, onInspect });
   useEffect(() => {
     latest.current = { onMove, onPick, footprints, onInspect };
@@ -169,12 +188,13 @@ export function CaseMap({
           data: { type: "FeatureCollection", features: LANDMARKS.map((l) => ({ type: "Feature", properties: { name: l.name }, geometry: { type: "Point", coordinates: l.lonLat } })) },
         });
         m.addLayer({ id: "landmark-dots", type: "circle", source: "landmarks", paint: { "circle-radius": 3, "circle-color": "#f3eee5", "circle-stroke-color": "#070b12", "circle-stroke-width": 1.5 } });
-        m.addLayer({
-          id: "landmark-names",
-          type: "symbol",
-          source: "landmarks",
-          layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Regular"], "text-size": 13, "text-offset": [0, 1.1], "text-anchor": "top" },
-          paint: { "text-color": "#f3eee5", "text-halo-color": "#070b12", "text-halo-width": 1.6 },
+        landmarkEls.current = LANDMARKS.map((l) => {
+          const label = document.createElement("span");
+          label.className = "c-landmark";
+          label.dataset.name = l.name;
+          label.textContent = l.name;
+          new ml.Marker({ element: label, anchor: "top", offset: [0, 5] }).setLngLat(l.lonLat).addTo(m);
+          return label;
         });
         let hovered: string | number | undefined;
         m.addSource("inspection-point", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -256,7 +276,18 @@ export function CaseMap({
     });
   }, [footprints, selected, ready]);
 
-  // the quicklook: fetch its corners, then swap the image source in place (no flash between dates)
+  // One set of place names per language, never both on top of each other: in English the basemap's own place labels;
+  // in Bangla our landmark labels instead (the basemap has no Bengali names, and WebGL text can't shape Bengali).
+  useEffect(() => {
+    const m = map.current;
+    nameLandmarks(landmarkEls.current, t.landmarks, lang === "bn");
+    if (!m || !ready) return;
+    if (m.getLayer("landmark-dots")) m.setLayoutProperty("landmark-dots", "visibility", lang === "bn" ? "visible" : "none");
+    m.setConfigProperty("basemap", "showPlaceLabels", lang !== "bn");
+  }, [t, lang, ready]);
+
+  // the quicklook: its corners (stored in the frozen case, else fetched), then swap the image source in place (no flash
+  // between dates). Replaying the frozen case never reaches ASF: a scene outside it is reported, not fetched.
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
@@ -267,11 +298,19 @@ export function CaseMap({
     }
     let live = true;
     const id = image.conceptId;
-    fetch(browseUrl(image, "bounds"))
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(({ corners }) => {
+    const corners: Promise<[number, number][]> = image.frozen
+      ? Promise.resolve(image.frozen.corners)
+      : replaying
+        ? Promise.reject(new Error("not in the frozen case"))
+        : fetch(browseUrl(image, "bounds"))
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+            .then((j: { corners: [number, number][] }) => j.corners);
+    corners
+      .then((c) => {
         if (!live) return;
-        const url = browseUrl(image);
+        if (c.length !== 4) throw new Error("expected four corners");
+        const corners = c as [[number, number], [number, number], [number, number], [number, number]];
+        const url = quicklookSrc(image);
         const src = m.getSource("browse") as ImageSource | undefined;
         if (src) src.updateImage({ url, coordinates: corners });
         else {
@@ -283,11 +322,11 @@ export function CaseMap({
         }
         m.once("idle", () => live && setImg({ id, state: "shown" }));
       })
-      .catch(() => live && setImg({ id, state: "failed" }));
+      .catch(() => live && setImg({ id, state: replaying && !image.frozen ? "absent" : "failed" }));
     return () => {
       live = false;
     };
-  }, [image, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [image, ready, replaying]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const m = map.current;
@@ -340,23 +379,24 @@ export function CaseMap({
     <div className="c-map" aria-label={label} role="region">
       <div ref={el} className="c-map-canvas" />
       {controls && <div className="map-view-tools">
-        <button type="button" aria-pressed={!terrain} onClick={() => setPerspective(false)}>2D analysis</button>
-        {allowTerrain && <button type="button" aria-pressed={terrain} onClick={() => setPerspective(true)}>3D terrain</button>}
-        <button type="button" onClick={() => map.current?.easeTo({ center: [initialView.current.lon, initialView.current.lat], zoom: initialView.current.zoom, duration: cameraDuration() })}>Recenter</button>
+        <button type="button" aria-pressed={!terrain} onClick={() => setPerspective(false)}>{t.map.analysis2d}</button>
+        {allowTerrain && <button type="button" aria-pressed={terrain} onClick={() => setPerspective(true)}>{t.map.terrain3d}</button>}
+        <button type="button" onClick={() => map.current?.easeTo({ center: [initialView.current.lon, initialView.current.lat], zoom: initialView.current.zoom, duration: cameraDuration() })}>{t.map.recenter}</button>
       </div>}
       {hover && (
         <div className="c-map-tip" style={{ left: hover.x, top: hover.y }} aria-hidden="true">
           <strong>{fmtDate(hover.a.start)}</strong>
           <span>
-            {fmtTime(hover.a.start)} · track {hover.a.track}, frame {hover.a.frame}
+            {fmtTime(hover.a.start)} · {t.map.trackFrame(hover.a.track === null ? "–" : fmtNum(hover.a.track), hover.a.frame === null ? "–" : fmtNum(hover.a.frame))}
           </span>
           <span>
-            {hover.a.direction} · {hover.a.polarizations.join("+")}
+            {t.direction[hover.a.direction]} · {hover.a.polarizations.join("+")}
           </span>
         </div>
       )}
-      {imgState === "loading" && <p className="c-map-note">Loading the NISAR quicklook from ASF…</p>}
-      {imgState === "failed" && <p className="c-map-note is-bad">The quicklook for this date couldn’t be loaded from ASF. Footprints and dates are still accurate.</p>}
+      {imgState === "loading" && <p className="c-map-note">{image?.frozen ? t.map.loading : t.map.loadingAsf}</p>}
+      {imgState === "failed" && <p className="c-map-note is-bad">{t.map.failed}</p>}
+      {imgState === "absent" && <p className="c-map-note is-bad">{t.map.absent}</p>}
       {error && <p className="c-map-note is-bad">{error}</p>}
       {rasterError && <p className="c-map-note is-bad">{rasterError}</p>}
       {processed && rasterShown !== processed.url && !rasterError && <p className="c-map-note" role="status">Loading calibrated layer…</p>}

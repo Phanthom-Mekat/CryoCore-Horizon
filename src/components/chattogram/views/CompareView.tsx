@@ -4,9 +4,12 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import type { Map as MlMap } from "mapbox-gl";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeftRight, Check, FileSearch } from "lucide-react";
-import { compatibility, fmtDate, fmtTime, type Acquisition } from "@/lib/chattogram/acquisitions";
-import { CaseMap, browseUrl } from "../CaseMap";
+import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
+import { fmtDate, fmtNum, fmtTime } from "@/lib/i18n/format";
+import { useT } from "@/lib/i18n/useT";
+import { CaseMap, quicklookSrc } from "../CaseMap";
 import { CaseBar } from "../CaseBar";
+import { RainCard } from "../RainCard";
 import { useCase, type View } from "../CaseProvider";
 
 /** Keeps two maps on the same centre and zoom, so both sides of the divider always show the same extent and scale. */
@@ -26,7 +29,9 @@ function useSyncedMaps() {
 }
 
 export function CompareView() {
-  const { load, stack, before, after, view, set, href } = useCase();
+  const { load, stack, before, after, view, set, href, source } = useCase();
+  const t = useT();
+  const c = t.compare;
   const [pos, setPos] = useState(50);
   const frame = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -35,15 +40,15 @@ export function CompareView() {
 
   // preload both quicklooks so the reveal never waits mid-drag
   useEffect(() => {
-    for (const a of [before, after]) if (a) fetch(browseUrl(a)).catch(() => {});
-  }, [before, after]);
+    for (const a of [before, after]) if (a && (a.frozen || source.mode === "live")) fetch(quicklookSrc(a)).catch(() => {});
+  }, [before, after, source.mode]);
 
   if (load.status !== "ready" || !stack || !before || !after) return null;
   if (stack.items.length < 2)
     return (
       <div className="c-state">
-        <h2>This stack has only one date</h2>
-        <p>A comparison needs two acquisitions from the same track and frame. Pick another stack under Explore.</p>
+        <h2>{c.oneDateTitle}</h2>
+        <p>{c.oneDateBody}</p>
       </div>
     );
 
@@ -51,6 +56,8 @@ export function CompareView() {
   const checks = compatibility(before, after);
   const issues = checks.filter((c) => !c.ok);
   const days = Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5);
+  const g = stack.items[0];
+  const num = (v: number | null) => (v === null ? "–" : fmtNum(v));
   const drag = (e: PointerEvent) => {
     const r = frame.current!.getBoundingClientRect();
     setPos(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
@@ -64,11 +71,11 @@ export function CompareView() {
   return (
     <>
       <CaseBar
-        title="Compare two dates"
+        title={c.title}
         actions={
           <Link className="c-btn" href={href("/chattogram/evidence")}>
             <FileSearch size={16} aria-hidden="true" />
-            Evidence for this pair
+            {c.evidence}
           </Link>
         }
       />
@@ -76,38 +83,39 @@ export function CompareView() {
     <div className="c-compare">
       <div className="c-compare-bar">
         <label className="c-field">
-          <span className="c-label">Before</span>
+          <span className="c-label">{t.before}</span>
           <select className="c-select" value={before.day} onChange={(e) => set({ a: e.target.value })}>
             {dates.map(option)}
           </select>
         </label>
-        <button type="button" className="c-btn c-swap" onClick={() => set({ a: after.day, b: before.day })} aria-label="Swap before and after">
+        <button type="button" className="c-btn c-swap" onClick={() => set({ a: after.day, b: before.day })} aria-label={c.swap}>
           <ArrowLeftRight size={16} aria-hidden="true" />
         </button>
         <label className="c-field">
-          <span className="c-label">After</span>
+          <span className="c-label">{t.after}</span>
           <select className="c-select" value={after.day} onChange={(e) => set({ b: e.target.value })}>
             {dates.map(option)}
           </select>
         </label>
         <p className="c-compare-gap">
-          <strong>{Math.abs(days)} days</strong> apart · same track {stack.items[0].track}, frame {stack.items[0].frame}, {stack.items[0].direction.toLowerCase()} pass
-          {days < 0 && <em> · “before” is later than “after”</em>}
+          <strong>{c.gapDays(fmtNum(Math.abs(days)))}</strong>
+          {c.gapRest(num(g.track), num(g.frame), t.direction[g.direction])}
+          {days < 0 && <em>{c.reversed}</em>}
         </p>
       </div>
 
       <div className="c-reveal" ref={frame} style={{ "--pos": `${pos}%` } as CSSProperties}>
         <div className="c-reveal-layer">
-          <CaseMap allowTerrain={false} label={`NISAR quicklook of ${fmtDate(after.start)}`} view={view} onMove={onMove} image={after} imageOpacity={1} onReady={ready(1)} controls={false} />
+          <CaseMap allowTerrain={false} label={t.quicklookOf(fmtDate(after.start))} view={view} onMove={onMove} image={after} imageOpacity={1} onReady={ready(1)} controls={false} />
         </div>
         <div className="c-reveal-layer c-reveal-before">
-          <CaseMap allowTerrain={false} label={`NISAR quicklook of ${fmtDate(before.start)}`} view={view} onMove={onMove} image={before} imageOpacity={1} onReady={ready(0)} />
+          <CaseMap allowTerrain={false} label={t.quicklookOf(fmtDate(before.start))} view={view} onMove={onMove} image={before} imageOpacity={1} onReady={ready(0)} />
         </div>
         <span className="c-badge c-badge-l">
-          <strong>Before</strong> {fmtDate(before.start)} · {fmtTime(before.start)}
+          <strong>{t.before}</strong> {fmtDate(before.start)} · {fmtTime(before.start)}
         </span>
         <span className="c-badge c-badge-r">
-          <strong>After</strong> {fmtDate(after.start)} · {fmtTime(after.start)}
+          <strong>{t.after}</strong> {fmtDate(after.start)} · {fmtTime(after.start)}
         </span>
         <div
           className="c-divider"
@@ -128,8 +136,8 @@ export function CompareView() {
             max={100}
             value={Math.round(pos)}
             onChange={(e) => setPos(Number(e.target.value))}
-            aria-label={`Reveal: left of the divider shows ${fmtDate(before.start)}, right shows ${fmtDate(after.start)}`}
-            aria-valuetext={`${Math.round(pos)}% ${fmtDate(before.start)}`}
+            aria-label={c.reveal(fmtDate(before.start), fmtDate(after.start))}
+            aria-valuetext={`${fmtNum(Math.round(pos))}% ${fmtDate(before.start)}`}
           />
         </div>
       </div>
@@ -137,25 +145,21 @@ export function CompareView() {
       <div className={`c-checks${issues.length ? " is-warn" : ""}`} role="status">
         <p className="c-checks-head">
           {issues.length ? <AlertTriangle size={16} aria-hidden="true" /> : <Check size={16} aria-hidden="true" />}
-          {issues.length
-            ? `Compare with care: ${issues.length} difference${issues.length > 1 ? "s" : ""} in how these two dates were acquired or processed.`
-            : "Comparable: these two dates match on every acquisition and processing check."}
+          {issues.length ? c.care(issues.length, fmtNum(issues.length)) : c.ok}
         </p>
         <ul>
-          {checks.map((c) => (
-            <li key={c.label} className={c.ok ? "is-ok" : "is-diff"}>
-              <span aria-hidden="true">{c.ok ? "✓" : "≠"}</span> {c.label}
-              {!c.ok && <small>{c.detail}</small>}
+          {checks.map((k) => (
+            <li key={k.key} className={k.ok ? "is-ok" : "is-diff"}>
+              <span aria-hidden="true">{k.ok ? "✓" : "≠"}</span> {t.checks[k.key].label}
+              {!k.ok && <small>{k.detail}</small>}
             </li>
           ))}
         </ul>
       </div>
 
-      <p className="c-compare-foot">
-        Both sides are NISAR GCOV browse quicklooks (colour composite of polarizations) from ASF, on the same map extent and scale. Dark is smooth surface such as
-        open water; bright is rough or vegetated ground. These pictures are for looking, not measuring: a measured change map needs the calibrated γ⁰ layers.
-      </p>
+      <p className="c-compare-foot">{c.foot}</p>
     </div>
+      <RainCard mode="pair" />
     </>
   );
 }
