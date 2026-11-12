@@ -1377,3 +1377,33 @@
   font: 0.72rem/1.45 var(--mono);
   word-break: break-word;
 }
+
+/* The processed brief keeps report figures readable on screen and paper. */
+.p-report > section { margin-top: 20px; }
+.p-report-chart svg { display: block; width: 100%; max-width: 720px; margin: 20px auto; color: var(--c-text); }
+.p-report-table { overflow-x: auto; }
+.p-report-table table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.p-report-table caption { text-align: left; margin: 12px 0; color: var(--c-muted); font-size: .85rem; }
+.p-report-table th, .p-report-table td { text-align: right; padding: 12px 10px; border-bottom: 1px solid var(--c-line); }
+.p-report-table th:first-child { text-align: left; }
+.p-report-method p, .p-report-audit p { line-height: 1.7; overflow-wrap: anywhere; }
+@media print {
+  .p-report { padding: 0; font-size: 10pt; }
+  .p-report > section { margin-top: 12pt; padding: 12pt; }
+  .p-report * { color: #111 !important; }
+  .p-report-chart svg { max-width: 480px; }
+  .p-report-table { overflow: visible; }
+  .p-report-table th, .p-report-table td { padding: 6pt 3pt; font-size: 8pt; }
+  .p-report .c-ev-sources { break-inside: avoid; }
+}
+
+.p-share-result { margin: 12px 0 20px; padding: 16px; border: 1px solid var(--c-line); border-radius: 12px; background: var(--c-navy); }
+.p-share-result label { display: block; font-size: .85rem; }
+.p-share-result input { display: block; width: 100%; min-width: 0; padding: 10px; margin: 8px 0; border: 1px solid var(--c-line); border-radius: 6px; color: var(--c-text); background: var(--c-navy); }
+
+.p-histogram { display: grid; gap: 8px; margin: 12px 0; }
+.p-histogram > div { display: grid; grid-template-columns: 80px minmax(30px, 1fr) 48px; gap: 8px; align-items: center; font-size: .75rem; font-variant-numeric: tabular-nums; }
+.p-histogram meter { width: 100%; height: 16px; }
+.p-histogram strong { text-align: right; }
+.p-area-inspector > p { line-height: 1.6; }
+.p-area-inspector .c-links { flex-wrap: wrap; margin-top: 12px; }

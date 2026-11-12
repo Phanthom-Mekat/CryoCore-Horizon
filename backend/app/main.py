@@ -11,6 +11,9 @@ from .config import BACKEND_ROOT, Settings
 from .cases import list_cases, read_case
 from .display import preview
 from .sampling import sample_case
+from .brief import processed_brief, brief_csv
+from .areas import area_evidence
+from typing import Literal
 from .database import Database
 from .explorer import build_explorer
 from .nasa import CMR_URL, CatalogError, NasaCatalog
@@ -33,7 +36,7 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
 
     app = FastAPI(
         title="CryoCore Horizon — Chattogram API", version="0.1.0",
-        description="NISAR-first scene discovery and provenance. No synthetic observations or computed change products.",
+        description="NISAR-first discovery, provenance and experimental calibrated radar-change pilots. No validated flood classification.",
         lifespan=lifespan,
     )
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
@@ -99,6 +102,25 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
         result = read_case(BACKEND_ROOT / "data" / "cases", case_id)
         if result is None: raise HTTPException(status_code=404, detail="Published case not found.")
         return result
+
+    @app.get("/api/v1/cases/{case_id}/area", tags=["Processed pilots"])
+    def case_area(case_id: str, lon1: float = Query(ge=-180, le=180, allow_inf_nan=False),
+                  lat1: float = Query(ge=-85, le=85, allow_inf_nan=False),
+                  lon2: float = Query(ge=-180, le=180, allow_inf_nan=False),
+                  lat2: float = Query(ge=-85, le=85, allow_inf_nan=False)):
+        manifest = case(case_id)
+        try:
+            return area_evidence(BACKEND_ROOT / "data" / "cases" / case_id, manifest, lon1, lat1, lon2, lat2)
+        except (OSError, ValueError):
+            raise HTTPException(422, "The selected area cannot be analysed on this published grid.") from None
+
+    @app.get("/api/v1/cases/{case_id}/brief", tags=["Processed pilots"])
+    def case_brief(case_id: str, format: Literal["json", "csv"] = "json"):
+        report = processed_brief(case(case_id))
+        if format == "csv":
+            return Response(brief_csv(report), media_type="text/csv",
+                            headers={"Content-Disposition": f'attachment; filename="radar-brief-{case_id}.csv"'})
+        return report
 
     @app.get("/api/v1/cases/{case_id}/sample", tags=["Processed pilots"])
     def case_sample(case_id: str, longitude: float = Query(ge=-180, le=180, allow_inf_nan=False),

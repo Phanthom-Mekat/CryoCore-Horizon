@@ -13,7 +13,7 @@ export function CaseGate({ children }: { children: ReactNode }) {
   const { load, reload, source } = useCase();
   const t = useT();
   const path = usePathname();
-  if (path === "/chattogram/processed") return children;
+  if (path === "/chattogram/processed" || path.startsWith("/chattogram/processed/")) return children;
   if (load.status === "ready" || (load.status === "empty" && path === "/chattogram/catalogue"))
     return (
       <>

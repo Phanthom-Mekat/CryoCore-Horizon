@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { History, Radio } from "lucide-react";
 import { getCaseSource, subscribeCaseSource, switchCaseSource } from "@/lib/chattogram/sourceStore";
 import { fmtDateTime, fmtDayMonth } from "@/lib/i18n/format";
@@ -13,6 +14,8 @@ import { useT } from "@/lib/i18n/useT";
 export function CaseSourceToggle() {
   const source = useSyncExternalStore(subscribeCaseSource, getCaseSource, () => null);
   const t = useT();
+  const path = usePathname();
+  if (path === "/chattogram/processed" || path.startsWith("/chattogram/processed/")) return null;
   if (!source?.frozenAt || source.fallback) return null;
   const options = [
     { mode: "live" as const, icon: Radio, label: t.source.live, title: t.source.liveTitle },

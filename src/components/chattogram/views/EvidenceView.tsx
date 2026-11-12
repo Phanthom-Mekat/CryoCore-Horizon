@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
@@ -127,7 +128,7 @@ export function EvidenceView() {
           ) : findings.status === "loading" ? (
             <p>{ev.checking}</p>
           ) : findings.status === "ready" ? (
-            <p>{ev.findingsReady(fmtNum(findings.data.length))}</p>
+            <><p>{ev.findingsReady(fmtNum(findings.data.length))}</p><p lang="en" className="c-hint">Processed pilots have their own date pairs and measured reports; their statistics do not apply automatically to this browse comparison.</p><Link className="c-btn c-noprint" lang="en" href="/chattogram/processed">Open calibrated pilot & brief</Link></>
           ) : (
             <p className="is-missing">{findings.status === "unavailable" ? ev.findingsMissing : findings.status === "empty" ? ev.findingsNone : findings.reason}</p>
           )}

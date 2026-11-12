@@ -75,12 +75,12 @@ Updated 13 November 2026. "Partial" includes implemented pilots with remaining s
 | F04 | Processed radar layers | Partial | Real frequency-A HH/HV GeoTIFF pilot; documented masks, common grid, hashes, downloads and georeferenced Mapbox overlays with fixed scales | Static terrain quality, mixed-mode review, larger-area tiling |
 | F05 | Defensible change map | Partial | Signed after-minus-before dB change over common valid pilot pixels; coverage/exclusion statistics | Confounder assessment, independent validation and frontend map; no water classification yet |
 | F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB display scale at `/chattogram/processed` | Extend to additional validated acquisitions |
-| F07 | Click-to-explain evidence | Partial | Native HH/HV pixel inspection, map pin, source-linked JSON and explicit exclusions; evidence page | `/cases/{id}/findings` polygons, area statistics and reference validation |
+| F07 | Click-to-explain evidence | Partial | Native pixel and selected-area HH/HV evidence, measured footprint, histograms, JSON/GeoJSON exports and explicit exclusions | Independently supported finding polygons, reference validation and area-report integration |
 | F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison | Observed area, eligible comparison area, change summaries |
 | F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying | Add processed layers, findings and the selected finding to the snapshot once they exist; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
-| F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata | Add findings and statistics once they exist |
+| F12 | Local observation brief | Partial | Browse JSON/CSV/GeoJSON plus dedicated measured-pilot report: distribution chart, full-precision JSON/CSV, coverage, provenance and print styling | Verify PDF/mobile layout; add map and independently supported area findings |
 | F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
 | F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
@@ -137,10 +137,38 @@ this pilot cannot demonstrate river-water change. See `docs/case-selection.md`.
 - [x] Pass 48 backend tests, TypeScript, lint and production build; verify real values and map selection on desktop in the in-app browser.
 - [ ] Finish inspector-specific mobile and browser-download verification: browser automation stopped responding during these checks.
 
+### Measured observation brief — 13 November 2026
+
+- [x] Add a case-specific backend brief with HH/HV measurements, source revisions, exclusions, method, limitations and asset hashes.
+- [x] Add a dedicated report page linked from the calibrated map, with a percentile-distribution chart and coverage table.
+- [x] Export full-precision JSON and CSV; verify both downloaded files against each other in the in-app browser.
+- [x] Keep processed-case dates separate from arbitrary browse comparisons; hide the unrelated catalogue source switch on processed pages.
+- [x] Add print styling and Print / save PDF action, retaining limitations and provenance.
+- [x] Pass 51 backend tests and production build; verify real report values on desktop.
+- [ ] Verify the final PDF pagination and 390 px report layout; the browser viewport override did not take effect during this check.
+
+### Shareable processed views — 13 November 2026
+
+- [x] Add Share radar view with a selectable fallback URL when clipboard access is unavailable.
+- [x] Pin the exact published case and restore radar layer, HH/HV polarization, opacity, comparison reveal, map centre/zoom and selected native-pixel coordinates.
+- [x] Validate incoming coordinates and controls; show an explicit error for missing/invalid cases instead of silently substituting a different pilot.
+- [x] Preserve coordinate precision so serialization does not move the selected point across a pixel boundary. Shared views open in 2D for consistent analysis.
+- [x] Pass four automated share-state tests and production build; verify restoration of HV, 72% reveal, 65% opacity and row/column 128 in the in-app browser.
+- [ ] Complete pixel-download browser verification: download permission was denied during this attempt; no workaround was attempted.
+
+### Area evidence increment — 13 November 2026
+
+- [x] Add two-corner area selection on the calibrated Mapbox view, with a native-grid outline and keyboard-accessible centre selection.
+- [x] Compute HH/HV date medians, median pixel change, valid/excluded area and bounded change histograms from native scientific rasters.
+- [x] Clip selections to the published raster, cap analysis at one million pixels, reject invalid coordinates/grids and distinguish empty measurements from zero change.
+- [x] Export exploratory area evidence as JSON and a GeoJSON footprint with source records, asset hashes and limitations.
+- [x] Verify full-pilot reconciliation, histogram counts, reversed corners and excluded/outside behavior in two focused tests; pass production build.
+- [ ] Connect area selections to share links and the printable report; independently validate interpreted findings. Area statistics alone do not establish water change.
+
 ### Next up
 
 - **Backend:** resolve mixed-mode and static terrain quality; select a water-suitable ROI and dated reference evidence; complete queued-worker lifecycle and frozen replay assets.
-- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; connect pilot evidence to the observation brief; translate the Calibrated radar page into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
+- **Frontend:** finish inspector mobile/export and report PDF/mobile verification; add area findings once supported; extend processed comparisons to additional validated dates; translate the Calibrated radar page and measured brief into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission

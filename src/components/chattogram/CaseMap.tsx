@@ -57,6 +57,7 @@ type Props = {
   allowTerrain?: boolean;
   onInspect?: (point: [number, number]) => void;
   inspectionPoint?: [number, number] | null;
+  analysisGeometry?: GeoJSON.Polygon | null;
   imageOpacity?: number;
   /** Footprints to outline; `selected` is drawn brighter. */
   footprints?: Acquisition[];
@@ -81,6 +82,7 @@ export function CaseMap({
   allowTerrain = true,
   onInspect,
   inspectionPoint = null,
+  analysisGeometry = null,
   imageOpacity = 0.9,
   footprints = [],
   selected = null,
@@ -198,6 +200,9 @@ export function CaseMap({
         });
         let hovered: string | number | undefined;
         m.addSource("inspection-point", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        m.addSource("analysis-area", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        m.addLayer({ id: "analysis-area-fill", type: "fill", source: "analysis-area", paint: { "fill-color": "#ffb454", "fill-opacity": 0.12 } });
+        m.addLayer({ id: "analysis-area-line", type: "line", source: "analysis-area", paint: { "line-color": "#ffb454", "line-width": 3, "line-dasharray": [3, 2] } });
         m.addLayer({ id: "inspection-point", type: "circle", source: "inspection-point", paint: { "circle-radius": 7, "circle-color": "#0b7189", "circle-stroke-color": "#ffffff", "circle-stroke-width": 3, "circle-emissive-strength": 1 } });
         m.on("mousemove", "footprints-fill", (e: MapMouseEvent & { features?: { id?: string | number }[] }) => {
           const id = e.features?.[0]?.id;
@@ -247,6 +252,11 @@ export function CaseMap({
     const source = map.current?.getSource("inspection-point") as GeoJSONSource | undefined;
     source?.setData({ type: "FeatureCollection", features: inspectionPoint ? [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: inspectionPoint } }] : [] });
   }, [inspectionPoint, ready]);
+
+  useEffect(() => {
+    const source = map.current?.getSource("analysis-area") as GeoJSONSource | undefined;
+    source?.setData({ type: "FeatureCollection", features: analysisGeometry ? [{ type: "Feature", properties: {}, geometry: analysisGeometry }] : [] });
+  }, [analysisGeometry, ready]);
 
   useEffect(() => {
     const src = map.current?.getSource("findings") as GeoJSONSource | undefined;

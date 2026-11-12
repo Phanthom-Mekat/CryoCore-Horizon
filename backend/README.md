@@ -173,6 +173,29 @@ Install dependencies and run the servers normally. Each developer supplies their
 own Mapbox public token for the basemap. Local databases and incomplete raw
 downloads are intentionally excluded; fresh NASA access still needs credentials.
 
+## Measured observation brief
+
+`GET /api/v1/cases/{id}/brief` returns an observation report tied to the published
+case's exact source pair. `?format=csv` downloads one row per polarization with
+full-precision measurements, dates, source IDs, method and caveats. JSON also
+includes grid metadata and asset hashes. No upstream requests or processing
+are triggered. P05/P95 are pixel-distribution percentiles, not confidence bounds;
+HH and HV areas must not be added together.
+
+The **Observation brief** button on the calibrated radar page opens a dedicated
+print-friendly report with a distribution chart, coverage table and provenance.
+The separate browse brief continues to describe its own selected acquisitions.
+
+## Area evidence
+
+`GET /api/v1/cases/{id}/area?lon1=91.84&lat1=22.33&lon2=91.85&lat2=22.34`
+analyses the native-grid rectangle between the two clicked pixels. Results
+include a WGS84 footprint, clipped window, HH/HV medians, valid/excluded areas,
+change histograms, source records, hashes and limitations. Reads are bounded to
+one million pixels per selection; no upstream data request is made. Missing
+measurements are null. Histogram tails retain changes outside ±6 dB. The result
+is exploratory evidence, not a classified event.
+
 ## Native pixel evidence
 
 `GET /api/v1/cases/{id}/sample?longitude=91.845&latitude=22.33` reads the

@@ -28,6 +28,49 @@ The browser only talks to the Next.js app. Server routes proxy the backend (`src
 them into stacks (same track, frame and direction), and keeps the selection (stack, before/after dates, map view,
 selected scene) in the URL, so every view can be shared as a link.
 
+## Export measured radar evidence
+
+Open **Observation brief** from the calibrated radar page. The stable route
+`/chattogram/processed/{caseId}/brief` renders the backend's case-specific report,
+including an HH/HV distribution chart, full coverage/exclusion table, method,
+source revisions and limitations. JSON and CSV retain published precision;
+the display rounds numbers for readability. Print / save PDF uses the browser's
+print dialog and a paper stylesheet. The report is explicitly in English.
+
+The browse brief's selected dates are independent of the processed pilot. Never
+attach pilot measurements to an arbitrary browse pair. The Live/Frozen catalogue
+switch is hidden on processed pages; these read the backend's published bundle.
+
+## Analyse a selected area
+
+Choose **Area analysis** in the calibrated map's evidence panel. Click two
+opposite corners, or pan and use the map-centre button for each corner. The
+selection snaps to the native pixel grid and clips to available data; the amber
+outline shows the rectangle actually measured. A third click starts a new area.
+Area mode starts in 2D for consistent selection.
+
+HH/HV tables show date medians and median pixel change on common-valid pixels,
+with valid and excluded area and a change histogram. Median pixel change is not
+necessarily the difference of date medians. Empty measurements stay null; HH/HV
+areas overlap. JSON and GeoJSON exports include provenance and caveats. These
+are exploratory measurements, not detected floods or validated findings.
+Area selections are not yet included in snapshot links or the printable report.
+
+## Share a processed view
+
+**Share radar view** creates a snapshot link with the published case ID, layer,
+polarization, opacity, comparison reveal, map centre/zoom and selected pixel.
+It copies the URL when clipboard access is available and also exposes a selectable
+field. Share again after changing controls; the previous link remains a snapshot.
+Recipients need the same published case served by their backend. Localhost links
+refer to the recipient's own development server.
+
+Shared views open in 2D; terrain, camera tilt and bearing are not recorded.
+Invalid controls fall back to safe defaults. An invalid or unavailable case ID
+shows an error rather than opening another case. Pixel coordinates retain full
+precision. Run `node --experimental-strip-types --test tests/processed-state.test.mjs`
+to check parsing, precision and round-trip restoration.
+
 ## Inspect a native radar pixel
 
 On `/chattogram/processed`, click the map or use **Inspect map centre** after
