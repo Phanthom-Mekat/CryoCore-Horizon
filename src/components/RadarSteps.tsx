@@ -11,7 +11,7 @@ const STEPS = [
   {
     title: "Listen for the echo",
     meta: "BACKSCATTER σ⁰",
-    body: "Rough, crevassed ice throws a lot of the signal back and looks bright. Smooth water and wet snow send it away and look dark. The echo carries the surface's roughness and moisture.",
+    body: "Rough ground, crops and buildings throw a lot of the signal back and look bright. Calm water works like a mirror and sends it away, so rivers and flooded fields look dark. Forest scatters the signal inside the canopy, which shows up strongly in the HV channel.",
   },
   {
     title: "Build a sharp image",
@@ -20,8 +20,8 @@ const STEPS = [
   },
   {
     title: "Compare passes",
-    meta: "12-DAY BASELINE",
-    body: "Twelve days later NISAR images the same ice again. Matching the speckle pattern between the two images shows how far each patch of the glacier moved.",
+    meta: "12-DAY REPEAT",
+    body: "Twelve days later NISAR images the same ground again from the same orbit and angle. Fields that flooded turn dark, and land that drained turns bright again.",
   },
 ];
 
@@ -99,11 +99,11 @@ export function RadarSteps() {
             <line key={`vx-${gx}`} className="rs-grid" x1={gx} x2={gx} y1="0" y2="300" />
           ))}
 
-          {/* ground: crevassed ice, then open water */}
-          <path className="rs-ice" d="M0 300 H40 l6 14 6-14 H96 l5 18 5-18 H150 l7 12 7-12 H214 l5 16 5-16 H262 l6 13 6-13 H330 l5 15 5-15 H380 V380 H0Z" />
+          {/* ground: fields and villages, then calm water */}
+          <path className="rs-land" d="M0 300 H40 l6 14 6-14 H96 l5 18 5-18 H150 l7 12 7-12 H214 l5 16 5-16 H262 l6 13 6-13 H330 l5 15 5-15 H380 V380 H0Z" />
           <path className="rs-water" d="M380 306 H600 V380 H380Z" />
-          <text className="rs-small" x="16" y="352">Crevassed ice</text>
-          <text className="rs-small" x="396" y="352">Open water</text>
+          <text className="rs-small" x="16" y="352">Fields and villages</text>
+          <text className="rs-small" x="396" y="352">Calm water</text>
 
           {/* satellite with its 12 m mesh reflector */}
           <g className="rs-sat">
@@ -155,8 +155,8 @@ export function RadarSteps() {
 
           <g className="rs-g rs-g4">
             {[
-              { x: 330, label: "Day 0", dx: 0 },
-              { x: 470, label: "Day 12", dx: -22 },
+              { x: 330, label: "Day 0", flood: false },
+              { x: 470, label: "Day 12", flood: true },
             ].map((t) => (
               <g key={t.label}>
                 <rect x={t.x} y="40" width="120" height="110" rx="3" filter={`url(#${speckleId})`} />
@@ -165,15 +165,14 @@ export function RadarSteps() {
                   className="rs-corner"
                   d={`M${t.x} 50 V40 H${t.x + 10} M${t.x + 110} 40 H${t.x + 120} V50 M${t.x} 140 V150 H${t.x + 10} M${t.x + 110} 150 H${t.x + 120} V140`}
                 />
-                <path className="rs-feature" transform={`translate(${t.x + 70 + t.dx} 80)`} d="M0 0 l8 10 -4 12 10 8 M14 -4 l6 14 -2 10" />
+                <path className="rs-feature" transform={`translate(${t.x + 70} 80)`} d="M0 0 l8 10 -4 12 10 8 M14 -4 l6 14 -2 10" />
+                {t.flood && <path className="rs-flood" d={`M${t.x + 14} 112 q18 -18 42 -8 t38 4 q4 18 -20 26 t-46 2 q-18 -6 -14 -24z`} />}
                 <text className="rs-small" x={t.x} y="168">{t.label}</text>
               </g>
             ))}
-            <path className="rs-move" d="M572 180 H520 m8 -6 l-8 6 8 6" />
-            <text className="rs-mono rs-delta" x="330" y="185">Δx ≈ 480 m / 12 d</text>
-            <text className="rs-small" x="330" y="210">
-              <tspan x="330" dy="0">Same crevasses,</tspan>
-              <tspan x="330" dy="1.3em">up to ~480 m further on</tspan>
+            <text className="rs-small" x="330" y="196">
+              <tspan x="330" dy="0">Same fields, same angle.</tspan>
+              <tspan x="330" dy="1.3em">The new dark patch is water.</tspan>
             </text>
           </g>
         </svg>

@@ -6,9 +6,9 @@ const serif = Newsreader({ variable: "--font-serif", subsets: ["latin"], weight:
 const sans = IBM_Plex_Sans({ variable: "--font-sans", subsets: ["latin"], weight: ["400", "500", "600"] });
 const mono = IBM_Plex_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["400", "500"] });
 
-const title = "CryoCore Horizon: tracking Jakobshavn Glacier with NISAR radar";
+const title = "CryoCore Horizon: Chattogram through the clouds with NISAR radar";
 const description =
-  "Our NASA Space Apps 2026 project for Dancing with the SARs. We use NASA–ISRO NISAR radar to track Greenland's fastest glacier through cloud and polar night.";
+  "Our NASA Space Apps 2026 project for Dancing with the SARs. We use NASA–ISRO NISAR radar to follow the Bengal delta around Chattogram, Bangladesh, through a monsoon of cloud.";
 
 export const metadata: Metadata = {
   // absolute URLs for the share image: an explicit site URL, else the Vercel production domain, else local dev
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title, description },
 };
 
-export const viewport: Viewport = { themeColor: "#04080F", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#050B14", colorScheme: "dark" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
