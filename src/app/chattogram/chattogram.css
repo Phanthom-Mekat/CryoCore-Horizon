@@ -1149,6 +1149,204 @@
   }
 }
 
+/* ---------- processed case: status, layers, findings, per-date summary ---------- */
+.c-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.c-prep h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  color: var(--c-text);
+}
+.c-prep p,
+.c-prep dl {
+  margin: 0 0 8px;
+}
+.c-prep.is-failed h2,
+.c-prep.is-needs_credentials h2 {
+  color: var(--d-warn);
+}
+.c-prep-steps {
+  margin: 0 0 8px;
+  padding-left: 1.2em;
+  list-style: decimal;
+  display: grid;
+  gap: 4px;
+}
+.c-prep code,
+.c-finding code {
+  font: 0.85em var(--mono);
+  overflow-wrap: anywhere;
+}
+.c-prep progress {
+  width: 120px;
+  vertical-align: middle;
+  accent-color: var(--c-focus);
+}
+.c-layers {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  font-size: 0.88rem;
+}
+.c-layers label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+}
+.c-layers input {
+  accent-color: var(--c-focus);
+}
+.c-finding {
+  background: var(--c-panel);
+}
+.c-finding h3 {
+  margin: 14px 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--c-dim);
+}
+.c-finding p {
+  font-size: 0.88rem;
+}
+.c-finding-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+}
+.c-finding-close {
+  padding: 4px 6px;
+}
+.c-quality {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--c-muted);
+  font-size: 0.85rem;
+}
+.c-quality.is-strong {
+  border-color: var(--d-good);
+}
+.c-quality.is-moderate {
+  border-color: var(--d-warn);
+}
+.c-quality.is-weak {
+  border-color: var(--d-bad);
+}
+.c-finding-checks,
+.c-finding-sources {
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+.c-finding-sources li {
+  display: grid;
+  gap: 2px;
+}
+.c-finding-sources .c-mono {
+  overflow-wrap: anywhere;
+}
+.c-finding-sources small {
+  color: var(--c-dim);
+}
+.c-processed {
+  display: grid;
+  gap: 12px;
+}
+.c-processed-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+}
+.c-processed-head h2 {
+  margin: 0;
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+}
+/* per-date summary under the timeline: same column, same axis as the date ticks */
+.c-sum-axis {
+  display: grid;
+  align-content: space-between;
+  height: 64px;
+  margin: 0;
+  font: 0.68rem var(--mono);
+  color: var(--c-dim);
+  text-align: right;
+}
+.c-sum {
+  position: relative;
+  height: 64px;
+  margin: 0 28px;
+  border-top: 1px solid var(--c-line);
+  border-bottom: 1px solid var(--c-line);
+}
+.c-sum-pt,
+.c-sum-gap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  margin-left: -8px;
+}
+.c-sum-whisker {
+  position: absolute;
+  left: 7px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--c-muted);
+}
+.c-sum-dot {
+  position: absolute;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border: 2px solid var(--c-navy);
+  border-radius: 50%;
+  background: var(--c-text);
+}
+.c-sum-pt.is-on .c-sum-dot {
+  background: var(--c-focus);
+  transform: scale(1.3);
+}
+.c-sum-gap {
+  display: grid;
+  place-items: center;
+  font: 0.8rem var(--mono);
+  color: var(--c-dim);
+}
+
+/* QA-only bundle made from synthetic fixtures (CaseProvider): impossible to miss on every case page */
+.c-synthetic {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 10px 16px;
+  border: 3px solid #000;
+  background: repeating-linear-gradient(-45deg, #ffd400 0 18px, #ffe866 18px 36px);
+  color: #000;
+  font-size: 0.9rem;
+}
+.c-synthetic > * {
+  color: #000;
+}
+.c-synthetic strong {
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
 /* ---------- frozen case notice (plan F09) ---------- */
 .c-frozen {
   display: flex;

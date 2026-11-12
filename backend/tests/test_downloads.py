@@ -5,7 +5,7 @@ import sqlite3
 import httpx
 import pytest
 
-from app.database import Database
+from app.database import LATEST_VERSION, Database
 from app.downloads import asset_lock, download
 from app.inspection import InspectionError, ORIGIN
 
@@ -91,4 +91,4 @@ def test_v2_migration_preserves_reports(tmp_path):
     db.initialize()
     assert db.get_inspection("old", 1) == {}
     with db.connect() as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == LATEST_VERSION

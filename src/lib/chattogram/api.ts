@@ -4,6 +4,7 @@
 import type { components } from "./api-schema";
 import type { ExplorerData } from "@/lib/explorer-data";
 import type { ProcessedCase } from "./processed";
+import type { CaseDetail, CaseLayer, FindingDetail, Findings, Timeseries } from "./case-api";
 
 export type Scene = components["schemas"]["Scene"];
 export type ScenePage = components["schemas"]["ScenePage"];
@@ -55,6 +56,13 @@ export const api = {
   search: (req: SearchRequest) => call<SearchResponse>("/api/earth/search", { method: "POST", body: JSON.stringify(req) }),
   /** Processed cases (backend/app/cases.py), through src/app/api/earth/cases. */
   cases: () => call<{ cases: ProcessedCase[] }>("/api/earth/cases").then((r) => r.cases),
+  /** The processed case (plan B3), through the read-only proxy at /api/earth/curated-cases. */
+  case: (id: string) => call<CaseDetail>(`/api/earth/curated-cases/${id}`),
+  layers: (id: string) => call<CaseLayer[]>(`/api/earth/curated-cases/${id}/layers`),
+  findings: (id: string) => call<Findings>(`/api/earth/curated-cases/${id}/findings`),
+  finding: (id: string, fid: string) => call<FindingDetail>(`/api/earth/curated-cases/${id}/findings/${encodeURIComponent(fid)}`),
+  timeseries: (id: string) => call<Timeseries>(`/api/earth/curated-cases/${id}/timeseries`),
+  exportUrl: (id: string, format: "json" | "csv" | "geojson") => `/api/earth/curated-cases/${id}/export?format=${format}`,
 };
 
 /** Every stored scene of one product (the API pages at 100). */
