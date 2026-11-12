@@ -263,6 +263,7 @@ function Source({ role, a }: { role: string; a: Acquisition }) {
 
 /** The processed case as the backend published it: metrics, findings, method, caveats and sources. */
 function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null }) {
+  const { source, frozenCurated } = useCase();
   const d = pc.detail;
   const m = d.metrics;
   const span = `${fmtDate(d.before.date)} → ${fmtDate(d.after.date)}`;
@@ -393,7 +394,7 @@ function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null })
         <div className="c-links c-noprint">
           <span className="c-hint">The case as the backend stores it:</span>
           {(["json", "csv", "geojson"] as const).map((f) => (
-            <a key={f} className="c-btn" href={api.exportUrl(CASE_ID, f)} download>
+            <a key={f} className="c-btn" href={frozenCurated && source.mode === "frozen" ? frozenCurated.exports[f] : api.exportUrl(CASE_ID, f)} download>
               <Download size={15} aria-hidden="true" />
               {f.toUpperCase()}
             </a>

@@ -96,6 +96,7 @@ export const isBusy = (d: CaseDetail) => d.status === "queued" || d.status === "
  * rebuilt. `v` (the backend's, else the case's update time) gives a republished case new URLs, so assets can be cached.
  */
 export function assetUrl(caseId: string, layer: CaseLayer, updatedAt: string) {
+  if (layer.url.startsWith("/data/")) return layer.url; // a frozen-case file, served as is
   const u = new URL(layer.url, "http://backend");
   const name = u.pathname.split("/").pop() ?? "";
   const v = u.searchParams.get("v") || updatedAt;

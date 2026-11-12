@@ -8,7 +8,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { covers, stacks, toAcquisition, type Acquisition } from "../src/lib/chattogram/acquisitions.ts";
 import { PROCESSING, bboxOf, browseFile, corners, decode, toWebp } from "../src/lib/chattogram/browse.ts";
-import { FOCUS, FROZEN_DIR, FROZEN_VERSION, type FrozenCase, type FrozenPilot } from "../src/lib/chattogram/frozen.ts";
+import { FOCUS, FROZEN_DIR, FROZEN_VERSION, type FrozenCase, type FrozenCurated, type FrozenPilot } from "../src/lib/chattogram/frozen.ts";
+import { CASE_ID, type CaseDetail, type CaseLayer, type FindingDetail, type Findings, type Timeseries } from "../src/lib/chattogram/case-api.ts";
 import { pilotOf, type ProcessedCase } from "../src/lib/chattogram/processed.ts";
 import type { ExplorerData } from "../src/lib/explorer-data.ts";
 import type { Scene, ScenePage } from "../src/lib/chattogram/api.ts";
@@ -86,6 +87,36 @@ if (pilotCase) {
   console.log(`pilot ${pilotCase.id}: ${Object.keys(files).length} files, GeoTIFF hashes match the published manifest`);
 } else console.log("no calibrated pilot on the backend; the snapshot will have none");
 
+// the curated case, only once the backend has published it from real files: everything its pages ask the API for
+const curatedDir = `${out}curated/`;
+rmSync(curatedDir, { recursive: true, force: true });
+let curated: FrozenCurated | null = null;
+const curatedBase = `/api/v1/curated-cases/${CASE_ID}`;
+const detail = await get<CaseDetail>(curatedBase).catch(() => null);
+if (detail?.status === "ready" && !detail.synthetic_fixture) {
+  mkdirSync(curatedDir, { recursive: true });
+  const files: FrozenCurated["files"] = {};
+  const keep = (name: string, body: Uint8Array) => {
+    writeFileSync(curatedDir + name, body);
+    files[name] = { src: `${FROZEN_DIR}curated/${name}`, sha256: sha256(body), bytes: body.byteLength };
+    return files[name].src;
+  };
+  const layers = await Promise.all(
+    (await get<CaseLayer[]>(`${curatedBase}/layers`)).map(async (l) => {
+      const u = new URL(l.url, BACKEND);
+      return { ...l, url: keep(u.pathname.split("/").pop()!, new Uint8Array(await (await fetchOk(u.pathname + u.search)).arrayBuffer())) };
+    }),
+  );
+  const findings = await get<Findings>(`${curatedBase}/findings`);
+  const findingDetails: FrozenCurated["findingDetails"] = {};
+  for (const f of findings.features) findingDetails[f.properties.id] = await get<FindingDetail>(`/api/v1/findings/${encodeURIComponent(f.properties.id)}`);
+  const exports = {} as FrozenCurated["exports"];
+  for (const fmt of ["json", "csv", "geojson"] as const)
+    exports[fmt] = keep(`${CASE_ID}.${fmt}`, new Uint8Array(await (await fetchOk(`${curatedBase}/export?format=${fmt}`)).arrayBuffer()));
+  curated = { detail, layers, findings, timeseries: await get<Timeseries>(`${curatedBase}/timeseries`), findingDetails, exports, files };
+  console.log(`curated case ${CASE_ID}: ${layers.length} layers, ${findings.features.length} findings, ${Object.keys(files).length} files`);
+} else console.log(`curated case ${CASE_ID} is ${detail ? detail.status + (detail.synthetic_fixture ? " (synthetic QA)" : "") : "not served"}; the snapshot will have none`);
+
 const manifest: FrozenCase = {
   version: FROZEN_VERSION,
   frozenAt: new Date().toISOString(),
@@ -102,6 +133,7 @@ const manifest: FrozenCase = {
   acquisitions,
   totals: { scenes: acquisitions.length, images: toFreeze.length, bytes },
   pilot,
+  curated,
 };
 writeFileSync(`${out}case.json`, JSON.stringify(manifest));
 console.log(`wrote public${FROZEN_DIR}case.json: ${acquisitions.length} scenes, ${toFreeze.length} images, ${(bytes / 1048576).toFixed(1)} MB`);

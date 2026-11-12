@@ -64,6 +64,9 @@ Plan F09. `pnpm freeze-case` (`scripts/freeze-case.mts`) reads the stored catalo
 - `pilot/`: the calibrated pilot as the backend published it: the 8 GeoTIFFs (each checked against the manifest's
   SHA-256 while freezing) and the 6 dB display PNGs the map draws. `case.json` holds the pilot manifest, the layer
   corners and every file's SHA-256 under `pilot`; snapshots taken before the pilot existed have none.
+- `curated/`: the curated `karnaphuli-estuary` case once the backend has published it from real files (never a
+  synthetic QA bundle): the 3 layer PNGs and the JSON/CSV/GeoJSON exports. `case.json` holds its detail, layers,
+  findings with per-finding evidence and timeseries under `curated`, with every file's SHA-256.
 
 How the pages use it (`CaseProvider`):
 

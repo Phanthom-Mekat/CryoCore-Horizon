@@ -5,6 +5,7 @@
 import type { Acquisition } from "./acquisitions";
 import type { ExplorerData } from "../explorer-data";
 import type { ProcessedCase, ProcessedImage } from "./processed";
+import type { CaseDetail, CaseLayer, FindingDetail, Findings, Timeseries } from "./case-api";
 
 /** The curated starting point: the city, which the most NISAR dates cover. Stacks over it are the ones frozen. */
 export const FOCUS = { name: "Chattogram city", lonLat: [91.8317, 22.3569] as [number, number] };
@@ -27,6 +28,19 @@ export type FrozenCase = {
   totals: { scenes: number; images: number; bytes: number };
   /** The calibrated pilot as the backend published it, absent in snapshots taken before it existed. */
   pilot?: FrozenPilot | null;
+  /** The curated case, only when the backend had published it from real NISAR files (never a synthetic QA bundle). */
+  curated?: FrozenCurated | null;
+};
+
+/** The curated case as the backend served it; layer `url`s and `exports` point at files in `curated/`. */
+export type FrozenCurated = {
+  detail: CaseDetail;
+  layers: CaseLayer[];
+  findings: Findings;
+  timeseries: Timeseries;
+  findingDetails: Record<string, FindingDetail>;
+  exports: Record<"json" | "csv" | "geojson", string>;
+  files: Record<string, { src: string; sha256: string; bytes: number }>;
 };
 
 /**

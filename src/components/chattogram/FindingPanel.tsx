@@ -6,6 +6,7 @@ import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { fmtDate } from "@/lib/i18n/format";
 import { CASE_ID, fmtDb, fmtKm2, type CaseDetail, type Finding, type FindingDetail } from "@/lib/chattogram/case-api";
 import { FINDING } from "./MapKey";
+import { useCase } from "./CaseProvider";
 
 const QUALITY = { strong: "Strong", moderate: "Moderate", weak: "Weak" } as const;
 
@@ -19,8 +20,12 @@ const checkText = (c: unknown) => {
 /** Click-to-explain (F07): what changed, why we think so, what is uncertain, and where every number comes from. */
 export function FindingPanel({ finding, detail, onClose }: { finding: Finding; detail: CaseDetail; onClose: () => void }) {
   const p = finding.properties;
-  const [ev, setEv] = useState<Load<FindingDetail>>({ status: "loading" });
+  const { source, frozenCurated } = useCase();
+  const frozenEv = source.mode === "frozen" ? frozenCurated?.findingDetails[p.id] : undefined;
+  const [liveEv, setEv] = useState<Load<FindingDetail>>({ status: "loading" });
+  const ev: Load<FindingDetail> = source.mode !== "frozen" ? liveEv : frozenEv ? { status: "ready", data: frozenEv } : { status: "unavailable", reason: "Not in the frozen case" };
   useEffect(() => {
+    if (source.mode === "frozen") return; // the snapshot holds every finding's evidence
     let live = true;
     api.finding(CASE_ID, p.id).then(
       (d) => live && setEv({ status: "ready", data: d }),
@@ -29,7 +34,7 @@ export function FindingPanel({ finding, detail, onClose }: { finding: Finding; d
     return () => {
       live = false;
     };
-  }, [p.id]);
+  }, [p.id, source.mode]);
 
   const k = FINDING[p.kind];
   const [b, a] = [fmtDate(detail.before.date), fmtDate(detail.after.date)];

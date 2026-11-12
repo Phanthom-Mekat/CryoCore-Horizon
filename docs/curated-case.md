@@ -2,8 +2,9 @@
 
 Selected 12 November 2026 from NASA CMR metadata synced into the local catalog
 (`python -m app.cli sync --start 2026-01-01 --end 2026-11-12`: 181 GCOV records, 128 intersecting the division polygon).
-Every value below comes from that metadata. **No NISAR file has been opened yet** (no Earthdata credentials on the
-selection machine), so Gate A's "inspect real files" step is still open; see [What is still unverified](#what-is-still-unverified).
+Every value below comes from that metadata. The pair was processed from the real files on 13 November 2026 (job 2):
+175.71 km² valid on both dates (0.0002 km² excluded), 4.91 km² brighter and 0.20 km² darker by at least 3 dB, 92 change
+regions of which the 40 largest are listed. See [What is still unverified](#what-is-still-unverified).
 
 ## Chosen area
 
@@ -100,8 +101,5 @@ video say "observed radar change", and they report the excluded area with every 
 
 ## What is still unverified
 
-- The HDF5 layout, masks and per-file metadata (Gate A, "inspect real files"). This needs NASA Earthdata credentials:
-  `EARTHDATA_TOKEN` in `backend/.env`, then `python -m app.cli prepare-case karnaphuli-estuary`.
-- That the valid-data mask leaves enough common coverage inside the rectangle. The worker fails the job with a plain
-  message if it does not.
+- ~~The HDF5 layout, masks and common coverage~~: confirmed by the real run (13 Nov 2026).
 - Tide heights at both acquisition times. Reference observations for any later water interpretation.

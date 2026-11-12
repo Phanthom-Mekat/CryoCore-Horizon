@@ -5,11 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { allScenes, api, toLoadError, type Load, type Region } from "@/lib/chattogram/api";
 import type { ExplorerData } from "@/lib/explorer-data";
 import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "@/lib/chattogram/acquisitions";
-import { FOCUS, loadFrozen, type FrozenPilot } from "@/lib/chattogram/frozen";
+import { FOCUS, loadFrozen, type FrozenCurated, type FrozenPilot } from "@/lib/chattogram/frozen";
 import { CASE_ID, isBusy, type ProcessedCase } from "@/lib/chattogram/case-api";
 
 const POLL_MS = 3000;
-const FROZEN_PROCESSED: Load<never> = { status: "unavailable", reason: "The frozen case replays without the backend, so the processed case is not loaded" };
+const FROZEN_PROCESSED: Load<never> = { status: "unavailable", reason: "This frozen case was captured before the processed case was published" };
 import { publishCaseSource } from "@/lib/chattogram/sourceStore";
 import { pilotOf, type ProcessedCase as PilotCase } from "@/lib/chattogram/processed";
 import { loadRain, type RainSeries } from "@/lib/chattogram/rain";
@@ -37,6 +37,8 @@ type Ctx = {
   rain: RainSeries | null;
   /** The calibrated pilot in the shipped snapshot, if it has one; pages use it while replaying. */
   frozenPilot: FrozenPilot | null;
+  /** The curated case in the shipped snapshot, if it has one; used while replaying. */
+  frozenCurated: FrozenCurated | null;
   reload: () => void;
   /** Selection, all of it mirrored in the URL so any view can be shared as a link. */
   stack: Stack | null;
@@ -68,6 +70,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const [processed, setProcessed] = useState<Load<ProcessedCase>>({ status: "loading" });
   const [rain, setRain] = useState<RainSeries | null>(null);
   const [frozenPilot, setFrozenPilot] = useState<FrozenPilot | null>(null);
+  const [frozenCurated, setFrozenCurated] = useState<FrozenCurated | null>(null);
   useEffect(() => {
     loadRain().then(setRain);
   }, []);
@@ -90,6 +93,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       const frozen = await loadFrozen();
       if (!live) return;
       setFrozenPilot(frozen?.pilot ?? null);
+      setFrozenCurated(frozen?.curated ?? null);
       const replay = (fallback: boolean) => {
         if (!frozen) return false;
         apply(frozen.explorer, frozen.acquisitions, { mode: "frozen", frozenAt: frozen.frozenAt, fallback });
@@ -155,7 +159,9 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     };
   }, [tick, wanted]);
 
-  const shownProcessed: Load<ProcessedCase> = wanted === "frozen" ? FROZEN_PROCESSED : processed;
+  // a replay (chosen, or the fallback when the backend is down) shows the snapshot's curated case, never a live one
+  const shownProcessed: Load<ProcessedCase> =
+    source.mode === "frozen" ? (frozenCurated ? { status: "ready", data: { detail: frozenCurated.detail, layers: frozenCurated.layers, findings: frozenCurated.findings, timeseries: frozenCurated.timeseries } } : FROZEN_PROCESSED) : processed;
   const data = load.status === "ready" ? load.data : null;
   const q = (k: string) => params.get(k);
 
@@ -210,6 +216,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     source,
     rain,
     frozenPilot,
+    frozenCurated,
     reload: () => setTick((t) => t + 1),
     stack,
     before,
