@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import type { Map as MlMap } from "maplibre-gl";
+import type { Map as MlMap } from "mapbox-gl";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeftRight, Check, FileSearch } from "lucide-react";
 import { compatibility, fmtDate, fmtTime, type Acquisition } from "@/lib/chattogram/acquisitions";
@@ -19,7 +19,7 @@ function useSyncedMaps() {
       const other = maps.current[1 - i];
       if (busy.current || !other) return;
       busy.current = true;
-      other.jumpTo({ center: m.getCenter(), zoom: m.getZoom() });
+      other.jumpTo({ center: m.getCenter(), zoom: m.getZoom(), bearing: m.getBearing(), pitch: m.getPitch() });
       busy.current = false;
     });
   }, []);

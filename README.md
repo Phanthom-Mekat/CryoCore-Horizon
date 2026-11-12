@@ -12,7 +12,8 @@ Chattogram backend is a subsequent step.
 
 The first integrated feature is at **[/explore](http://localhost:3000/explore)**:
 NASA GCOV catalog footprints, an attributed division boundary, date filtering,
-scene evidence, and a tilted MapLibre map with NASA GIBS Blue Marble context.
+scene evidence, and an interactive Mapbox GL map. All geographic maps use Mapbox
+Standard for context; NASA imagery and scientific layers retain their attribution.
 It discovers observations; it does not yet compute environmental changes.
 
 Start the backend using [its instructions](backend/README.md), then run `pnpm dev`.
@@ -31,6 +32,15 @@ Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing 
 - `/dashboard`: ice speed map, speed over time, calving front position, radar before/after
 
 ## Run the site
+
+Interactive geographic maps require a public Mapbox token in `.env.local`:
+`NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token`. See [Mapbox setup](docs/MAPBOX.md)
+for URL restrictions, deployment configuration, and map behavior.
+
+The site defaults to light mode. Use the sun/moon button in the landing navigation
+or dashboard header to switch themes. Your choice is saved in browser local
+storage and shared across pages and tabs. UI themes do not recolor satellite
+imagery or change scientific color scales.
 
 ```bash
 pnpm install

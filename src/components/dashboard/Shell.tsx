@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, Bell, BookOpen, Columns2, FileSearch, Gauge, Home, Info, Layers, LayoutDashboard, Map, Menu, Mountain, Radar, Satellite, Search, X, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { DataGate, useDashboardMaybe } from "./DashboardProvider";
 
 type Item = { href: string; label: string; icon: LucideIcon };
@@ -147,6 +148,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Bell size={18} aria-hidden="true" />
             {alertCount > 0 && <span className="d-dot" />}
           </Link>}
+          <ThemeToggle />
           <span className="d-avatar" title="Team CryoCore Horizon" aria-hidden="true">
             CH
           </span>

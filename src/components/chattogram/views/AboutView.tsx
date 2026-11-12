@@ -81,8 +81,7 @@ export function AboutView() {
           </li>
         )}
         <li>
-          Basemaps: <a href="https://openfreemap.org/">OpenFreeMap</a>, © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>; NASA
-          GIBS Blue Marble in the scene catalogue (static context, not NISAR).
+          Basemaps: <a href="https://www.mapbox.com/about/maps/">Mapbox</a>, © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>. Geographic context, not NISAR observations.
         </li>
       </ul>
 

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { GeoJSONSource, ImageSource, Map as MlMap, MapMouseEvent } from "maplibre-gl";
+import type { GeoJSONSource, ImageSource, Map as MlMap, MapMouseEvent } from "mapbox-gl";
 import type { Acquisition } from "@/lib/chattogram/acquisitions";
 import { fmtDate, fmtTime } from "@/lib/chattogram/acquisitions";
 import type { View } from "./CaseProvider";
 import { WATER, stripeTile } from "@/lib/chattogram/palette";
 
-export const BASEMAP = "https://tiles.openfreemap.org/styles/dark";
+import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme, mapError, cameraDuration } from "@/lib/mapbox";
+import { MapUnavailable } from "@/components/maps/MapUnavailable";
 
 /** Orientation landmarks (approximate centres), labelled in our own style above the basemap. */
 export const LANDMARKS: { name: string; lonLat: [number, number] }[] = [
@@ -83,38 +84,41 @@ export function CaseMap({
 
   // create the map once
   useEffect(() => {
+    if (!MAPBOX_CONFIGURED) return;
     let dead = false;
-    import("maplibre-gl").then((ml) => {
+    let disposeTheme: (() => void) | undefined;
+    loadMapbox().then((ml) => {
       if (dead || !el.current) return;
 
       const reduced = matchMedia(REDUCED).matches;
       const m = new ml.Map({
         container: el.current,
-        style: BASEMAP,
+        style: mapStyle(),
+        accessToken: MAPBOX_TOKEN,
+        projection: "mercator",
         center: [view.lon, view.lat],
         zoom: view.zoom,
-        attributionControl: { compact: true },
+        attributionControl: false,
         fadeDuration: reduced ? 0 : 200,
         dragRotate: false,
         pitchWithRotate: false,
       });
+      m.addControl(new ml.AttributionControl({ compact: true }));
+      map.current = m;
+      disposeTheme = followMapTheme(m);
       m.touchZoomRotate.disableRotation();
       if (controls) {
         m.addControl(new ml.NavigationControl({ showCompass: false }), "top-right");
         m.addControl(new ml.ScaleControl({ unit: "metric", maxWidth: 120 }), "bottom-left");
       }
-      // the basemap style names a few icons its sprite lacks; a blank one keeps the console clean
-      m.on("styleimagemissing", (e: { id: string }) => {
-        if (!m.hasImage(e.id)) m.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
-      });
       m.on("error", (e) => {
-        if (String(e.error?.message ?? "").includes("tiles.openfreemap.org")) setError("The basemap couldn’t load. The radar layers still work.");
+        if (!dead) setError(mapError(String(e.error?.message ?? "")));
       });
       m.on("load", () => {
         if (dead) return;
         m.addSource("boundary", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        m.addLayer({ id: "boundary-glow", type: "line", source: "boundary", paint: { "line-color": "#8fe3ff", "line-width": 6, "line-opacity": 0.12 } });
-        m.addLayer({ id: "boundary", type: "line", source: "boundary", paint: { "line-color": "#8fe3ff", "line-width": 1.4, "line-opacity": 0.9 } });
+        m.addLayer({ id: "boundary-glow", type: "line", source: "boundary", paint: { "line-color": "#1686b0", "line-width": 6, "line-opacity": 0.12 } });
+        m.addLayer({ id: "boundary", type: "line", source: "boundary", paint: { "line-color": "#1686b0", "line-width": 1.4, "line-opacity": 0.9 } });
         m.addSource("footprints", { type: "geojson", data: { type: "FeatureCollection", features: [] }, promoteId: "id" });
         m.addLayer({
           id: "footprints-fill",
@@ -154,7 +158,7 @@ export function CaseMap({
           id: "landmark-names",
           type: "symbol",
           source: "landmarks",
-          layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 13, "text-offset": [0, 1.1], "text-anchor": "top" },
+          layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Regular"], "text-size": 13, "text-offset": [0, 1.1], "text-anchor": "top" },
           paint: { "text-color": "#f3eee5", "text-halo-color": "#070b12", "text-halo-width": 1.6 },
         });
         let hovered: string | number | undefined;
@@ -184,9 +188,10 @@ export function CaseMap({
         setReady(true);
         onReady?.(m);
       });
-    });
+    }).catch(() => { if (!dead) setError("The interactive map could not start. Check WebGL support and reload."); });
     return () => {
       dead = true;
+      disposeTheme?.();
       map.current?.remove();
       map.current = null;
     };
@@ -250,7 +255,7 @@ export function CaseMap({
         else {
           m.addSource("browse", { type: "image", url, coordinates: corners });
           m.addLayer(
-            { id: "browse", type: "raster", source: "browse", paint: { "raster-opacity": imageOpacity, "raster-fade-duration": 0, "raster-resampling": "linear" } },
+            { id: "browse", type: "raster", source: "browse", paint: { "raster-opacity": imageOpacity, "raster-emissive-strength": 1, "raster-fade-duration": 0, "raster-resampling": "linear" } },
             "boundary-glow",
           );
         }
@@ -267,9 +272,15 @@ export function CaseMap({
     if (m?.getLayer("browse")) m.setPaintProperty("browse", "raster-opacity", imageOpacity);
   }, [imageOpacity, ready]);
 
+  if (!MAPBOX_CONFIGURED) return <div className="c-map"><MapUnavailable /></div>;
+
   return (
     <div className="c-map" aria-label={label} role="region">
       <div ref={el} className="c-map-canvas" />
+      {controls && <div className="map-view-tools">
+        <button type="button" onClick={() => map.current?.easeTo({ center: [view.lon, view.lat], zoom: view.zoom, pitch: 0, bearing: 0, duration: cameraDuration() })}>2D view</button>
+        <button type="button" onClick={() => map.current?.easeTo({ pitch: 50, duration: cameraDuration() })}>Tilt view</button>
+      </div>}
       {hover && (
         <div className="c-map-tip" style={{ left: hover.x, top: hover.y }} aria-hidden="true">
           <strong>{fmtDate(hover.a.start)}</strong>

@@ -23,7 +23,7 @@ export function changeColor(db: number) {
   return t < 0 ? mix(CHANGE.mid, CHANGE.neg, -t) : mix(CHANGE.mid, CHANGE.pos, t);
 }
 
-/** A small diagonal-stripe tile for MapLibre fill-pattern, so categories never rely on colour alone. */
+/** A small diagonal-stripe tile for Mapbox fill-pattern, so categories never rely on colour alone. */
 export function stripeTile(color: string, angle: 45 | 135, size = 12) {
   const data = new Uint8Array(size * size * 4);
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16));

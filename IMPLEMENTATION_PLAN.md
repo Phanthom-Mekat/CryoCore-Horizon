@@ -16,7 +16,7 @@ Prepared: 12 November 2026.
 - [x] Filter actual scene polygons against the division polygon; report excluded and missing footprints separately.
 - [x] Add reproducible boundary preparation, pinned source metadata, checksum, and license attribution.
 - [x] Connect real NASA CMR search and pagination to the SQLite catalog through server-side frontend routes.
-- [x] Build a MapLibre explorer with NASA GIBS context, selectable scenes, date filtering, and source inspection.
+- [x] Build a Mapbox GL explorer with attributed geographic context, selectable scenes, date filtering, and source inspection.
 - [x] Match the existing landing/dashboard aesthetic using the shared brand, dashboard shell, navigation, page header, KPI components, and color tokens.
 - [x] Adopt pnpm with a committed lockfile and document frontend/backend setup and data limitations.
 - [x] Pass 17 backend tests, the production frontend build, and TypeScript checking; inspect desktop and 390 px mobile layouts.
@@ -285,7 +285,7 @@ Target desktop composition: a dominant map occupying about two thirds of the
 screen, a compact evidence panel, and a bottom timeline. Put the case name,
 observation dates, and data source above the map. Avoid a wall of small metric cards.
 
-- [x] Use MapLibre with georeferenced catalog polygons and attributed NASA GIBS raster context.
+- [x] Use Mapbox GL with georeferenced catalog polygons, NASA image overlays, and attributed Mapbox context.
   _Frontend: `/chattogram` also draws the real NISAR GCOV browse quicklooks, georeferenced from ASF's KML or the CMR footprint._
 - [ ] Evaluate the map against the first real processed NISAR raster layer.
 - [x] Reuse the established navy surfaces, ice-blue accents, typography, and shared components across the explorer, dashboard, and landing navigation.
