@@ -39,6 +39,7 @@ export function ExploreView() {
           </Link>
         }
       />
+      <p className="c-compare-foot"><Link href="/chattogram/processed">Open the calibrated radar pilot →</Link> · Measured HH/HV layers and signed change for the July–October subset.</p>
     <div className="c-explore">
       <section className="c-stage" aria-label={e.mapRegion}>
         <CaseMap
