@@ -3,7 +3,7 @@
 // English kept on purpose (technical details, source citations, proper names) goes inside an element marked
 // lang="en" translate="no". Plain lang="en" only labels the language, so untranslated UI marked that way still fails.
 //
-// Not listed yet: English added with the processed case (13 Nov 2026) in MapKey, Timeline, OverviewView,
+// Not listed yet: English added with the processed case (13 Nov 2026) in MapKey, Timeline,
 // ExploreView, CompareView, EvidenceView, AboutView (Data preparation) and ProcessedView (share, area selection),
 // and the new FindingPanel, PrepStatus, AreaInspector and ProcessedBrief. Each goes on the list once translated.
 import { test } from "node:test";
@@ -20,6 +20,7 @@ const TRANSLATED = [
   "src/components/chattogram/PixelInspector.tsx",
   "src/components/chattogram/RainCard.tsx",
   "src/components/chattogram/RainChart.tsx",
+  "src/components/chattogram/views/OverviewView.tsx",
 ];
 
 for (const path of TRANSLATED) {
@@ -28,7 +29,7 @@ for (const path of TRANSLATED) {
     assert.deepEqual(
       found.map((f) => `line ${f.line}: ${f.text}`),
       [],
-      `${path} has English that doesn't come from the messages. Move it to messages.ts (en + bn), or mark it lang="en" if it must stay English.`,
+      `${path} has English that doesn't come from the messages. Move it to messages.ts (en + bn), or put it inside lang="en" translate="no" if it must stay English.`,
     );
   });
 }

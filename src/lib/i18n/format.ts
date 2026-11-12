@@ -14,4 +14,6 @@ export const fmtNum = (n: number, digits?: number) =>
   n.toLocaleString(loc(), digits === undefined ? { useGrouping: false } : { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false });
 /** Like fmtNum, with a leading + on positive values (signed dB change). */
 export const fmtSigned = (n: number, digits = 2) => `${n > 0 ? "+" : ""}${fmtNum(n, digits)}`;
+/** An area in km², without the unit: two decimals below 10 km² and one above, so 4.91 and 175.7 both read naturally. */
+export const fmtArea = (km2: number) => fmtNum(km2, km2 < 10 ? 2 : 1);
 export const fmtSize = (b: number | null) => (b === null ? "–" : b > 1e9 ? `${fmtNum(b / 1e9, 1)} GB` : `${fmtNum(Math.round(b / 1e6))} MB`);

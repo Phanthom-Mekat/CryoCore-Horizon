@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, Columns2, FileSearch, Layers, Map as MapIcon, Radar, Ruler, Scan, ScanLine, ShieldCheck, Satellite, Activity, TrendingDown, TrendingUp } from "lucide-react";
 import { Kpi, KpiStrip } from "@/components/dashboard/ui";
 import { compatibility, covers } from "@/lib/chattogram/acquisitions";
-import { fmtDate, fmtDayMonth, fmtNum, fmtSigned } from "@/lib/i18n/format";
+import { fmtArea, fmtDate, fmtDayMonth, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { CaseMap, quicklookSrc } from "../CaseMap";
 import { FOCUS, useCase, usePilot } from "../CaseProvider";
@@ -17,6 +17,11 @@ const STEPS = [
   { n: 3, icon: FileSearch, link: "/chattogram/evidence" },
 ];
 
+/** Text the backend writes in English: the Bangla translation when we have one, else the original, marked as English. */
+function BackendText({ text, translated }: { text: string; translated?: string }) {
+  return translated ?? <span lang="en">{text}</span>;
+}
+
 /** The front door: the question, the numbers, the way through the case, and the comparison to start with. */
 export function OverviewView() {
   const { load, explorer, stack, before, after, href, source, processed, caseHref } = useCase();
@@ -27,7 +32,7 @@ export function OverviewView() {
   const detail = processed.status === "ready" ? processed.data.detail : null;
   const m = detail?.status === "ready" ? detail.metrics : null;
   const span = detail ? `${fmtDate(detail.before.date)} → ${fmtDate(detail.after.date)}` : "";
-  const num = (v: number) => (v < 10 ? v.toFixed(2) : v.toFixed(1));
+  const provenance = detail?.analysis_area.properties?.provenance;
 
   const all = load.data.acquisitions;
   const overCity = load.data.stacks.filter((s) => covers(s.items[0], FOCUS.lonLat));
@@ -88,71 +93,72 @@ export function OverviewView() {
 
       <section className={`c-processed${m ? " is-ready" : ""}`} aria-labelledby="processed-h">
         <div className="c-processed-head">
-          <p className="c-eyebrow">{m ? "Processed case · measured from the calibrated GCOV files" : "Processed case · not processed yet"}</p>
-          <h2 id="processed-h">{detail ? detail.title : "Karnaphuli estuary"}</h2>
+          <p className="c-eyebrow">{m ? o.caseMeasured : o.casePending}</p>
+          <h2 id="processed-h">{detail ? <BackendText text={detail.title} translated={o.caseTitles[detail.id]} /> : o.caseFallbackTitle}</h2>
           {detail && (
-            <p className="c-pair" aria-label={`Pair: ${span}`}>
+            <p className="c-pair" aria-label={o.casePair(span)}>
               <span>
-                <small>Before</small>
+                <small>{t.before}</small>
                 {fmtDate(detail.before.date)}
               </span>
               <ArrowRight size={16} aria-hidden="true" />
               <span>
-                <small>After</small>
+                <small>{t.after}</small>
                 {fmtDate(detail.after.date)}
               </span>
             </p>
           )}
           <Link className="c-btn is-primary" href={caseHref("/chattogram/explore") ?? href("/chattogram/explore")}>
-            Open the case
+            {o.openCase}
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
         {detail && m ? (
           <div className="c-processed-body">
-            <dl className="c-figures" aria-label={`Processed case in numbers, ${span}`}>
+            <dl className="c-figures" aria-label={o.caseFigures(span)}>
               <div>
                 <dt>
                   <Scan size={16} aria-hidden="true" />
-                  Valid in both dates
+                  {o.validBoth}
                 </dt>
                 <dd>
-                  {num(m.valid_common_km2)}
+                  {fmtArea(m.valid_common_km2)}
                   <small>km²</small>
                 </dd>
-                <dd className="c-stat-sub">
-                  of the {num(m.analysis_km2)} km² analysis rectangle · {span}
-                </dd>
+                <dd className="c-stat-sub">{o.validBothSub(fmtArea(m.analysis_km2), span)}</dd>
               </div>
               <div className="is-up">
                 <dt>
                   <TrendingUp size={16} aria-hidden="true" />
-                  Observed increase
+                  {o.increase}
                 </dt>
                 <dd>
-                  {num(m.increase_km2)}
+                  {fmtArea(m.increase_km2)}
                   <small>km²</small>
                 </dd>
-                <dd className="c-stat-sub">
-                  brighter by ≥ {m.threshold_db} dB · {span}
-                </dd>
+                <dd className="c-stat-sub">{o.increaseSub(fmtNum(m.threshold_db), span)}</dd>
               </div>
               <div className="is-down">
                 <dt>
                   <TrendingDown size={16} aria-hidden="true" />
-                  Observed decrease
+                  {o.decrease}
                 </dt>
                 <dd>
-                  {num(m.decrease_km2)}
+                  {fmtArea(m.decrease_km2)}
                   <small>km²</small>
                 </dd>
-                <dd className="c-stat-sub">
-                  darker by ≥ {m.threshold_db} dB · {span}
-                </dd>
+                <dd className="c-stat-sub">{o.decreaseSub(fmtNum(m.threshold_db), span)}</dd>
               </div>
             </dl>
             <p className="c-hint">
-              Observed radar change in calibrated backscatter (γ⁰), not confirmed water change, flooding or damage. Analysis area: {detail.analysis_area.properties?.provenance}.
+              {o.caseHint}
+              {provenance && (
+                <>
+                  {" "}
+                  {o.analysisArea} <BackendText text={provenance} translated={o.areaProvenance[provenance]} />
+                  {t.stop}
+                </>
+              )}
             </p>
           </div>
         ) : (
@@ -228,16 +234,16 @@ export function OverviewView() {
         <Radar size={18} aria-hidden="true" />
         <p>
           {m ? (
-            <span lang="en">
-              <strong>Real now:</strong> NASA’s NISAR catalogue, scene footprints, radar quicklooks, the division boundary and calibrated backscatter change for
-              one pair over the analysis rectangle. <strong>Not claimed:</strong> water change, floods or damage; those need reference checks.{" "}
-            </span>
+            <>
+              <strong>{o.realNow}</strong> {o.realNowCaseBody} <strong>{o.notClaimed}</strong> {o.notClaimedBody}
+            </>
           ) : (
             <>
               <strong>{o.realNow}</strong> {o.realNowBody} <strong>{o.next}</strong> {o.nextBody}
             </>
           )}{" "}
-          <Link href={href("/chattogram/processed")}>{o.openPilot}</Link>. <Link href={href("/chattogram/about")}>{o.canCant}</Link>
+          <Link href={href("/chattogram/processed")}>{o.openPilot}</Link>
+          {t.stop} <Link href={href("/chattogram/about")}>{o.canCant}</Link>
         </p>
       </section>
     </div>

@@ -163,6 +163,8 @@ Evidence, About, Calibrated radar), the sidebar, the frozen-case notice, map lab
   purpose (source citations, technical error details, proper names) goes inside an element marked
   `lang="en" translate="no"`. A plain `lang="en"` only tells screen readers the language, so untranslated text marked
   that way still fails. Translate a component, then add it to the list.
+- Text the backend writes in English (a case title, the analysis area's provenance) shows in Bangla when
+  `messages.ts` has a translation for that value, and otherwise as sent, inside `lang="en"`: never blank.
 - Still English on purpose: the downloaded brief (JSON, CSV, GeoJSON: data files whose field names must stay
   stable), identifiers, and technical error details. Not yet translated: the Scene catalogue, the Jakobshavn sample
   pages and the landing page.
