@@ -10,6 +10,7 @@ from functools import lru_cache
 from .config import BACKEND_ROOT, Settings
 from .cases import list_cases, read_case
 from .display import preview
+from .sampling import sample_case
 from .database import Database
 from .explorer import build_explorer
 from .nasa import CMR_URL, CatalogError, NasaCatalog
@@ -98,6 +99,15 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
         result = read_case(BACKEND_ROOT / "data" / "cases", case_id)
         if result is None: raise HTTPException(status_code=404, detail="Published case not found.")
         return result
+
+    @app.get("/api/v1/cases/{case_id}/sample", tags=["Processed pilots"])
+    def case_sample(case_id: str, longitude: float = Query(ge=-180, le=180, allow_inf_nan=False),
+                    latitude: float = Query(ge=-90, le=90, allow_inf_nan=False)):
+        manifest = case(case_id)
+        try:
+            return sample_case(BACKEND_ROOT / "data" / "cases" / case_id, manifest, longitude, latitude)
+        except (OSError, ValueError):
+            raise HTTPException(status_code=422, detail="The location or published raster grid could not be sampled.") from None
 
     @lru_cache(maxsize=24)
     def cached_preview(case_id: str, name: str, digest: str):

@@ -1,0 +1,387 @@
+{
+  "concept_id": "G4241673561-ASF",
+  "revision_id": 1,
+  "granule_id": "NISAR_L2_PR_GCOV_024_163_D_077_2005_QPDH_A_20260707T122637_20260707T122712_P05023_N_F_J_001",
+  "asset_bytes": 8321499136,
+  "catalog_checksum": {
+    "Value": "1c5ea754b866396473fab70221746768",
+    "Algorithm": "MD5"
+  },
+  "full_file_checksum_verified": false,
+  "identification": {
+    "absoluteOrbitNumber": 4933,
+    "boundingPolygon": "POLYGON ((91.8417674857373 24.1642712699643 -10.9559577008384,91.7833087835027 23.9504760909416 83.5043089637382,91.7243033781852 23.7368347247184 126.561981925148,91.6627858887633 23.5238136048728 -17.9654060936882,91.6036647238408 23.3102445103182 -10.4657709203993,91.5444410699496 23.0967223918181 -23.6024431389096,91.4852427653975 22.8832156546556 -48.4150805675066,91.4265163212959 22.6696187961067 -53.7325668476248,91.3680508737668 22.4559815013598 -54.020252255732,91.3097699165387 22.24232124501 -54.4438362192917,91.2516739821104 22.0286386582536 -54.8402023401594,91.5292366074979 21.9625805992967 -54.6399459876421,91.7946070624399 21.8989283464943 -54.189979557476,92.0498056494201 21.8372589974301 -50.7879752699341,92.2971678769374 21.7770555153717 28.7159183757964,92.5368573832055 21.7183184550155 99.0479128351811,92.7682483676716 21.6612418403593 1.54261515804911,93.0005280092709 21.6035721535127 578.791289284588,93.2244310165281 21.5476338075363 854.188475121957,93.4432732153076 21.4926280030431 1094.50427299883,93.6555104451418 21.4389707300995 1059.923828125,93.7212765908199 21.6503723663013 1564.2573242179,93.7811170118707 21.8633099067505 1351.8462392545,93.838321961953 22.0769478695482 807.958102351356,93.8968454904655 22.2902798357242 392.153654607914,93.9592732389779 22.5026449867509 401.526732106178,94.0194007723112 22.7156264458991 118.651214723782,94.0818510725949 22.9280441543732 76.4553451548811,94.146390506748 23.1399563744913 246.701399356232,94.2100861795805 23.3521133698641 291.830475916944,94.2742264024594 23.5641866595976 359.622039011036,94.0595788107407 23.6189052420399 482.86758561924,93.8524962824432 23.6713615793092 1844.98474123629,93.6282718388833 23.7278131625199 1821.63537544682,93.3940758798259 23.7863806226435 1327.99664779861,93.1469272310002 23.8477506251224 214.299462247631,92.9087152005434 23.9064608980933 579.676148221571,92.6563706389633 23.9681996662099 362.135407119106,92.39593710767 24.0314209861747 225.282744086942,92.1238918166853 24.0969238179238 12.9099591568456,91.8417674857373 24.1642712699643 -10.9559577008384))",
+    "compositeReleaseId": "P05023",
+    "diagnosticModeFlag": 0,
+    "frameNumber": 77,
+    "granuleId": "NISAR_L2_PR_GCOV_024_163_D_077_2005_QPDH_A_20260707T122637_20260707T122712_P05023_N_F_J_001",
+    "hasInputDataException": 0,
+    "instrumentName": "LSAR",
+    "isDithered": "False",
+    "isFullFrame": "True",
+    "isGeocoded": "True",
+    "isJointObservation": "True",
+    "isMixedMode": "True",
+    "isUrgentObservation": "True",
+    "listOfFrequencies": [
+      "A",
+      "B"
+    ],
+    "listOfObservationModes": [
+      "(NOT SPECIFIED)"
+    ],
+    "lookDirection": "Left",
+    "missionId": "NISAR",
+    "orbitPassDirection": "Descending",
+    "plannedDatatakeId": [
+      "dtid_2026188121720"
+    ],
+    "plannedObservationId": [
+      "oid_2026188122428"
+    ],
+    "platformName": "NISAR",
+    "processingCenter": "JPL",
+    "processingDateTime": "2026-07-10T06:50:53",
+    "processingType": "Nominal",
+    "productDoi": "10.5067/NIL2GCOV-P1",
+    "productLevel": "L2",
+    "productSpecificationVersion": "1.5.0",
+    "productType": "GCOV",
+    "productVersion": "1.0.11",
+    "radarBand": "L",
+    "staticLayersDataAccess": "https://nisar-services.earthdata.nasa.gov/redirect/NISAR_L2_STATIC/NISAR_L2_PR_GCOV_024_163_D_077_2005_QPDH_A_20260707T122637_20260707T122712_P05023_N_F_J_001.h5",
+    "trackNumber": 163,
+    "zeroDopplerEndTime": "2026-07-07T12:27:12.999342105",
+    "zeroDopplerStartTime": "2026-07-07T12:26:37.000000000"
+  },
+  "frequencies": {
+    "frequencyA": {
+      "HHHH": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "HHHV": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "complex64",
+        "units": "1"
+      },
+      "HHVH": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "complex64",
+        "units": "1"
+      },
+      "HHVV": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "complex64",
+        "units": "1"
+      },
+      "HVHV": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "HVVH": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "complex64",
+        "units": "1"
+      },
+      "HVVV": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "complex64",
+        "units": "1"
+      },
+      "VHVH": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "VHVV": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "complex64",
+        "units": "1"
+      },
+      "VVVV": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "inputDataExceptionMask": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "uint8",
+        "units": ""
+      },
+      "listOfCovarianceTerms": {
+        "shape": [
+          10
+        ],
+        "dtype": "|S4",
+        "units": "",
+        "value": [
+          "HHHH",
+          "HHHV",
+          "HHVH",
+          "HHVV",
+          "HVHV",
+          "HVVH",
+          "HVVV",
+          "VHVH",
+          "VHVV",
+          "VVVV"
+        ]
+      },
+      "listOfPolarizations": {
+        "shape": [
+          4
+        ],
+        "dtype": "|S2",
+        "units": "",
+        "value": [
+          "HH",
+          "HV",
+          "VH",
+          "VV"
+        ]
+      },
+      "mask": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "uint8",
+        "units": ""
+      },
+      "numberOfLooks": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "numberOfSubSwaths": {
+        "shape": [],
+        "dtype": "uint8",
+        "units": "1",
+        "value": 4
+      },
+      "projection": {
+        "shape": [],
+        "dtype": "uint32",
+        "units": "",
+        "value": 32646
+      },
+      "rtcGammaToSigmaFactor": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "xCoordinateSpacing": {
+        "shape": [],
+        "dtype": "float64",
+        "units": "meters",
+        "value": 20.0
+      },
+      "xCoordinates": {
+        "shape": [
+          17208
+        ],
+        "dtype": "float64",
+        "units": "meters",
+        "endpoints": [
+          309610.0,
+          653750.0
+        ]
+      },
+      "yCoordinateSpacing": {
+        "shape": [],
+        "dtype": "float64",
+        "units": "meters",
+        "value": -20.0
+      },
+      "yCoordinates": {
+        "shape": [
+          16884
+        ],
+        "dtype": "float64",
+        "units": "meters",
+        "endpoints": [
+          2687030.0,
+          2349370.0
+        ]
+      }
+    },
+    "frequencyB": {
+      "HHHH": {
+        "shape": [
+          4221,
+          4302
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "HHHV": {
+        "shape": [
+          4221,
+          4302
+        ],
+        "dtype": "complex64",
+        "units": "1"
+      },
+      "HVHV": {
+        "shape": [
+          4221,
+          4302
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "inputDataExceptionMask": {
+        "shape": [
+          16884,
+          17208
+        ],
+        "dtype": "uint8",
+        "units": ""
+      },
+      "listOfCovarianceTerms": {
+        "shape": [
+          3
+        ],
+        "dtype": "|S4",
+        "units": "",
+        "value": [
+          "HHHH",
+          "HHHV",
+          "HVHV"
+        ]
+      },
+      "listOfPolarizations": {
+        "shape": [
+          2
+        ],
+        "dtype": "|S2",
+        "units": "",
+        "value": [
+          "HH",
+          "HV"
+        ]
+      },
+      "mask": {
+        "shape": [
+          4221,
+          4302
+        ],
+        "dtype": "uint8",
+        "units": ""
+      },
+      "numberOfLooks": {
+        "shape": [
+          4221,
+          4302
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "numberOfSubSwaths": {
+        "shape": [],
+        "dtype": "uint8",
+        "units": "1",
+        "value": 4
+      },
+      "projection": {
+        "shape": [],
+        "dtype": "uint32",
+        "units": "",
+        "value": 32646
+      },
+      "rtcGammaToSigmaFactor": {
+        "shape": [
+          4221,
+          4302
+        ],
+        "dtype": "float32",
+        "units": "1"
+      },
+      "xCoordinateSpacing": {
+        "shape": [],
+        "dtype": "float64",
+        "units": "meters",
+        "value": 80.0
+      },
+      "xCoordinates": {
+        "shape": [
+          4302
+        ],
+        "dtype": "float64",
+        "units": "meters",
+        "endpoints": [
+          309640.0,
+          653720.0
+        ]
+      },
+      "yCoordinateSpacing": {
+        "shape": [],
+        "dtype": "float64",
+        "units": "meters",
+        "value": -80.0
+      },
+      "yCoordinates": {
+        "shape": [
+          4221
+        ],
+        "dtype": "float64",
+        "units": "meters",
+        "endpoints": [
+          2687000.0,
+          2349400.0
+        ]
+      }
+    }
+  },
+  "warnings": [
+    "Metadata only: no raster pixels, valid-mask coverage, pair alignment or change analysis validated."
+  ],
+  "status": "metadata_inspected",
+  "analysis_ready": false,
+  "bytes_fetched": 3670016,
+  "http_requests": 28,
+  "etag": "\"c1e07392f63e66a5916a461450487c7b-31\"",
+  "inspected_at": "2026-11-12T17:04:29.580366+00:00"
+}

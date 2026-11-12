@@ -5,6 +5,7 @@ import type { Map as MapboxMap } from "mapbox-gl";
 import { ArrowDownToLine, ArrowUpRight, Layers, ScanLine, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { CaseMap } from "../CaseMap";
+import { PixelInspector } from "../PixelInspector";
 import type { ProcessedCase, ProcessedImage } from "@/lib/chattogram/processed";
 
 type Mode = "before" | "after" | "change" | "swipe";
@@ -21,6 +22,7 @@ export function ProcessedView() {
   const [opacity, setOpacity] = useState(0.85);
   const [split, setSplit] = useState(50);
   const [view, setView] = useState(INITIAL);
+  const [point, setPoint] = useState<[number, number] | null>(null);
   const maps = useRef<(MapboxMap | null)[]>([null, null]);
   const syncing = useRef(false);
   const onReady = useCallback((index: number, map: MapboxMap) => {
@@ -71,14 +73,15 @@ export function ProcessedView() {
       <section className="p-map-card" aria-label="Processed radar workspace">
         <div className="p-toolbar"><div className="p-segment" aria-label="Radar layer">{(["before", "after", "swipe", "change"] as Mode[]).map(value => <button key={value} aria-pressed={mode === value} onClick={() => setMode(value)}>{value === "swipe" ? "Compare" : value === "change" ? "Signed change" : value === "before" ? "Before" : "After"}</button>)}</div><select aria-label="Radar polarization" className="c-select" value={pol} onChange={e => setPol(e.target.value as typeof pol)}><option value="HHHH">HH polarization</option><option value="HVHV">HV polarization</option></select></div>
         <div className="p-map-stage">
-          <CaseMap key={mode === "swipe" ? "swipe-main" : "single"} label="Calibrated radar map" allowTerrain={mode !== "swipe"} view={view} onMove={setView} image={null} processed={image} imageOpacity={opacity} onReady={m => onReady(0, m)} />
-          {mode === "swipe" && <><div className="p-swipe-overlay" style={{ clipPath: `inset(0 ${100-split}% 0 0)` }}><CaseMap label="Before radar map" view={view} onMove={setView} image={null} processed={beforeImage} imageOpacity={opacity} controls={false} onReady={m => onReady(1, m)} /></div><div className="p-swipe-line" style={{ left: `${split}%` }} /><div className="p-date-labels"><span>{date(0)}</span><span>{date(1)}</span></div></>}
+          <CaseMap key={mode === "swipe" ? "swipe-main" : "single"} label="Calibrated radar map" onInspect={setPoint} inspectionPoint={point} allowTerrain={mode !== "swipe"} view={view} onMove={setView} image={null} processed={image} imageOpacity={opacity} onReady={m => onReady(0, m)} />
+          {mode === "swipe" && <><div className="p-swipe-overlay" style={{ clipPath: `inset(0 ${100-split}% 0 0)` }}><CaseMap label="Before radar map" inspectionPoint={point} view={view} onMove={setView} image={null} processed={beforeImage} imageOpacity={opacity} controls={false} onReady={m => onReady(1, m)} /></div><div className="p-swipe-line" style={{ left: `${split}%` }} /><div className="p-date-labels"><span>{date(0)}</span><span>{date(1)}</span></div></>}
           <div className="p-map-stamp"><span className="p-live-dot" />REAL RADAR · EXPERIMENTAL</div>
         </div>
         {mode === "swipe" && <label className="p-slider">Before / after reveal<input aria-label="Before and after reveal" type="range" min="0" max="100" value={split} onChange={e => setSplit(Number(e.target.value))} /><output>{split}%</output></label>}
         <div className="p-map-footer"><div className="p-scale"><div className={mode === "change" ? "p-gradient-change" : "p-gradient-power"} /><div><span>{mode === "change" ? "−6 dB · decrease" : "−25 dB"}</span><span>{mode === "change" ? "+6 dB · increase" : "0 dB"}</span></div><small>{mode === "change" ? "October minus July · values clipped for display" : "Gamma0 backscatter · same scale for both dates"}</small></div><label className="p-opacity">Layer opacity<input type="range" min="0" max="100" value={Math.round(opacity*100)} onChange={e => setOpacity(Number(e.target.value)/100)} /></label></div>
       </section>
       <aside className="c-panel p-evidence" aria-label="Pilot evidence">
+        <PixelInspector caseId={data.id} point={point} onSelect={setPoint} center={[view.lon, view.lat]} polarization={pol} />
         <div className="c-panel-block"><p className="c-eyebrow">What you are seeing</p><h2>Measured change.<br />Careful interpretation.</h2><p>Real HH/HV radar power, calibrated to dB. {mode === "change" ? "Colour shows how backscatter changed between these dates. It does not identify flooding." : "Before and after share the same brightness scale. Darker pixels have lower backscatter; they are not automatically water."}</p><span className="p-status">Experimental · provisional data</span></div>
         <div className="c-panel-block"><p className="c-label">Coverage & exclusions</p><dl className="c-facts"><div><dt>Inside study area</dt><dd>{stats.common_area_km2.toFixed(2)} km²</dd></div><div><dt>Geographic exclusion</dt><dd>{stats.outside_roi_area_km2.toFixed(2)} km²</dd></div><div><dt>Additional quality exclusions</dt><dd>{stats.excluded_pixels.toLocaleString()} pixels</dd></div></dl><p className="c-hint">Transparent pixels are excluded, not unchanged. The clipped river corridor cannot support a river-water-change claim.</p></div>
         <div className="c-panel-block"><p className="c-label">Read the map responsibly</p><p className="c-hint">3D terrain and buildings provide Mapbox context. Radar colours retain their scale in both views. Use 2D for spatial comparison.</p><details><summary>Method & limitations</summary><p className="c-hint">{data.method} · native aligned grids · valid power and documented masks · no resampling of scientific outputs.</p><ul className="p-limitations">{data.limitations.map(item => <li key={item}>{item}</li>)}</ul></details></div>

@@ -75,7 +75,7 @@ Updated 13 November 2026. "Partial" includes implemented pilots with remaining s
 | F04 | Processed radar layers | Partial | Real frequency-A HH/HV GeoTIFF pilot; documented masks, common grid, hashes, downloads and georeferenced Mapbox overlays with fixed scales | Static terrain quality, mixed-mode review, larger-area tiling |
 | F05 | Defensible change map | Partial | Signed after-minus-before dB change over common valid pilot pixels; coverage/exclusion statistics | Confounder assessment, independent validation and frontend map; no water classification yet |
 | F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB display scale at `/chattogram/processed` | Extend to additional validated acquisitions |
-| F07 | Click-to-explain evidence | Partial | Evidence page with sources, checks, limitations | `/cases/{id}/findings` polygons to click; local statistics |
+| F07 | Click-to-explain evidence | Partial | Native HH/HV pixel inspection, map pin, source-linked JSON and explicit exclusions; evidence page | `/cases/{id}/findings` polygons, area statistics and reference validation |
 | F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison | Observed area, eligible comparison area, change summaries |
 | F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying | Add processed layers, findings and the selected finding to the snapshot once they exist; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
@@ -128,10 +128,19 @@ this pilot cannot demonstrate river-water change. See `docs/case-selection.md`.
 - [x] Verify desktop and 390 px mobile layouts, dark mode, 3D controls, polarization and keyboard slider in the in-app browser; confirm both production and development rendering.
 - [x] Pass TypeScript, ESLint, production build and 38 backend tests.
 
+### Native pixel evidence — 13 November 2026
+
+- [x] Sample containing native GeoTIFF pixels through a read-only API, with grid checks and coordinate validation.
+- [x] Show HH/HV before, after and signed change in dB on map click, with a selection pin and keyboard-accessible inspect-centre action.
+- [x] Distinguish valid zero change, excluded pixels and locations outside the processed window; never substitute zero for missing evidence.
+- [x] Add JSON evidence export containing source revisions, acquisition dates, method and asset hashes.
+- [x] Pass 48 backend tests, TypeScript, lint and production build; verify real values and map selection on desktop in the in-app browser.
+- [ ] Finish inspector-specific mobile and browser-download verification: browser automation stopped responding during these checks.
+
 ### Next up
 
 - **Backend:** resolve mixed-mode and static terrain quality; select a water-suitable ROI and dated reference evidence; complete queued-worker lifecycle and frozen replay assets.
-- **Frontend:** add measured pixel inspection and findings once supported; extend processed comparisons to additional validated dates; connect pilot evidence to the observation brief; translate the Calibrated radar page into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
+- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; connect pilot evidence to the observation brief; translate the Calibrated radar page into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission
@@ -368,7 +377,7 @@ observation dates, and data source above the map. Avoid a wall of small metric c
   _Frontend: `/chattogram` names eight landmarks (Chattogram, Cox’s Bazar, Feni, Noakhali, Sandwip, Hatiya, Maheshkhali, Kaptai Lake)._
 - [x] Add hover values, selected-area outlines, and smooth transitions lasting
   roughly 150–300 ms. Respect reduced-motion settings.
-  _Frontend: hover shows each acquisition's date, time, track and polarizations; pixel values follow once processed rasters exist._
+  _Frontend: hover shows each acquisition's date, time, track and polarizations; the processed view supports click-to-inspect native HH/HV pixel values and a selection pin._
 - [x] At 1920×1080 recording size, make dates, the selected finding, and primary
   numbers readable without zooming into the footage.
 

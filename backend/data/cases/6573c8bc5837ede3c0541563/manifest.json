@@ -1,0 +1,255 @@
+{
+  "id": "6573c8bc5837ede3c0541563",
+  "title": "Karnaphuli radar-change pilot",
+  "status": "processed_pilot",
+  "method": "gcov-window-v1",
+  "created_at": "2026-11-12T17:12:58.651009+00:00",
+  "inputs": {
+    "method": "gcov-window-v1",
+    "sources": [
+      {
+        "concept_id": "G4241673561-ASF",
+        "revision_id": 1,
+        "etag": "\"c1e07392f63e66a5916a461450487c7b-31\""
+      },
+      {
+        "concept_id": "G4362350526-ASF",
+        "revision_id": 1,
+        "etag": "\"100349078e5778e24b30dc97eb29a1a0-31\""
+      }
+    ],
+    "window": [
+      10733,
+      3444
+    ],
+    "shape": [
+      256,
+      256
+    ],
+    "boundary": {
+      "name": "Chattogram Division",
+      "source_name": "Chittagong",
+      "source": "Bangladesh Bureau of Statistics (BBS) / HDX, via geoBoundaries gbHumanitarian",
+      "source_url": "https://data.humdata.org/dataset/cod-ab-bgd",
+      "download_url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbHumanitarian/BGD/ADM1/geoBoundaries-BGD-ADM1.geojson",
+      "boundary_id": "BGD-ADM1-88445334",
+      "year": 2018,
+      "license": "CC BY 3.0 IGO",
+      "license_url": "https://creativecommons.org/licenses/by/3.0/igo/",
+      "downloaded_at": "2026-11-11T20:30:19.837563+00:00",
+      "sha256": "873c0f69fbf6d4a623b89b78ef4cabf88a2dfe6fb32c2e3cad2e71cbf7c4dc31",
+      "note": "2018 reference boundary, not verified as the current legal boundary. Display is simplified; intersection tests use the original geometry. Not suitable for cadastral decisions."
+    }
+  },
+  "sources": [
+    {
+      "concept_id": "G4241673561-ASF",
+      "revision_id": 1,
+      "granule_id": "NISAR_L2_PR_GCOV_024_163_D_077_2005_QPDH_A_20260707T122637_20260707T122712_P05023_N_F_J_001",
+      "acquisition": "2026-07-07T12:26:37.000000Z",
+      "collection": "NISAR_L2_GCOV_PROVISIONAL_V1",
+      "etag": "\"c1e07392f63e66a5916a461450487c7b-31\"",
+      "catalog_checksum": {
+        "Value": "1c5ea754b866396473fab70221746768",
+        "Algorithm": "MD5"
+      },
+      "full_file_checksum_verified": false,
+      "bytes_fetched": 9699328,
+      "layers": {
+        "HHHH": {
+          "description": "Covariance between HH and HH",
+          "dtype": "float32",
+          "chunks": [
+            512,
+            512
+          ]
+        },
+        "HVHV": {
+          "description": "Covariance between HV and HV",
+          "dtype": "float32",
+          "chunks": [
+            512,
+            512
+          ]
+        },
+        "mask": {
+          "description": "Mask indicating the subswath number associated with valid GCOV samples. A GCOV sample is only considered valid if it is generated from fully-focused radar samples. If at least one radar sample in the averaging set is partially focused or invalid, the corresponding mask pixel will contain the value 0. GCOV pixels outside of the radar acquisition extent are filled with the value 255",
+          "dtype": "uint8",
+          "chunks": [
+            512,
+            512
+          ]
+        },
+        "inputDataExceptionMask": {
+          "description": "Bitwise OR of input data exception codes for each image pixel (0: no anomaly, 2: NISAR LSAR qFSP-H1 sample slip)",
+          "dtype": "uint8",
+          "chunks": [
+            512,
+            512
+          ]
+        }
+      }
+    },
+    {
+      "concept_id": "G4362350526-ASF",
+      "revision_id": 1,
+      "granule_id": "NISAR_L2_PR_GCOV_032_163_D_077_2005_QPDH_A_20261011T122635_20261011T122709_P05023_N_F_J_001",
+      "acquisition": "2026-10-11T12:26:35.000000Z",
+      "collection": "NISAR_L2_GCOV_PROVISIONAL_V1",
+      "etag": "\"100349078e5778e24b30dc97eb29a1a0-31\"",
+      "catalog_checksum": {
+        "Value": "5183029c13a2f1c929bedeb43f46d1a8",
+        "Algorithm": "MD5"
+      },
+      "full_file_checksum_verified": false,
+      "bytes_fetched": 9699328,
+      "layers": {
+        "HHHH": {
+          "description": "Covariance between HH and HH",
+          "dtype": "float32",
+          "chunks": [
+            512,
+            512
+          ]
+        },
+        "HVHV": {
+          "description": "Covariance between HV and HV",
+          "dtype": "float32",
+          "chunks": [
+            512,
+            512
+          ]
+        },
+        "mask": {
+          "description": "Mask indicating the subswath number associated with valid GCOV samples. A GCOV sample is only considered valid if it is generated from fully-focused radar samples. If at least one radar sample in the averaging set is partially focused or invalid, the corresponding mask pixel will contain the value 0. GCOV pixels outside of the radar acquisition extent are filled with the value 255",
+          "dtype": "uint8",
+          "chunks": [
+            512,
+            512
+          ]
+        },
+        "inputDataExceptionMask": {
+          "description": "Bitwise OR of input data exception codes for each image pixel (0: no anomaly, 2: NISAR LSAR qFSP-H1 sample slip)",
+          "dtype": "uint8",
+          "chunks": [
+            512,
+            512
+          ]
+        }
+      }
+    }
+  ],
+  "crs": "EPSG:32646",
+  "bounds": [
+    378480.0,
+    2467260.0,
+    383600.0,
+    2472380.0
+  ],
+  "transform": [
+    20.0,
+    0.0,
+    378480.0,
+    0.0,
+    -20.0,
+    2472380.0
+  ],
+  "statistics": {
+    "HHHH": {
+      "roi_pixels": 54538,
+      "before_valid_pixels": 54538,
+      "after_valid_pixels": 54538,
+      "common_valid_pixels": 54538,
+      "excluded_pixels": 0,
+      "common_area_km2": 21.8152,
+      "excluded_area_km2": 0.0,
+      "median_change_db": -0.6957198977470398,
+      "change_percentiles_db": [
+        -5.212383127212524,
+        -0.6957198977470398,
+        4.0398536920547405
+      ],
+      "window_pixels": 65536,
+      "outside_roi_pixels": 10998,
+      "outside_roi_area_km2": 4.3992
+    },
+    "HVHV": {
+      "roi_pixels": 54538,
+      "before_valid_pixels": 54538,
+      "after_valid_pixels": 54538,
+      "common_valid_pixels": 54538,
+      "excluded_pixels": 0,
+      "common_area_km2": 21.8152,
+      "excluded_area_km2": 0.0,
+      "median_change_db": -0.545623779296875,
+      "change_percentiles_db": [
+        -4.891475439071655,
+        -0.545623779296875,
+        4.004486036300659
+      ],
+      "window_pixels": 65536,
+      "outside_roi_pixels": 10998,
+      "outside_roi_area_km2": 4.3992
+    }
+  },
+  "assets": [
+    {
+      "name": "before-HHHH.tif",
+      "sha256": "7b6f6c65ed840a4c3584f6f87dbe206ab62dbbbb12308c57d1373cc9e88eab5d",
+      "bytes": 201240,
+      "units": "dB"
+    },
+    {
+      "name": "after-HHHH.tif",
+      "sha256": "487da3e93d649df06eb0f3ecd0816e52e3cb19e06c5a6452b0428b2323a48ec0",
+      "bytes": 200226,
+      "units": "dB"
+    },
+    {
+      "name": "change-HHHH.tif",
+      "sha256": "e12e9f437ae7fe500a518ffb73336052f5e9731a0a0003e18afaade8ce2026bb",
+      "bytes": 202238,
+      "units": "dB"
+    },
+    {
+      "name": "common-HHHH.tif",
+      "sha256": "572745fc8ae79df4216c1d418190e11d5ed876c8c1008c07dde4241f7d9b3c49",
+      "bytes": 1586,
+      "units": "boolean"
+    },
+    {
+      "name": "before-HVHV.tif",
+      "sha256": "381db475d23edc14a94d67b747b6c845ed1266af618eb211fa88032fa5ce73c1",
+      "bytes": 193076,
+      "units": "dB"
+    },
+    {
+      "name": "after-HVHV.tif",
+      "sha256": "82eb5a506124eb51f1b834c173974822e127bdd57a90a84db0687cf2c7edbe37",
+      "bytes": 192010,
+      "units": "dB"
+    },
+    {
+      "name": "change-HVHV.tif",
+      "sha256": "93b19a3e8d41dcf58bec79145b3d843131fc4f25b2d8b56f32d4567572899032",
+      "bytes": 198590,
+      "units": "dB"
+    },
+    {
+      "name": "common-HVHV.tif",
+      "sha256": "572745fc8ae79df4216c1d418190e11d5ed876c8c1008c07dde4241f7d9b3c49",
+      "bytes": 1586,
+      "units": "boolean"
+    }
+  ],
+  "validity_rule": "Inside reference boundary and both footprints; finite positive power; mask 1..numberOfSubSwaths; inputDataExceptionMask=0. Change uses intersection of date-specific valid pixels.",
+  "alignment": "Identical native pixel grids; no interpolation or resampling.",
+  "claim": "Observed radar backscatter change, not a flood or damage classification.",
+  "limitations": [
+    "Mixed-mode flag is set; inspect processing metadata and valid coverage before analysis.",
+    "Provisional calibration and mixed-mode acquisitions; no independent dated reference validation.",
+    "Subswath and exception masks do not establish absence of layover/shadow; static terrain quality layers not yet applied.",
+    "2018 reference boundary; area is projected grid area, not a surveyed area.",
+    "Geographic clipping excludes the river corridor in this pilot; do not infer river-water change from excluded pixels."
+  ]
+}
