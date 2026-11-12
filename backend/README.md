@@ -164,6 +164,28 @@ Mixed-mode/provisional calibration, static terrain-quality masking, seasonal/tid
 confounders and independent validation remain unresolved. The calibrated pilot is integrated at `/chattogram/processed`; the broader scene
 explorer retains browse imagery for dates without processed products.
 
+## Shared data for collaborators
+
+The repository includes the processed radar pilot, source-inspection reports and
+reference boundary in [`data/`](data/README.md). Pulling the repository is enough
+to obtain the calibrated case; no Earthdata token is needed to view or sample it.
+Install dependencies and run the servers normally. Each developer supplies their
+own Mapbox public token for the basemap. Local databases and incomplete raw
+downloads are intentionally excluded; fresh NASA access still needs credentials.
+
+## Native pixel evidence
+
+`GET /api/v1/cases/{id}/sample?longitude=91.845&latitude=22.33` reads the
+containing native pixel from each published HH/HV GeoTIFF. It returns before,
+after and signed change in dB, the pixel centre and grid indices, source
+acquisition IDs/revisions, method and asset hashes. Values are neither
+interpolated nor clipped to the preview legend. No NASA request is made.
+
+Excluded measurements return null change, distinct from a measured zero.
+Locations outside the processed window return `outside_extent`. Saved masks
+cannot identify every individual exclusion cause. This is radar evidence,
+not a flood classification or an independently validated finding.
+
 ## Tests
 
 ```powershell

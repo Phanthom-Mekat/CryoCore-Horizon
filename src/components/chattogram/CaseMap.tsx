@@ -41,6 +41,8 @@ type Props = {
   image: Acquisition | null;
   processed?: ProcessedImage | null;
   allowTerrain?: boolean;
+  onInspect?: (point: [number, number]) => void;
+  inspectionPoint?: [number, number] | null;
   imageOpacity?: number;
   /** Footprints to outline; `selected` is drawn brighter. */
   footprints?: Acquisition[];
@@ -63,6 +65,8 @@ export function CaseMap({
   image,
   processed = null,
   allowTerrain = true,
+  onInspect,
+  inspectionPoint = null,
   imageOpacity = 0.9,
   footprints = [],
   selected = null,
@@ -86,9 +90,9 @@ export function CaseMap({
   const [img, setImg] = useState<{ id: string; state: "shown" | "failed" } | null>(null);
   const imgState = !image ? "none" : img?.id === image.conceptId ? img.state : "loading";
   const [hover, setHover] = useState<{ x: number; y: number; a: Acquisition } | null>(null);
-  const latest = useRef({ onMove, onPick, footprints });
+  const latest = useRef({ onMove, onPick, footprints, onInspect });
   useEffect(() => {
-    latest.current = { onMove, onPick, footprints };
+    latest.current = { onMove, onPick, footprints, onInspect };
   });
 
   // create the map once
@@ -126,6 +130,7 @@ export function CaseMap({
       m.on("load", () => {
         if (dead) return;
         m.addSource("terrain-dem", { type: "raster-dem", url: "mapbox://mapbox.mapbox-terrain-dem-v1", tileSize: 512, maxzoom: 14 });
+        m.on("click", e => latest.current.onInspect?.([e.lngLat.lng, e.lngLat.lat]));
         m.addSource("boundary", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
         m.addLayer({ id: "boundary-glow", type: "line", source: "boundary", paint: { "line-color": "#1686b0", "line-width": 6, "line-opacity": 0.12 } });
         m.addLayer({ id: "boundary", type: "line", source: "boundary", paint: { "line-color": "#1686b0", "line-width": 1.4, "line-opacity": 0.9 } });
@@ -172,6 +177,8 @@ export function CaseMap({
           paint: { "text-color": "#f3eee5", "text-halo-color": "#070b12", "text-halo-width": 1.6 },
         });
         let hovered: string | number | undefined;
+        m.addSource("inspection-point", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        m.addLayer({ id: "inspection-point", type: "circle", source: "inspection-point", paint: { "circle-radius": 7, "circle-color": "#0b7189", "circle-stroke-color": "#ffffff", "circle-stroke-width": 3, "circle-emissive-strength": 1 } });
         m.on("mousemove", "footprints-fill", (e: MapMouseEvent & { features?: { id?: string | number }[] }) => {
           const id = e.features?.[0]?.id;
           if (hovered !== undefined) m.setFeatureState({ source: "footprints", id: hovered }, { hover: false });
@@ -215,6 +222,11 @@ export function CaseMap({
     const c = m.getCenter();
     if (Math.abs(c.lng - view.lon) > 1e-4 || Math.abs(c.lat - view.lat) > 1e-4 || Math.abs(m.getZoom() - view.zoom) > 0.01) m.jumpTo({ center: [view.lon, view.lat], zoom: view.zoom });
   }, [view.lon, view.lat, view.zoom, ready]);
+
+  useEffect(() => {
+    const source = map.current?.getSource("inspection-point") as GeoJSONSource | undefined;
+    source?.setData({ type: "FeatureCollection", features: inspectionPoint ? [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: inspectionPoint } }] : [] });
+  }, [inspectionPoint, ready]);
 
   useEffect(() => {
     const src = map.current?.getSource("findings") as GeoJSONSource | undefined;

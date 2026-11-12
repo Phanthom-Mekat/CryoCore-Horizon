@@ -28,6 +28,20 @@ The browser only talks to the Next.js app. Server routes proxy the backend (`src
 them into stacks (same track, frame and direction), and keeps the selection (stack, before/after dates, map view,
 selected scene) in the URL, so every view can be shared as a link.
 
+## Inspect a native radar pixel
+
+On `/chattogram/processed`, click the map or use **Inspect map centre** after
+keyboard panning. A pin marks the requested location; the evidence panel shows
+both HH and HV before/after/change values from the containing native pixel.
+**Save pixel evidence** exports the response with method, source revisions and
+asset hashes. The Next.js sample proxy forwards validated coordinates to
+`GET /api/v1/cases/{id}/sample` without exposing credentials.
+
+Excluded and outside-window locations are explicit. Missing values are never
+shown as zero change, and numbers can exceed the colour legend's display range.
+The panel uses the shared light/dark theme. Pixel evidence does not establish
+flooding or replace independent validation.
+
 ## Honesty rules the UI follows
 
 - Quicklooks are labelled as browse images, never as calibrated backscatter.
