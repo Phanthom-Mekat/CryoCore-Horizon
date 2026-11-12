@@ -1,37 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
-import { api, toLoadError, type Load } from "@/lib/chattogram/api";
+import { ArrowUpRight, Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
+import { api } from "@/lib/chattogram/api";
 import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
+import { pilotCovers } from "@/lib/chattogram/processed";
 import { rainBefore } from "@/lib/chattogram/rain";
-import { METHOD_VERSION, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
-import { fmtDate, fmtDateTime, fmtNum, fmtSize } from "@/lib/i18n/format";
+import { METHOD_VERSION, PROCESSED_CLAIM, SYNTHETIC_CLAIM, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
+import { CASE_ID, fmtDb, fmtKm2, methodId, type ProcessedCase } from "@/lib/chattogram/case-api";
+import { fmtDate, fmtDateTime, fmtNum, fmtSigned, fmtSize } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
-import { useCase } from "../CaseProvider";
+import { useCase, usePilot } from "../CaseProvider";
+import { FINDING } from "../MapKey";
+import { PrepStatus } from "../PrepStatus";
 
 // The page follows the interface language; the downloaded brief (JSON, CSV, GeoJSON) stays in English, since it is a data
 // file for other tools and its field names must not change with the reader's language.
 export function EvidenceView() {
-  const { load, before, after, source, rain } = useCase();
+  const { load, before, after, source, rain, href, processed, isCasePair, caseHref } = useCase();
   const t = useT();
   const ev = t.evidence;
-  const [findings, setFindings] = useState<Load<unknown[]>>({ status: "loading" });
+  const findings = usePilot();
   const [copied, setCopied] = useState<"view" | "replay" | null>(null);
-
-  // processed findings come from the backend's planned /cases API; until it exists this says so plainly.
-  // A frozen replay asks nothing live: the snapshot holds no processed findings yet.
   const replaying = source.mode === "frozen";
-  useEffect(() => {
-    if (replaying) return;
-    api.cases().then(
-      (c) => setFindings(c.length ? { status: "ready", data: c } : { status: "empty", reason: "" }),
-      (e) => setFindings(toLoadError(e)),
-    );
-  }, [replaying]);
 
   if (load.status !== "ready" || !before || !after) return null;
+  const pc = processed.status === "ready" && processed.data.detail.status === "ready" ? processed.data : null;
+  const measured = pc && isCasePair ? pc : null; // the processed numbers describe exactly this pair
+  const toCase = pc && !isCasePair ? caseHref("/chattogram/evidence") : null;
   const region = load.data.region;
   const checks = compatibility(before, after);
   const days = Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5);
@@ -44,33 +41,36 @@ export function EvidenceView() {
     u.searchParams.set("source", "frozen");
     return u.toString();
   })();
+  const pilot = findings.status === "ready" ? findings.data : null;
+  const pilotMeasured = pilot !== null && pilotCovers(pilot, before.conceptId, after.conceptId);
+  const pilotDates = pilot ? ([fmtDate(pilot.sources[0].acquisition), fmtDate(pilot.sources[1].acquisition)] as const) : null;
   const replayable = Boolean(source.frozenAt && before.frozen && after.frozen);
   const copy = (text: string, which: "view" | "replay") => navigator.clipboard?.writeText(text).then(() => setCopied(which), () => setCopied(null));
 
   return (
     <article className="c-evidence">
       <header className="c-ev-head">
-        <p className="c-label">{ev.briefLabel(METHOD_VERSION)}</p>
+        <p className="c-label">{ev.briefLabel(measured ? methodId(measured.detail) : METHOD_VERSION)}</p>
         <h1>
           {t.place.region}: {t.vs(fmtDate(before.start), fmtDate(after.start))}
         </h1>
         <p className="c-ev-claim">
-          <strong>{ev.whatShows}</strong> {ev.claim}
+          <strong>{ev.whatShows}</strong> {measured ? (measured.detail.synthetic_fixture ? SYNTHETIC_CLAIM : PROCESSED_CLAIM) : pilotMeasured ? ev.claimPilot : ev.claim}
         </p>
         <div className="c-links c-noprint">
           <button type="button" className="c-btn is-primary" onClick={() => window.print()}>
             <Printer size={15} aria-hidden="true" />
             {ev.print}
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null, rain), null, 2), "application/json")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null, rain, pc, pilot), null, 2), "application/json")}>
             <Download size={15} aria-hidden="true" />
             JSON
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.csv`, briefCsv(before, after), "text/csv")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.csv`, briefCsv(before, after, pc), "text/csv")}>
             <Download size={15} aria-hidden="true" />
             CSV
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.geojson`, JSON.stringify(briefGeojson(before, after)), "application/geo+json")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.geojson`, JSON.stringify(briefGeojson(before, after, pc)), "application/geo+json")}>
             <Download size={15} aria-hidden="true" />
             GeoJSON
           </button>
@@ -97,11 +97,27 @@ export function EvidenceView() {
             </div>
             <div>
               <dt>{ev.measured}</dt>
-              <dd className="is-missing">{ev.measuredBody}</dd>
+              {measured?.detail.metrics ? (
+                <dd lang="en">
+                  Signed change in calibrated backscatter (γ⁰, dB) over {fmtKm2(measured.detail.metrics.valid_common_km2)} valid in both dates, of the{" "}
+                  {fmtKm2(measured.detail.metrics.analysis_km2)} analysis rectangle: {fmtKm2(measured.detail.metrics.increase_km2)} brighter and{" "}
+                  {fmtKm2(measured.detail.metrics.decrease_km2)} darker by at least {measured.detail.metrics.threshold_db} dB.
+                </dd>
+              ) : pilotMeasured ? (
+                <dd>{ev.measuredPilot(fmtSigned(pilot.statistics.HHHH.median_change_db), fmtSigned(pilot.statistics.HVHV.median_change_db), fmtNum(pilot.statistics.HHHH.common_area_km2, 2))}</dd>
+              ) : (
+                <dd className="is-missing">
+                  {pc ? "Not for this pair: the processed case uses another pair (see below). " : ""}
+                  {pilotDates ? ev.measuredOther(...pilotDates) : ev.measuredBody}
+                </dd>
+              )}
             </div>
             <div>
               <dt>{ev.interpreted}</dt>
-              <dd className="is-missing">{ev.interpretedBody}</dd>
+              <dd className="is-missing">
+                {measured ? "Each area is observed radar change, not water change, flooding or damage. " : ""}
+                {ev.interpretedBody}
+              </dd>
             </div>
           </dl>
         </div>
@@ -121,19 +137,63 @@ export function EvidenceView() {
           </ul>
         </div>
 
-        <div className="c-ev-card">
+        <div className="c-ev-card c-ev-pilot">
           <h2>{ev.findings}</h2>
-          {replaying ? (
+          {replaying && !pilot ? (
             <p className="is-missing">{ev.findingsFrozen}</p>
           ) : findings.status === "loading" ? (
             <p>{ev.checking}</p>
-          ) : findings.status === "ready" ? (
-            <><p>{ev.findingsReady(fmtNum(findings.data.length))}</p><p lang="en" className="c-hint">Processed pilots have their own date pairs and measured reports; their statistics do not apply automatically to this browse comparison.</p><Link className="c-btn c-noprint" lang="en" href="/chattogram/processed">Open calibrated pilot & brief</Link></>
+          ) : pilot && pilotDates ? (
+            <>
+              <p>
+                {ev.pilotFor(pilot.title, ...pilotDates)} {pilotMeasured ? ev.pilotSame : ev.pilotOther}
+              </p>
+              <dl className="c-ev-levels">
+                <div>
+                  <dt>{ev.pilotArea}</dt>
+                  <dd>{fmtNum(pilot.statistics.HHHH.common_area_km2, 2)} km²</dd>
+                </div>
+                <div>
+                  <dt>{ev.pilotOutside}</dt>
+                  <dd>{fmtNum(pilot.statistics.HHHH.outside_roi_area_km2, 2)} km²</dd>
+                </div>
+                {(["HHHH", "HVHV"] as const).map((k) => {
+                  const st = pilot.statistics[k];
+                  return (
+                    <div key={k}>
+                      <dt>{ev.pilotMedian(k.slice(0, 2))}</dt>
+                      <dd>
+                        {fmtSigned(st.median_change_db)} dB <small>{ev.pilotRange(fmtSigned(st.change_percentiles_db[0]), fmtSigned(st.change_percentiles_db[2]))}</small>
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+              <p className="is-missing">{ev.pilotNoFindings}</p>
+              <details>
+                <summary>{ev.pilotLimits}</summary>
+                <ul lang="en">
+                  {pilot.limitations.map((l) => (
+                    <li key={l}>{l}</li>
+                  ))}
+                </ul>
+              </details>
+              <Link className="c-btn c-noprint" href={href("/chattogram/processed")}>
+                {ev.pilotOpen} <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            </>
           ) : (
-            <p className="is-missing">{findings.status === "unavailable" ? ev.findingsMissing : findings.status === "empty" ? ev.findingsNone : findings.reason}</p>
+            <p className="is-missing">{findings.status === "unavailable" ? ev.findingsMissing : findings.status === "failed" ? findings.reason : ev.findingsNone}</p>
           )}
         </div>
+        {!pc && (
+          <div className="c-ev-card">
+            <PrepStatus />
+          </div>
+        )}
       </section>
+
+      {pc && <Processed pc={pc} toCase={toCase} />}
 
       <section className="c-ev-sources">
         <h2>{ev.sources}</h2>
@@ -198,5 +258,149 @@ function Source({ role, a }: { role: string; a: Acquisition }) {
         </a>
       )}
     </div>
+  );
+}
+
+/** The processed case as the backend published it: metrics, findings, method, caveats and sources. */
+function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null }) {
+  const { source, frozenCurated } = useCase();
+  const d = pc.detail;
+  const m = d.metrics;
+  const span = `${fmtDate(d.before.date)} → ${fmtDate(d.after.date)}`;
+  return (
+    <section className="c-ev-sources">
+      <h2>Processed case: {d.title}</h2>
+      <p className="c-hint">
+        {d.place} · {span} · published {fmtDate(d.updated_at)} · {methodId(d)}
+        {toCase && (
+          <>
+            {" "}
+            · These numbers are for that pair, not the one above. <Link href={toCase}>Open the brief for the case pair</Link>
+          </>
+        )}
+      </p>
+      <div className="c-ev-grid">
+        <div className="c-ev-card">
+          <h3>Areas, {span}</h3>
+          {m ? (
+            <dl className="c-ev-src">
+              {(
+                [
+                  ["Analysis rectangle", fmtKm2(m.analysis_km2)],
+                  ["Valid in both dates", fmtKm2(m.valid_common_km2)],
+                  ["Excluded (no data or masked)", fmtKm2(m.excluded_km2)],
+                  [`Brighter by ≥ ${m.threshold_db} dB`, fmtKm2(m.increase_km2)],
+                  [`Darker by ≥ ${m.threshold_db} dB`, fmtKm2(m.decrease_km2)],
+                ] as const
+              ).map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="is-missing">The backend published no metrics for this case.</p>
+          )}
+          <p className="c-hint">{d.analysis_area.properties?.provenance}</p>
+        </div>
+        <div className="c-ev-card">
+          <h3>Method parameters</h3>
+          <dl className="c-ev-src">
+            {Object.entries(d.method?.params ?? {}).map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd className="c-mono">{typeof v === "object" ? JSON.stringify(v) : String(v)}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div className="c-ev-card">
+          <h3>Caveats</h3>
+          <ul>
+            {d.caveats.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="c-ev-card">
+        <h3>Areas of observed radar change ({pc.findings.features.length})</h3>
+        {pc.findings.features.length ? (
+          <div className="d-table-wrap">
+            <table className="d-table">
+              <thead>
+                <tr>
+                  <th>Area</th>
+                  <th>Kind</th>
+                  <th>Size, km²</th>
+                  <th>Mean change, dB</th>
+                  <th>Median γ⁰ before → after, dB</th>
+                  <th>Valid</th>
+                  <th>Quality</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pc.findings.features.map(({ properties: p }) => (
+                  <tr key={p.id}>
+                    <td className="c-mono">{p.id}</td>
+                    <td>
+                      <span aria-hidden="true" style={{ color: FINDING[p.kind].color }}>
+                        {FINDING[p.kind].icon}
+                      </span>{" "}
+                      {FINDING[p.kind].label}
+                    </td>
+                    <td>{p.area_km2.toFixed(2)}</td>
+                    <td>{fmtDb(p.mean_delta_db, true)}</td>
+                    <td>
+                      {fmtDb(p.median_before_db)} → {fmtDb(p.median_after_db)}
+                    </td>
+                    <td>{Math.round(p.valid_fraction * 100)}%</td>
+                    <td>
+                      {p.quality}: {p.quality_reason}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p>No area passed the method’s change threshold.</p>
+        )}
+      </div>
+
+      <div className="c-ev-card">
+        <h3>Processed from</h3>
+        <ul>
+          {d.sources.map((s) => (
+            <li key={s.granule}>
+              <span className="c-mono">{s.granule}</span> · {s.collection}
+              {s.version ? ` v${s.version}` : ""}
+              {s.md5 ? ` · MD5 ${s.md5}` : ""}
+              {s.size_bytes ? ` · ${fmtSize(s.size_bytes)}` : ""}
+              {s.qa_url && (
+                <>
+                  {" "}
+                  ·{" "}
+                  <a href={s.qa_url} target="_blank" rel="noreferrer">
+                    QA report
+                  </a>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+        <div className="c-links c-noprint">
+          <span className="c-hint">The case as the backend stores it:</span>
+          {(["json", "csv", "geojson"] as const).map((f) => (
+            <a key={f} className="c-btn" href={frozenCurated && source.mode === "frozen" ? frozenCurated.exports[f] : api.exportUrl(CASE_ID, f)} download>
+              <Download size={15} aria-hidden="true" />
+              {f.toUpperCase()}
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

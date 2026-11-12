@@ -4,6 +4,8 @@
 // Plain module (types and constants only, plus a fetch), so the Node freeze script can import it too.
 import type { Acquisition } from "./acquisitions";
 import type { ExplorerData } from "../explorer-data";
+import type { ProcessedCase, ProcessedImage } from "./processed";
+import type { CaseDetail, CaseLayer, FindingDetail, Findings, Timeseries } from "./case-api";
 
 /** The curated starting point: the city, which the most NISAR dates cover. Stacks over it are the ones frozen. */
 export const FOCUS = { name: "Chattogram city", lonLat: [91.8317, 22.3569] as [number, number] };
@@ -24,6 +26,31 @@ export type FrozenCase = {
   /** Every scene that intersects the division; those in the frozen stacks carry `frozen` assets. */
   acquisitions: Acquisition[];
   totals: { scenes: number; images: number; bytes: number };
+  /** The calibrated pilot as the backend published it, absent in snapshots taken before it existed. */
+  pilot?: FrozenPilot | null;
+  /** The curated case, only when the backend had published it from real NISAR files (never a synthetic QA bundle). */
+  curated?: FrozenCurated | null;
+};
+
+/** The curated case as the backend served it; layer `url`s and `exports` point at files in `curated/`. */
+export type FrozenCurated = {
+  detail: CaseDetail;
+  layers: CaseLayer[];
+  findings: Findings;
+  timeseries: Timeseries;
+  findingDetails: Record<string, FindingDetail>;
+  exports: Record<"json" | "csv" | "geojson", string>;
+  files: Record<string, { src: string; sha256: string; bytes: number }>;
+};
+
+/**
+ * `files` is keyed by the path after /api/earth/cases/{id}/ (`display/<name>` PNG previews, `assets/<name>` GeoTIFFs),
+ * so the pages swap a live URL for its frozen copy one to one. Pixel sampling has no frozen copy: it reads the rasters.
+ */
+export type FrozenPilot = {
+  case: ProcessedCase;
+  corners: ProcessedImage["corners"];
+  files: Record<string, { src: string; sha256: string; bytes: number }>;
 };
 
 /** The bundle if this deployment ships one, else null. */

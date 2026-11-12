@@ -6,7 +6,8 @@ import type { Acquisition } from "@/lib/chattogram/acquisitions";
 import { fmtDate, fmtNum, fmtTime } from "@/lib/i18n/format";
 import { useLang, useT } from "@/lib/i18n/useT";
 import { useCase, type View } from "./CaseProvider";
-import { WATER, stripeTile } from "@/lib/chattogram/palette";
+import { stripeTile } from "@/lib/chattogram/palette";
+import { FINDING } from "./MapKey";
 
 import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme, mapError, cameraDuration } from "@/lib/mapbox";
 import { MapUnavailable } from "@/components/maps/MapUnavailable";
@@ -69,9 +70,13 @@ type Props = {
   /** Hands the map instance to a parent, e.g. to sync two maps in a swipe. */
   onReady?: (map: MlMap) => void;
   controls?: boolean;
-  /** Processed water-change candidates from the backend (GeoJSON, properties: id, category). Drawn with colour + stripes. */
+  /** Processed areas of observed radar change (properties: id, kind increase|decrease). Drawn with colour + stripes. */
   findings?: GeoJSON.FeatureCollection | null;
   selectedFinding?: string | null;
+  onFinding?: (id: string) => void;
+  /** The analysis rectangle, outlined and named. */
+  area?: GeoJSON.Feature | null;
+  areaName?: string;
 };
 
 export function CaseMap({
@@ -93,13 +98,16 @@ export function CaseMap({
   controls = true,
   findings = null,
   selectedFinding = null,
+  onFinding,
+  area = null,
+  areaName = "Analysis area",
 }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const initialView = useRef(view);
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
   const [terrain, setTerrain] = useState(false);
-  const [rasterError, setRasterError] = useState<string | null>(null);
+  const [rasterError, setRasterError] = useState(false);
   const [rasterShown, setRasterShown] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // load state of the quicklook, keyed by acquisition so a new date reads as "loading" until its own result lands
@@ -111,9 +119,9 @@ export function CaseMap({
   const t = useT();
   const lang = useLang();
   const landmarkEls = useRef<HTMLSpanElement[]>([]);
-  const latest = useRef({ onMove, onPick, footprints, onInspect });
+  const latest = useRef({ onMove, onPick, footprints, onInspect, onFinding });
   useEffect(() => {
-    latest.current = { onMove, onPick, footprints, onInspect };
+    latest.current = { onMove, onPick, footprints, onInspect, onFinding };
   });
 
   // create the map once
@@ -172,18 +180,45 @@ export function CaseMap({
             "line-opacity": ["case", ["boolean", ["get", "selected"], false], 1, 0.55],
           },
         });
-        // processed water-change candidates: category colour, its own stripe direction, outline brighter when selected
-        for (const [id, w] of Object.entries(WATER)) m.addImage(`stripe-${id}`, stripeTile(w.color, w.stripe));
+        // the analysis rectangle: dashed outline, its name along the edge
+        m.addSource("area", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        m.addLayer({ id: "area", type: "line", source: "area", paint: { "line-color": "#f3eee5", "line-width": 1.6, "line-dasharray": [3, 2] } });
+        m.addLayer({
+          id: "area-name",
+          type: "symbol",
+          source: "area",
+          layout: { "text-field": ["get", "name"], "text-size": 12, "symbol-placement": "line", "text-offset": [0, -0.8] },
+          paint: { "text-color": "#f3eee5", "text-halo-color": "#070b12", "text-halo-width": 1.6 },
+        });
+        // processed areas of observed radar change: the diverging scale's poles (signed change, never the water
+        // colours), each with its own stripe direction; the selected one is outlined in white
+        for (const [id, w] of Object.entries(FINDING)) m.addImage(`stripe-${id}`, stripeTile(w.color, w.stripe));
         m.addSource("findings", { type: "geojson", data: { type: "FeatureCollection", features: [] }, promoteId: "id" });
-        m.addLayer({ id: "findings-pattern", type: "fill", source: "findings", paint: { "fill-pattern": ["concat", "stripe-", ["get", "category"]] } });
+        m.addLayer({ id: "findings-pattern", type: "fill", source: "findings", paint: { "fill-pattern": ["concat", "stripe-", ["get", "kind"]] } });
+        m.addLayer({
+          id: "findings-halo",
+          type: "line",
+          source: "findings",
+          paint: { "line-color": "#070b12", "line-width": ["case", ["boolean", ["get", "selected"], false], 6, 3], "line-opacity": 0.8 },
+        });
         m.addLayer({
           id: "findings-line",
           type: "line",
           source: "findings",
           paint: {
-            "line-color": ["match", ["get", "category"], "new_water_candidate", WATER.new_water_candidate.color, "recession_candidate", WATER.recession_candidate.color, "#f3eee5"],
-            "line-width": ["case", ["boolean", ["get", "selected"], false], 3, 1.2],
+            "line-color": ["case", ["boolean", ["get", "selected"], false], "#f3eee5", ["match", ["get", "kind"], "increase", FINDING.increase.color, "decrease", FINDING.decrease.color, "#f3eee5"]],
+            "line-width": ["case", ["boolean", ["get", "selected"], false], 3, 1.4],
           },
+        });
+        m.on("click", "findings-pattern", (e) => {
+          const id = e.features?.[0]?.properties?.id;
+          if (id) latest.current.onFinding?.(String(id));
+        });
+        m.on("mouseenter", "findings-pattern", () => {
+          if (latest.current.onFinding) m.getCanvas().style.cursor = "pointer";
+        });
+        m.on("mouseleave", "findings-pattern", () => {
+          m.getCanvas().style.cursor = "";
         });
         m.addSource("landmarks", {
           type: "geojson",
@@ -219,7 +254,11 @@ export function CaseMap({
           setHover(null);
           m.getCanvas().style.cursor = "";
         });
-        m.on("click", "footprints-fill", (e: MapMouseEvent & { features?: { id?: string | number }[] }) => latest.current.onPick?.(String(e.features?.[0]?.id ?? "") || null));
+        m.on("click", "footprints-fill", (e: MapMouseEvent & { features?: { id?: string | number }[] }) => {
+          // a click on a finding is about the finding, not the acquisition under it
+          if (latest.current.onFinding && m.queryRenderedFeatures(e.point, { layers: ["findings-pattern"] }).length) return;
+          latest.current.onPick?.(String(e.features?.[0]?.id ?? "") || null);
+        });
         // only the viewer's own pans and zooms are saved; loads, resizes and syncing from another map are not
         m.on("moveend", (e: { originalEvent?: Event }) => {
           if (!e.originalEvent) return;
@@ -266,6 +305,11 @@ export function CaseMap({
       features: (findings?.features ?? []).map((f) => ({ ...f, properties: { ...f.properties, selected: f.properties?.id === selectedFinding } })),
     });
   }, [findings, selectedFinding, ready]);
+
+  useEffect(() => {
+    const src = map.current?.getSource("area") as GeoJSONSource | undefined;
+    src?.setData({ type: "FeatureCollection", features: area ? [{ ...area, properties: { ...area.properties, name: areaName } }] : [] });
+  }, [area, areaName, ready]);
 
   useEffect(() => {
     const src = map.current?.getSource("boundary") as GeoJSONSource | undefined;
@@ -366,8 +410,8 @@ export function CaseMap({
         m.addSource("processed", { type: "image", url: objectUrl, coordinates: processed.corners });
         m.addLayer({ id: "processed", type: "raster", source: "processed", paint: { "raster-opacity": imageOpacity, "raster-emissive-strength": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" } }, "boundary-glow");
       m.once("idle", () => { if (live) setRasterShown(processed.url); });
-      setRasterError(null);
-    }).catch(() => { if (live) setRasterError("The processed layer could not load. Retry or select another layer."); });
+      setRasterError(false);
+    }).catch(() => { if (live) setRasterError(true); });
     return () => { live = false; controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [processed, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -408,8 +452,8 @@ export function CaseMap({
       {imgState === "failed" && <p className="c-map-note is-bad">{t.map.failed}</p>}
       {imgState === "absent" && <p className="c-map-note is-bad">{t.map.absent}</p>}
       {error && <p className="c-map-note is-bad">{error}</p>}
-      {rasterError && <p className="c-map-note is-bad">{rasterError}</p>}
-      {processed && rasterShown !== processed.url && !rasterError && <p className="c-map-note" role="status">Loading calibrated layer…</p>}
+      {rasterError && <p className="c-map-note is-bad">{t.map.calibratedFailed}</p>}
+      {processed && rasterShown !== processed.url && !rasterError && <p className="c-map-note" role="status">{t.map.calibratedLoading}</p>}
     </div>
   );
 }

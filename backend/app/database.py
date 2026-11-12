@@ -1,10 +1,142 @@
 import json
 import sqlite3
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .schemas import Scene, SearchRequest
 from .region import REGION
+
+# Explicit, ordered migrations. Never edit a shipped one; append a new version instead.
+MIGRATIONS = {
+    1: """
+        CREATE TABLE IF NOT EXISTS scenes (
+            concept_id TEXT PRIMARY KEY,
+            region_id TEXT NOT NULL,
+            product TEXT NOT NULL,
+            start_time TEXT,
+            revision_id INTEGER NOT NULL,
+            payload TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS scenes_product_time ON scenes(product, start_time);
+        CREATE TABLE IF NOT EXISTS searches (
+            id INTEGER PRIMARY KEY,
+            region_id TEXT NOT NULL,
+            request TEXT NOT NULL,
+            bbox TEXT NOT NULL,
+            total_hits INTEGER NOT NULL,
+            returned_ids TEXT NOT NULL,
+            retrieved_at TEXT NOT NULL
+        );
+    """,
+    2: """
+        CREATE TABLE inspections (
+            concept_id TEXT NOT NULL,
+            revision_id INTEGER NOT NULL,
+            inspected_at TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            PRIMARY KEY (concept_id, revision_id)
+        );
+    """,
+    3: """
+        CREATE TABLE downloads (
+            asset_id TEXT PRIMARY KEY,
+            concept_id TEXT NOT NULL,
+            revision_id INTEGER NOT NULL,
+            payload TEXT NOT NULL
+        );
+        CREATE INDEX downloads_scene ON downloads(concept_id, revision_id);
+    """,
+    4: """
+        CREATE TABLE regions (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            kind TEXT NOT NULL CHECK (kind IN ('division', 'analysis_area')),
+            geometry TEXT NOT NULL,          -- GeoJSON, EPSG:4326
+            provenance TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE cases (
+            id TEXT PRIMARY KEY,
+            region_id TEXT NOT NULL REFERENCES regions(id),
+            title TEXT NOT NULL,
+            place TEXT NOT NULL,
+            stack TEXT NOT NULL,
+            -- Soft links to scenes.concept_id: cases are defined before the catalog is synced.
+            before_concept_id TEXT NOT NULL,
+            after_concept_id TEXT NOT NULL,
+            definition TEXT NOT NULL,        -- the curated case definition as JSON
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE processing_jobs (
+            id INTEGER PRIMARY KEY,
+            case_id TEXT NOT NULL REFERENCES cases(id),
+            state TEXT NOT NULL CHECK (state IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+            stage TEXT,
+            progress REAL NOT NULL DEFAULT 0,
+            error TEXT,
+            error_code TEXT,
+            retryable INTEGER NOT NULL DEFAULT 0,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            started_at TEXT,
+            heartbeat_at TEXT,
+            finished_at TEXT
+        );
+        -- At most one active job per case: duplicate requests reuse it.
+        CREATE UNIQUE INDEX processing_jobs_one_active ON processing_jobs(case_id)
+            WHERE state IN ('queued', 'running');
+        CREATE INDEX processing_jobs_state ON processing_jobs(state, id);
+        CREATE TABLE assets (
+            id INTEGER PRIMARY KEY,
+            case_id TEXT REFERENCES cases(id),
+            kind TEXT NOT NULL,              -- 'source_h5' | 'layer' | 'findings' | 'timeseries' | 'manifest'
+            name TEXT NOT NULL,              -- file name only; directories come from settings
+            concept_id TEXT,
+            revision_id INTEGER,
+            size_bytes INTEGER,
+            md5 TEXT,
+            created_at TEXT NOT NULL,
+            UNIQUE (case_id, kind, name)
+        );
+        CREATE TABLE analysis_runs (
+            id INTEGER PRIMARY KEY,
+            case_id TEXT NOT NULL REFERENCES cases(id),
+            job_id INTEGER REFERENCES processing_jobs(id),
+            method_name TEXT,
+            method_version TEXT,
+            params TEXT NOT NULL,
+            metrics TEXT,
+            sources TEXT NOT NULL,
+            published_at TEXT NOT NULL
+        );
+        CREATE TABLE findings (
+            id TEXT NOT NULL,
+            case_id TEXT NOT NULL REFERENCES cases(id),
+            run_id INTEGER NOT NULL REFERENCES analysis_runs(id),
+            kind TEXT NOT NULL,
+            quality TEXT,
+            properties TEXT NOT NULL,
+            geometry TEXT NOT NULL,
+            PRIMARY KEY (case_id, id)
+        );
+        CREATE TABLE validation_records (
+            id INTEGER PRIMARY KEY,
+            case_id TEXT NOT NULL REFERENCES cases(id),
+            finding_id TEXT,
+            reference_source TEXT NOT NULL,
+            observed_at TEXT,
+            label TEXT NOT NULL,
+            notes TEXT,
+            created_at TEXT NOT NULL
+        );
+    """,
+}
+LATEST_VERSION = max(MIGRATIONS)
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 class Database:
@@ -22,25 +154,37 @@ class Database:
         finally:
             connection.close()
 
+    def schema_version(self) -> int:
+        with self.connect() as db:
+            return _current_version(db)
+
     def initialize(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.connect() as db:
+        db = sqlite3.connect(self.path, timeout=10, isolation_level=None)
+        try:
             db.execute("PRAGMA journal_mode=WAL")
-            db.execute("BEGIN IMMEDIATE")
-            version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version > 3:
-                raise RuntimeError(f"Unsupported database schema version: {version}")
-            # Each migration and its version update commit together; preserve v1/v2 data.
-            if version < 1:
-                db.execute("CREATE TABLE scenes (concept_id TEXT PRIMARY KEY, region_id TEXT NOT NULL, product TEXT NOT NULL, start_time TEXT, revision_id INTEGER NOT NULL, payload TEXT NOT NULL)")
-                db.execute("CREATE INDEX scenes_product_time ON scenes(product, start_time)")
-                db.execute("CREATE TABLE searches (id INTEGER PRIMARY KEY, region_id TEXT NOT NULL, request TEXT NOT NULL, bbox TEXT NOT NULL, total_hits INTEGER NOT NULL, returned_ids TEXT NOT NULL, retrieved_at TEXT NOT NULL)")
-            if version < 2:
-                db.execute("CREATE TABLE inspections (concept_id TEXT NOT NULL, revision_id INTEGER NOT NULL, inspected_at TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY (concept_id, revision_id))")
-            if version < 3:
-                db.execute("CREATE TABLE downloads (asset_id TEXT PRIMARY KEY, concept_id TEXT NOT NULL, revision_id INTEGER NOT NULL, payload TEXT NOT NULL)")
-                db.execute("CREATE INDEX downloads_scene ON downloads(concept_id, revision_id)")
-            db.execute("PRAGMA user_version=3")
+            db.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)")
+            current = _current_version(db)
+            if current > LATEST_VERSION:
+                raise RuntimeError(f"Database schema v{current} is newer than this code (v{LATEST_VERSION}).")
+            if current and not db.execute("SELECT 1 FROM schema_version").fetchone():
+                # A v1 database from before the schema_version table: record what is already there.
+                db.execute("INSERT INTO schema_version VALUES (?, ?)", (current, now_iso()))
+            for version in range(current + 1, LATEST_VERSION + 1):
+                try:
+                    # executescript runs outside Python's implicit transactions, so the script carries its own.
+                    db.executescript(f"BEGIN IMMEDIATE;{MIGRATIONS[version]}"
+                                     f"INSERT INTO schema_version VALUES ({version}, '{now_iso()}');"
+                                     f"PRAGMA user_version={version};COMMIT;")
+                except Exception:
+                    if db.in_transaction:
+                        db.execute("ROLLBACK")
+                    raise
+        finally:
+            db.close()
+        from .cases import seed_definitions  # cases imports schemas only; late import keeps modules independent
+        with self.connect() as db:
+            seed_definitions(db)
 
     def save_search(self, request: SearchRequest, scenes: list[Scene], hits: int, now: str) -> int:
         # Store the whole page atomically; repeated discovery does not duplicate scenes.
@@ -107,3 +251,8 @@ class Database:
         with self.connect() as db:
             rows = db.execute("SELECT payload FROM downloads WHERE concept_id=? AND revision_id=?", (concept_id, revision_id)).fetchall()
         return [json.loads(row["payload"]) for row in rows]
+
+def _current_version(db) -> int:
+    has_table = db.execute("SELECT 1 FROM sqlite_master WHERE name = 'schema_version'").fetchone()
+    recorded = db.execute("SELECT MAX(version) FROM schema_version").fetchone()[0] if has_table else None
+    return recorded or db.execute("PRAGMA user_version").fetchone()[0]

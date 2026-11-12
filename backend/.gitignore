@@ -22,3 +22,6 @@ data/cases/6573c8bc5837ede3c0541563/*
 !data/cases/6573c8bc5837ede3c0541563/common-HVHV.tif
 .env
 !.env.example
+!data/extracts/
+data/extracts/*
+!data/extracts/karnaphuli-estuary/

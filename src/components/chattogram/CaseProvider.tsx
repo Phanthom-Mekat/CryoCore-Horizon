@@ -5,8 +5,13 @@ import { useSearchParams } from "next/navigation";
 import { allScenes, api, toLoadError, type Load, type Region } from "@/lib/chattogram/api";
 import type { ExplorerData } from "@/lib/explorer-data";
 import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "@/lib/chattogram/acquisitions";
-import { FOCUS, loadFrozen } from "@/lib/chattogram/frozen";
+import { FOCUS, loadFrozen, type FrozenCurated, type FrozenPilot } from "@/lib/chattogram/frozen";
+import { CASE_ID, isBusy, type ProcessedCase } from "@/lib/chattogram/case-api";
+
+const POLL_MS = 3000;
+const FROZEN_PROCESSED: Load<never> = { status: "unavailable", reason: "This frozen case was captured before the processed case was published" };
 import { publishCaseSource } from "@/lib/chattogram/sourceStore";
+import { pilotOf, type ProcessedCase as PilotCase } from "@/lib/chattogram/processed";
 import { loadRain, type RainSeries } from "@/lib/chattogram/rain";
 
 export { FOCUS };
@@ -30,6 +35,10 @@ type Ctx = {
   source: CaseSource;
   /** Rainfall context (plan F13), a static file, so it is the same live or frozen. Null if not shipped. */
   rain: RainSeries | null;
+  /** The calibrated pilot in the shipped snapshot, if it has one; pages use it while replaying. */
+  frozenPilot: FrozenPilot | null;
+  /** The curated case in the shipped snapshot, if it has one; used while replaying. */
+  frozenCurated: FrozenCurated | null;
   reload: () => void;
   /** Selection, all of it mirrored in the URL so any view can be shared as a link. */
   stack: Stack | null;
@@ -37,7 +46,15 @@ type Ctx = {
   after: Acquisition | null;
   view: View;
   pick: string | null; // the acquisition highlighted on the map
-  set: (patch: Partial<{ stack: string; a: string; b: string; view: View; pick: string | null }>) => void;
+  /** The selected processed finding (URL `f`). */
+  finding: string | null;
+  set: (patch: Partial<{ stack: string; a: string; b: string; view: View; pick: string | null; f: string | null }>) => void;
+  /** The processed case from the backend: its status always, layers/findings/timeseries once it is ready (else empty). */
+  processed: Load<ProcessedCase>;
+  /** True when the selected before/after are exactly the processed case's pair. */
+  isCasePair: boolean;
+  /** A page opened on the processed case's stack and pair (null until both its scenes are in the catalogue). */
+  caseHref: (path: string) => string | null;
   /** Same page with the current selection, for nav links. */
   href: (path: string) => string;
 };
@@ -50,7 +67,10 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const [explorer, setExplorer] = useState<ExplorerData | null>(null);
   const [source, setSource] = useState<CaseSource>({ mode: "live", frozenAt: null, fallback: false });
   const [tick, setTick] = useState(0);
+  const [processed, setProcessed] = useState<Load<ProcessedCase>>({ status: "loading" });
   const [rain, setRain] = useState<RainSeries | null>(null);
+  const [frozenPilot, setFrozenPilot] = useState<FrozenPilot | null>(null);
+  const [frozenCurated, setFrozenCurated] = useState<FrozenCurated | null>(null);
   useEffect(() => {
     loadRain().then(setRain);
   }, []);
@@ -72,6 +92,8 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     (async () => {
       const frozen = await loadFrozen();
       if (!live) return;
+      setFrozenPilot(frozen?.pilot ?? null);
+      setFrozenCurated(frozen?.curated ?? null);
       const replay = (fallback: boolean) => {
         if (!frozen) return false;
         apply(frozen.explorer, frozen.acquisitions, { mode: "frozen", frozenAt: frozen.frozenAt, fallback });
@@ -105,6 +127,41 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     };
   }, [tick, wanted]);
 
+  // The processed case loads on its own, so a backend without /cases (or a case still processing) never blocks the
+  // catalogue views. While the backend is working on it, the case (with its job) is polled every few seconds.
+  useEffect(() => {
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const empty = { layers: [], findings: { type: "FeatureCollection" as const, features: [] }, timeseries: { units: "dB" as const, points: [] } };
+    if (wanted === "frozen") return; // a replay asks nothing live (see `shownProcessed`)
+    const poll = () =>
+      api
+        .case(CASE_ID)
+        .then(async (detail) => {
+          if (!live) return;
+          if (detail.status !== "ready") {
+            setProcessed({ status: "ready", data: { detail, ...empty } });
+            if (isBusy(detail)) timer = setTimeout(poll, POLL_MS);
+            return;
+          }
+          const [layers, findings, timeseries] = await Promise.all([
+            api.layers(CASE_ID),
+            api.findings(CASE_ID),
+            api.timeseries(CASE_ID).catch(() => empty.timeseries), // the chart is optional; the case is not
+          ]);
+          if (live) setProcessed({ status: "ready", data: { detail, layers, findings, timeseries } });
+        })
+        .catch((e) => live && setProcessed(toLoadError(e)));
+    poll();
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [tick, wanted]);
+
+  // a replay (chosen, or the fallback when the backend is down) shows the snapshot's curated case, never a live one
+  const shownProcessed: Load<ProcessedCase> =
+    source.mode === "frozen" ? (frozenCurated ? { status: "ready", data: { detail: frozenCurated.detail, layers: frozenCurated.layers, findings: frozenCurated.findings, timeseries: frozenCurated.timeseries } } : FROZEN_PROCESSED) : processed;
   const data = load.status === "ready" ? load.data : null;
   const q = (k: string) => params.get(k);
 
@@ -131,18 +188,85 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     if (patch.view) next.set("v", `${patch.view.lon.toFixed(4)},${patch.view.lat.toFixed(4)},${patch.view.zoom.toFixed(2)}`);
     if (patch.pick) next.set("pick", patch.pick);
     else if (patch.pick === null) next.delete("pick");
+    if (patch.f) next.set("f", patch.f);
+    else if (patch.f === null) next.delete("f");
     if (next.toString() !== window.location.search.slice(1)) window.history.replaceState(null, "", `?${next}`);
   }, []);
   const href = useCallback((p: string) => (params.size ? `${p}?${params}` : p), [params]);
 
-  const value: Ctx = { load, explorer, source, rain, reload: () => setTick((t) => t + 1), stack, before, after, view, pick: q("pick"), set, href };
-  return <CaseContext.Provider value={value}>{children}</CaseContext.Provider>;
+  const pd = shownProcessed.status === "ready" ? shownProcessed.data.detail : null;
+  const isCasePair = !!pd && before?.granule === pd.before.granule && after?.granule === pd.after.granule;
+  const caseHref = useCallback(
+    (p: string) => {
+      const a = pd && data?.acquisitions.find((x) => x.granule === pd.before.granule);
+      const b = pd && data?.acquisitions.find((x) => x.granule === pd.after.granule);
+      if (!a || !b || a.stack !== b.stack) return null;
+      const next = new URLSearchParams(params);
+      next.set("stack", a.stack);
+      next.set("a", a.day);
+      next.set("b", b.day);
+      return `${p}?${next}`;
+    },
+    [pd, data, params],
+  );
+
+  const value: Ctx = {
+    load,
+    explorer,
+    source,
+    rain,
+    frozenPilot,
+    frozenCurated,
+    reload: () => setTick((t) => t + 1),
+    stack,
+    before,
+    after,
+    view,
+    pick: q("pick"),
+    finding: q("f"),
+    set,
+    href,
+    processed: shownProcessed,
+    isCasePair,
+    caseHref,
+  };
+  return (
+    <CaseContext.Provider value={value}>
+      {pd?.synthetic_fixture && (
+        <div className="c-synthetic" role="alert">
+          <strong>SYNTHETIC QA DATA — NOT NISAR</strong>
+          <span>This case was processed from generated test fixtures to check the pipeline. Every layer, number and finding on these pages is made up.</span>
+        </div>
+      )}
+      {children}
+    </CaseContext.Provider>
+  );
 }
 
 export function useCase() {
   const c = useContext(CaseContext);
   if (!c) throw new Error("useCase must be used inside CaseProvider");
   return c;
+}
+
+/** The calibrated pilot: from the backend's /cases API, or from the snapshot while replaying (no live request then). */
+export function usePilot(): Load<PilotCase> {
+  const { source, frozenPilot } = useCase();
+  const replaying = source.mode === "frozen";
+  const [pilot, setPilot] = useState<Load<PilotCase>>({ status: "loading" });
+  useEffect(() => {
+    if (replaying) return;
+    api.cases().then(
+      (c) => {
+        const p = pilotOf(c);
+        setPilot(p ? { status: "ready", data: p } : { status: "empty", reason: "" });
+      },
+      (e) => setPilot(toLoadError(e)),
+    );
+  }, [replaying]);
+  // a live result fetched before switching to the frozen case must not show in the replay
+  if (!replaying) return pilot;
+  return frozenPilot ? { status: "ready", data: frozenPilot.case } : { status: "unavailable", reason: "" };
 }
 
 /**

@@ -8,9 +8,11 @@ import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { fmtDate, fmtNum, fmtTime } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { CaseMap, quicklookSrc } from "../CaseMap";
+import { CASE_ID, fmtDb, layerImage } from "@/lib/chattogram/case-api";
 import { CaseBar } from "../CaseBar";
 import { RainCard } from "../RainCard";
 import { useCase, type View } from "../CaseProvider";
+import { DbKey } from "../MapKey";
 
 /** Keeps two maps on the same centre and zoom, so both sides of the divider always show the same extent and scale. */
 function useSyncedMaps() {
@@ -29,7 +31,7 @@ function useSyncedMaps() {
 }
 
 export function CompareView() {
-  const { load, stack, before, after, view, set, href, source } = useCase();
+  const { load, stack, before, after, view, set, href, source, processed, isCasePair, caseHref } = useCase();
   const t = useT();
   const c = t.compare;
   const [pos, setPos] = useState(50);
@@ -51,6 +53,15 @@ export function CompareView() {
         <p>{c.oneDateBody}</p>
       </div>
     );
+
+  // the processed case's pair gets its calibrated layers instead of the quicklooks; any other pair keeps the quicklooks
+  const detail = processed.status === "ready" ? processed.data.detail : null;
+  const pc = detail?.status === "ready" && processed.status === "ready" ? processed.data : null;
+  const lb = pc?.layers.find((l) => l.id === "before_db");
+  const la = pc?.layers.find((l) => l.id === "after_db");
+  const calibrated = isCasePair && lb && la ? { before: lb, after: la } : null;
+  const sameScale = calibrated && calibrated.before.scale.min === calibrated.after.scale.min && calibrated.before.scale.max === calibrated.after.scale.max;
+  const toCase = pc && !isCasePair ? caseHref("/chattogram/compare") : null;
 
   const dates = [...stack.items].sort((a, b) => a.start.localeCompare(b.start));
   const checks = compatibility(before, after);
@@ -106,10 +117,33 @@ export function CompareView() {
 
       <div className="c-reveal" ref={frame} style={{ "--pos": `${pos}%` } as CSSProperties}>
         <div className="c-reveal-layer">
-          <CaseMap allowTerrain={false} label={t.quicklookOf(fmtDate(after.start))} view={view} onMove={onMove} image={after} imageOpacity={1} onReady={ready(1)} controls={false} />
+          <CaseMap
+            allowTerrain={false}
+            label={calibrated ? `Calibrated γ⁰ of ${fmtDate(after.start)}` : t.quicklookOf(fmtDate(after.start))}
+            view={view}
+            onMove={onMove}
+            image={calibrated ? null : after}
+            processed={calibrated && layerImage(CASE_ID, calibrated.after, pc!.detail.updated_at)}
+            area={detail?.analysis_area ?? null}
+            areaName={detail ? `${detail.title} · analysis area` : undefined}
+            imageOpacity={1}
+            onReady={ready(1)}
+            controls={false}
+          />
         </div>
         <div className="c-reveal-layer c-reveal-before">
-          <CaseMap allowTerrain={false} label={t.quicklookOf(fmtDate(before.start))} view={view} onMove={onMove} image={before} imageOpacity={1} onReady={ready(0)} />
+          <CaseMap
+            allowTerrain={false}
+            label={calibrated ? `Calibrated γ⁰ of ${fmtDate(before.start)}` : t.quicklookOf(fmtDate(before.start))}
+            view={view}
+            onMove={onMove}
+            image={calibrated ? null : before}
+            processed={calibrated && layerImage(CASE_ID, calibrated.before, pc!.detail.updated_at)}
+            area={detail?.analysis_area ?? null}
+            areaName={detail ? `${detail.title} · analysis area` : undefined}
+            imageOpacity={1}
+            onReady={ready(0)}
+          />
         </div>
         <span className="c-badge c-badge-l">
           <strong>{t.before}</strong> {fmtDate(before.start)} · {fmtTime(before.start)}
@@ -157,7 +191,30 @@ export function CompareView() {
         </ul>
       </div>
 
-      <p className="c-compare-foot">{c.foot}</p>
+      {calibrated ? (
+        <div className="c-compare-foot">
+          <p>
+            <strong>Calibrated layers.</strong> This is the processed case’s pair, so both sides show calibrated backscatter (γ⁰, {calibrated.before.units}) computed
+            from the full GCOV files, clipped to the analysis rectangle, on the same map extent and{" "}
+            {sameScale
+              ? `one shared contrast scale (${fmtDb(calibrated.before.scale.min)} to ${fmtDb(calibrated.before.scale.max)}). Darker is a weaker return, such as smooth water.`
+              : "contrast scales that differ between the two dates, so compare brightness with care."}{" "}
+            No-data pixels are transparent. {calibrated.before.crs_note}
+          </p>
+          <DbKey min={calibrated.before.scale.min} max={calibrated.before.scale.max} />
+        </div>
+      ) : (
+        <p className="c-compare-foot">
+          {c.foot}
+          {toCase && pc && (
+            <>
+              {" "}
+              Calibrated layers exist for the processed pair, {fmtDate(pc.detail.before.date)} → {fmtDate(pc.detail.after.date)}:{" "}
+              <Link href={toCase}>compare that pair</Link>.
+            </>
+          )}
+        </p>
+      )}
     </div>
       <RainCard mode="pair" />
     </>

@@ -57,9 +57,6 @@ export function SiteNav() {
         ))}
       </nav>
       <ThemeToggle />
-      <Link href="/dashboard" className="nav-link-plain">
-        Glacier sample
-      </Link>
       <Link href="/chattogram" className="nav-cta">
         Chattogram case study
       </Link>

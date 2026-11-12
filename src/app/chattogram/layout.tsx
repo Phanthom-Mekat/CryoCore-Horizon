@@ -4,7 +4,7 @@ import { Shell } from "@/components/dashboard/Shell";
 import { CaseProvider } from "@/components/chattogram/CaseProvider";
 import { CaseGate } from "@/components/chattogram/CaseGate";
 import "mapbox-gl/dist/mapbox-gl.css";
-import "../dashboard/dashboard.css";
+import "./dashboard.css";
 import "./chattogram.css";
 
 // The case is read in the browser through the backend proxy, so navigating in may wait on it.

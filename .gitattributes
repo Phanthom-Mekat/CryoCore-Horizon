@@ -3,3 +3,6 @@ backend/data/**/*.tif -text
 backend/data/**/*.json -text
 backend/data/*.json -text
 backend/data/*.geojson -text
+# Frozen-case files are recorded with their SHA-256: never rewrite their line endings
+public/data/chattogram/case/** -text
+backend/data/extracts/** -text

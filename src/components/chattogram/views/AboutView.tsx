@@ -1,14 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { fmtNum } from "@/lib/i18n/format";
 import { useLang, useT } from "@/lib/i18n/useT";
 import { useCase } from "../CaseProvider";
-import { ChangeKey, WaterKey } from "../MapKey";
+import { ChangeKey, FindingKey, WaterKey } from "../MapKey";
+import { PrepStatus } from "../PrepStatus";
 
 export function AboutView() {
-  const { load, explorer } = useCase();
+  const { load, explorer, processed } = useCase();
+  const ready = processed.status === "ready" && processed.data.detail.status === "ready";
   const t = useT();
   const lang = useLang();
   const ab = t.about;
@@ -38,9 +39,14 @@ export function AboutView() {
         )}
       </ul>
 
+      <h2 lang="en">Data preparation</h2>
+      <div className="c-ev-card" lang="en">
+        <PrepStatus />
+      </div>
+
       <h2>{ab.notDone}</h2>
       <ul>
-        <li>{ab.notDone1}</li>
+        {!ready && <li>{ab.notDone1}</li>}
         <li>{ab.notDone2}</li>
         <li>{ab.notDone3}</li>
       </ul>
@@ -48,8 +54,9 @@ export function AboutView() {
       <h2>{ab.results}</h2>
       <p>{ab.resultsBody}</p>
       <div className="c-keys">
-        <WaterKey />
         <ChangeKey />
+        <FindingKey />
+        <WaterKey />
       </div>
 
       <h2>{ab.sources}</h2>
@@ -84,11 +91,6 @@ export function AboutView() {
           {ab.srcBasemapsNote}
         </li>
       </ul>
-
-      <p className="c-aside">
-        {ab.glacierAside} <Link href="/dashboard">{ab.glacierLink}</Link>
-        {lang === "en" ? "." : "।"}
-      </p>
     </article>
   );
 }
