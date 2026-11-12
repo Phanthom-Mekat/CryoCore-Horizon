@@ -1,6 +1,6 @@
 # CryoCore Horizon: Chattogram implementation plan
 
-Status (13 Nov 2026): discovery catalogue and the frontend case journey use real NISAR metadata and browse quicklooks; the case replays from a frozen snapshot without the backend (F09), in English and Bangla (F15), with NASA rainfall context (F13). A small backend pilot now produces calibrated HH/HV layers and signed radar change from real pixels; a dedicated processed Mapbox view is integrated, while terrain-quality checks and independent validation remain pending. See the progress tracker below.
+Status (13 Nov 2026, after merging PR #2 into `main` at `f8c6197`): discovery catalogue and the frontend case journey use real NISAR metadata and browse quicklooks; the case replays from a frozen snapshot without the backend (F09), in English and Bangla (F15), with NASA rainfall context (F13). There are now **two processed tracks** (see [below](#two-processed-tracks--team-decision-needed)): a small calibrated pilot already processed from real NISAR pixels, and the curated `karnaphuli-estuary` case, whose full pipeline (job queue, worker, change regions, findings, exports) is built and tested but has **not yet been run on real NISAR files**. Terrain-quality checks and independent validation remain pending. See the progress tracker below.
 
 Implementation update: the case lives at `/chattogram` (Overview, Explore map, Compare, Evidence, Scene catalogue, About; see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md)). The first discovery increment is its Scene catalogue.
 It includes an attributed 2018 BBS/HDX reference boundary, real NASA catalog
@@ -65,25 +65,25 @@ surface-change findings. F01/F02 and the scientific milestones remain incomplete
 
 ### Progress tracker
 
-Updated 13 November 2026. "Partial" includes implemented pilots with remaining scientific validation or broader product work.
+Updated 13 November 2026 after the PR #2 merge (`f8c6197`). "Partial" includes implemented pilots with remaining scientific validation or broader product work. "Pilot" = the calibrated window at `/api/v1/cases`; "curated case" = `karnaphuli-estuary` at `/api/v1/curated-cases`.
 
 | ID | Feature | Status | Done | Still needed |
 | --- | --- | --- | --- | --- |
-| F01 | Verified study area | Partial | 2018 BBS/HDX boundary with provenance; scenes filtered by the polygon; drawn on every map | Confirm current suitability; add the smaller analysis polygon |
-| F02 | Real NISAR case selection | Partial | Real July/October HDF5 metadata inspected; frequency-A metadata gate passes; frequency B blocked on exception-mask dimensions; case-selection notes recorded | Gate A: validate mixed-mode implications, subset, valid common pixels and reference observations |
-| F03 | Reliable data preparation | Partial | Authenticated inspection and resumable download CLI; durable checkpoints/states; ETag/MD5 verification and SHA-256 provenance; atomic file publication; read-only progress API | Full NASA assets still partial; automatic worker queue, cancellation/retry policy and preparation UI |
-| F04 | Processed radar layers | Partial | Real frequency-A HH/HV GeoTIFF pilot; documented masks, common grid, hashes, downloads and georeferenced Mapbox overlays with fixed scales | Static terrain quality, mixed-mode review, larger-area tiling |
-| F05 | Defensible change map | Partial | Signed after-minus-before dB change over common valid pilot pixels; coverage/exclusion statistics | Confounder assessment, independent validation and frontend map; no water classification yet |
-| F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB display scale at `/chattogram/processed` | Extend to additional validated acquisitions |
-| F07 | Click-to-explain evidence | Partial | Native HH/HV pixel inspection, map pin, source-linked JSON and explicit exclusions; evidence page | `/cases/{id}/findings` polygons, area statistics and reference validation |
-| F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison; calibrated pilot strip (dates, 21.82 km² compared, 4.40 km² excluded, HH/HV median and middle-90% change) from the backend, English and Bangla | Division-wide observed area and change summaries once processing extends beyond the pilot; pilot in the frozen case |
-| F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying; calibrated pilot frozen (manifest, 6 display PNGs, 8 GeoTIFFs checked against the published SHA-256) and replayed on Overview, Evidence, the brief and Calibrated radar | Pixel inspection in a replay (needs the rasters read client-side or pre-sampled); findings and the selected finding once they exist; refresh with `pnpm freeze-case` before recording |
-| F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
-| F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
-| F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata; Evidence page and brief JSON carry the calibrated pilot (median/5–95% HH/HV change, coverage, sources, asset hashes, limitations) and switch the claim only when the brief's dates are the pilot's | Add findings polygons; pilot window in GeoJSON |
+| F01 | Verified study area | Partial | 2018 BBS/HDX boundary with provenance; scenes filtered by the polygon; drawn on every map; curated analysis polygon: team-drawn lower Karnaphuli/port rectangle (≈175.7 km² equal-area, provenance recorded) in `backend/app/assets/analysis-areas.geojson`, documented in [docs/curated-case.md](docs/curated-case.md) | Confirm the boundary's current suitability; about 16.7 km² of the rectangle (the river channel) lies outside the 2018 polygon, which the docs explain |
+| F02 | Real NISAR case selection | Partial | Pilot: real July/October HDF5 metadata inspected, frequency-A gate passes, frequency B blocked on exception-mask dimensions. Curated case: pair pinned from CMR metadata (stack `069_A_013`, 18 Jun vs 16 Oct 2026, both provisional v1.0.11, HH+HV) with rejected alternatives and confounders recorded | Inspect the curated pair's real files (layout, masks, valid common coverage); mixed-mode implications for the pilot; reference observations |
+| F03 | Reliable data preparation | Mostly done (not yet run on real files) | Resumable authenticated downloads with host allowlist, MD5/size checks and disk-space check; durable SQLite job queue with atomic claim, one active job per case, stale-job requeue, retry limits and `needs_credentials`; `python -m app.worker` and `app.cli prepare-case`; atomic bundle publication; `PrepStatus` panel on Overview and Evidence | Run `prepare-case karnaphuli-estuary` with Earthdata credentials (≈12.4 GB); a cancel action (`cancelled` exists only as a schema state) |
+| F04 | Processed radar layers | Partial | Pilot: real frequency-A HH/HV GeoTIFFs with masks, hashes, downloads and Mapbox overlays. Curated pipeline: windowed GCOV reads, mask and no-data handling, grid alignment, 5×5 boxcar speckle filter, before/after/change dB PNGs with corners and fixed scales (tested on synthetic fixtures) | Real run for the curated case; static terrain quality; mixed-mode review |
+| F05 | Defensible change map | Partial | Pilot: signed dB change over common valid pixels with coverage/exclusion statistics. Curated pipeline: ±3 dB increase/decrease regions after opening and a minimum region size, areas in equal-area km², labelled "Observed radar change" | Real-data run; confounder assessment (tide, rain, crops, ships, wind); independent validation; no water classification yet |
+| F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB scale at `/chattogram/processed`; Compare switches to the curated case's calibrated layers when that case is ready | Extend to additional validated acquisitions |
+| F07 | Click-to-explain evidence | Partial | Pilot: native HH/HV pixel inspection, map pin, source-linked JSON. Curated case: finding polygons on the Explore map, `FindingPanel` (what changed, quality, sources, method), `/api/v1/findings/{id}` evidence, selection kept in the URL (`f`) | Real findings (needs the real run); reference checks (`validation_records` is empty); translate `FindingPanel` |
+| F08 | Chattogram overview | Partial | Real catalogue numbers and a featured comparison; curated-case section (valid km², observed increase/decrease km² once ready, else preparation status); calibrated pilot strip (dates, 21.82 km² compared, 4.40 km² excluded, HH/HV median and middle-90% change), English and Bangla | Curated numbers appear only after the real run; translate the curated section |
+| F09 | Reproducible case replay | Done for catalogue and pilot | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, zero live requests; calibrated pilot frozen (manifest, 6 display PNGs, 8 GeoTIFFs checked against the published SHA-256) and replayed on Overview, Evidence, the brief and Calibrated radar | Freeze the curated case (layers, findings, timeseries) once processed; pixel inspection in a replay; sidebar links drop `?source=frozen`; refresh with `pnpm freeze-case` before recording |
+| F10 | Validation and methods | Partial | Methods, limitations and claim level in About and Evidence; `validation_records` table and `reference_checks` field in finding evidence; categorical finding quality (strong/moderate/weak with a reason) | Reference data, evaluation samples, results |
+| F11 | Timeline playback | Partial | Replay over actual dates, gaps visible; `/api/v1/curated-cases/{id}/timeseries` per-date dB statistics shown under the Explore timeline once the curated case is ready | Three or more processed dates for real playback; a synced chart from real values |
+| F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; brief JSON carries `processed_case` (curated metrics, findings, method, sources) and `calibrated_pilot` (statistics, asset hashes, limitations) and changes its claim only for the matching pair; backend export `/api/v1/curated-cases/{id}/export?format=json\|csv\|geojson` | Real curated findings; the pilot window in GeoJSON |
 | F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
-| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
+| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | Translate the PR #2 additions (curated section on Overview, Evidence "Processed" section, `FindingPanel`, `PrepStatus`, synthetic-data banner); a native speaker's review; the Scene catalogue, landing page and glacier sample if they stay in the demo |
 | F16 | Terrain storytelling | Not started | – | P2 |
 | F17 | Evidence-based narration | Not started | – | P2 |
 
@@ -96,7 +96,7 @@ Updated 13 November 2026. "Partial" includes implemented pilots with remaining s
 - [x] Verify real NASA resume: October scene progressed from 4 MiB to 8 MiB on the second invocation.
 - [x] Inspect both candidate HDF5 files and expose frequency-specific compatibility reasons through the read-only pair API.
 - [x] Pass 32 backend tests and verify new endpoints against the already-running backend.
-- [ ] Complete queued-worker lifecycle, processing and frontend preparation status (F03 remains partial).
+- [x] Complete queued-worker lifecycle, processing and frontend preparation status: delivered by PR #2 (see [Curated-case pipeline](#curated-case-pipeline-pr-2--13-november-2026)); the real-data run is still pending.
 
 - [x] Verify the configured Earthdata bearer token against a real NISAR HDF5 asset.
 - [x] Inspect real file metadata within a bounded transfer budget; persist revision-specific reports without exposing credentials or signed URLs.
@@ -145,11 +145,50 @@ this pilot cannot demonstrate river-water change. See `docs/case-selection.md`.
 - [x] Fixed the card always reporting "no processed cases" (it read `{cases: [...]}` as an array).
 - [x] Checked in the browser: matching and non-matching pairs, Bangla, JSON download contents, frozen replay (no live request).
 
+### Pilot on Overview, Bangla calibrated radar, pilot in the replay — 13 November 2026
+
+- [x] Overview: calibrated pilot strip (dates, area compared, excluded area, HH/HV median and middle-90% change) through a shared `usePilot()` hook, English and Bangla.
+- [x] Calibrated radar page and pixel inspector fully in English and Bangla (controls, legend, evidence panel, map notes); dates and numbers localised.
+- [x] `pnpm freeze-case` also freezes the pilot (`public/data/chattogram/case/pilot/`: manifest in `case.json`, 6 display PNGs, 8 GeoTIFFs checked against the published SHA-256); replays read it on Overview, Evidence, the brief and Calibrated radar; the pixel inspector says it needs live data.
+- [x] Fixes: no live pilot lingers after switching to the frozen case; Calibrated radar waits for the case source and shows the frozen notice; the excluded-area label includes footprint clipping.
+- [x] Checked in the browser (both languages, frozen replay with 0 `/api/` requests, all 14 snapshot files match their hashes); TypeScript, lint and build pass. The map drawing in a replay was not seen (browser pane hidden).
+
+### Curated-case pipeline (PR #2) — 13 November 2026
+
+Merged from `feat/chattogram-home` and documented in [docs/curated-case.md](docs/curated-case.md) and [backend/README.md](backend/README.md).
+
+- [x] Curated case `karnaphuli-estuary`: team-drawn analysis rectangle and pinned pair (`069_A_013`, 18 Jun vs 16 Oct 2026) with rejected alternatives, confounders and the claim the data can support.
+- [x] Schema v4: `regions`, `cases`, `processing_jobs`, `assets`, `analysis_runs`, `findings`, `validation_records`; v1 databases migrate in place.
+- [x] Job queue and worker: `POST /api/v1/jobs` (admin token, else 403), `GET /api/v1/jobs/{id}`, atomic claim, one active job per case, stale-job requeue, retry limits, `needs_credentials`, Ctrl+C requeue; `python -m app.worker`, `python -m app.cli sync|prepare-case|migrate`.
+- [x] Downloads: bearer token or `.netrc`, redirect host allowlist, Range resume, CMR size and MD5 checks, disk-space check, no credentials in logs.
+- [x] Processing (`app/processing/`): windowed reads, masks, grid alignment, boxcar speckle filter, ±3 dB regions, equal-area km², findings with categorical quality, before/after/change PNGs, per-date timeseries; atomic bundle swap into `data/cases/<id>/`.
+- [x] Read API at `/api/v1/curated-cases…` (summary, detail, layers, assets with immutable cache headers, findings, timeseries, export) and `/api/v1/findings/{id}`; explicit states `not_processed`, `queued`, `running`, `failed`, `needs_credentials`, `ready`.
+- [x] Frontend: curated case loaded and polled in `CaseProvider`; finding polygons and `FindingPanel` on Explore; calibrated layers on Compare; `PrepStatus` on Overview and Evidence; processed section on Evidence and in the brief; synthetic-QA banner.
+- [x] Tests: 82 backend tests pass after the merge, including interrupted downloads, duplicate jobs, missing layers, masks, grid mismatch, zero coverage, repeatability and a synthetic end-to-end bundle (synthetic data never served unless `CRYO_ALLOW_SYNTHETIC_QA=1`).
+- [ ] Run `prepare-case karnaphuli-estuary` on real NISAR files. Checked 13 Nov against a copy of the local database: the case reports `not_processed`, no job, no metrics.
+- [ ] Add a cancel action (`cancelled` is allowed by the schema but nothing sets it).
+- [ ] Translate the new UI into Bangla (F15).
+
+### Two processed tracks — team decision needed
+
+| | Calibrated pilot | Curated case |
+| --- | --- | --- |
+| API | `/api/v1/cases` | `/api/v1/curated-cases` |
+| Pair | stack `163_D_077`, 7 Jul vs 11 Oct 2026, quad-pol | stack `069_A_013`, 18 Jun vs 16 Oct 2026, HH+HV |
+| Area | 256 × 256 px window, 21.82 km² valid; river corridor clipped out | ≈175.7 km² rectangle including the river channel |
+| Real data | Yes, processed from real NISAR pixels | Not yet: needs the ≈12.4 GB download and a worker run |
+| UI | Calibrated radar page, Overview strip, Evidence card, frozen replay, pixel inspector, Bangla | Explore findings, Compare layers, Overview/Evidence sections, export (English only) |
+
+The demo should have one central case (submission checklist). The curated case tells the river story the plan
+wants but has no real result yet; the pilot is real but cannot speak to river water. Decide which leads the video,
+and whether the pilot stays as a secondary view.
+
 ### Next up
 
-- **Backend:** resolve mixed-mode and static terrain quality; select a water-suitable ROI and dated reference evidence; complete queued-worker lifecycle.
-- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
-- **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
+- **Backend:** run `python -m app.cli prepare-case karnaphuli-estuary` with Earthdata credentials and review its real coverage, findings and caveats; static terrain quality and mixed-mode review; dated reference evidence (tide heights at both pass times); a job cancel action.
+- **Frontend:** translate the PR #2 views (curated sections, `FindingPanel`, `PrepStatus`, banner) into Bangla; freeze the curated case once processed; keep `?source=frozen` in the sidebar links; fix the lint error in `CaseProvider.tsx` (synchronous `setState` in an effect) and the unused `WATER` import in `CaseMap.tsx`; finish inspector mobile/export checks; swap the modelled rainfall for GPM IMERG; rework the landing page around the Chattogram case (needs a team decision).
+- **Team:** choose the central processed case (above); make the GitHub repository public before submission; fill in the team names on the landing page; choose a repository licence.
+- **Setup after pulling `main`:** `pip install -e .` in `backend/` (new `scipy` and `pillow` dependencies), then restart the backend so `/api/v1/curated-cases` exists.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission
 duration, format, eligibility, and deadlines against the current event rules before recording.
@@ -263,6 +302,7 @@ Priority definitions:
 - [x] Inspect real files and record acquisition times, product versions, maturity,
   orbit/track, frequency, polarization, and relevant quality metadata.
 - [ ] Confirm a compatible before/after pair; three or more dates unlock playback.
+  _Pilot pair confirmed from real files (frequency A). Curated pair pinned from CMR metadata only; its real files are not inspected yet._
 - [ ] Identify reference observations appropriate to those dates and the phenomenon.
 - [x] Record file sizes and an achievable storage/processing budget before bulk downloads.
 - [x] Write `case-selection.md` with chosen location/dates, rejected alternatives,
@@ -285,6 +325,7 @@ layout and metadata rather than assuming every file provides the same layers.
   interpretation of every dark pixel or backscatter decrease.
 - [ ] Account for permanent water, tide, wet soil, vegetation, built-up areas,
   shadow/layover, speckle, and differing acquisition conditions as applicable.
+  _(Listed for the curated case in docs/curated-case.md, Known confounders; not yet quantified.)_
 - [x] Calculate area in a suitable projected/equal-area system, not degree pixels (EPSG:32646 projected grid area).
 - [x] Report observed area and excluded/unknown area alongside change estimates.
 
@@ -296,9 +337,9 @@ layout and metadata rather than assuming every file provides the same layers.
 - [ ] For a classification claim, report sample counts, confusion matrix,
   precision/recall, and limitations. Do not invent a target accuracy achievement.
 - [ ] Assess threshold sensitivity and show if the conclusion changes substantially.
-- [ ] Use categorical quality flags with explanations unless confidence probabilities
+- [x] Use categorical quality flags with explanations unless confidence probabilities
   have actually been calibrated.
-- [ ] If validation is insufficient, label results “candidate water change” or
+- [x] If validation is insufficient, label results “candidate water change” or
   “observed radar change”; withhold confirmed-flood and damage claims.
 
 ## 6. Backend implementation sequence
@@ -306,29 +347,31 @@ layout and metadata rather than assuming every file provides the same layers.
 ### B1. Data models and migrations
 
 - [x] Add explicit SQLite schema migrations before expanding the current schema.
-- [ ] Add `regions`, `cases`, `processing_jobs`, `assets`, `analysis_runs`,
+- [x] Add `regions`, `cases`, `processing_jobs`, `assets`, `analysis_runs`,
   `findings`, and `validation_records`, linked to existing scene records.
-- [ ] Store source concept/revision IDs, acquisition metadata, timestamps, checksums,
+- [x] Store source concept/revision IDs, acquisition metadata, timestamps, checksums,
   method version, parameters, units, geometry, and quality flags.
-- [ ] Store large raw files and derived rasters outside SQLite; database rows hold
+- [x] Store large raw files and derived rasters outside SQLite; database rows hold
   references. Ensure public responses never expose credentials or server paths.
 
 ### B2. Download and processing worker
 
-- [ ] Start with one separate Python worker and a durable SQLite-backed job queue.
+- [x] Start with one separate Python worker and a durable SQLite-backed job queue.
   Atomic claiming, restart recovery, retry limits, and idempotency are required.
 - [x] Keep heavy raster work out of FastAPI request handlers. Use bounded/windowed
   reads where possible rather than loading full scenes into memory.
 - [ ] Implement queued/running/succeeded/failed/cancelled states, progress, and errors.
+  _Done except cancellation: `cancelled` is a valid state but no endpoint or worker path sets it._
 - [x] Authenticate downloads server-side; validate source hosts, handle redirects
   safely, and never log credentials. Browser requests select scene IDs, not arbitrary URLs.
 - [x] Write assets to temporary locations; publish completed bundles atomically.
-- [ ] Add tests for interrupted downloads, duplicate jobs, missing layers, masks,
+- [x] Add tests for interrupted downloads, duplicate jobs, missing layers, masks,
   grid mismatches, zero valid coverage, and repeatable statistics.
 
 ### B3. Derived-product API
 
-Proposed additions; final schemas must be agreed before frontend integration:
+Implemented by PR #2. The curated case lives under `/api/v1/curated-cases…` because `/api/v1/cases` already serves the
+calibrated pilot; read every `/cases` below as `/curated-cases` for that case. `backend/README.md` still lists the old paths.
 
 | Endpoint | Contract |
 | --- | --- |
@@ -344,10 +387,10 @@ Proposed additions; final schemas must be agreed before frontend integration:
 
 - [x] Generate typed frontend contracts from OpenAPI or maintain validated shared fixtures.
   _Frontend: `npm run api:types` writes `src/lib/chattogram/api-schema.d.ts` from the running backend; `/api/v1/region` still needs a response model._
-- [ ] Define empty, partial, failed, unavailable, and ready states explicitly.
-- [ ] Serve precomputed display assets with cache headers; do not run analyses for
+- [x] Define empty, partial, failed, unavailable, and ready states explicitly.
+- [x] Serve precomputed display assets with cache headers; do not run analyses for
   map pans. Choose precomputed tiles versus a raster tile server after testing a real asset.
-- [ ] Public demo access is read-only. Protect job creation and administration.
+- [x] Public demo access is read-only. Protect job creation and administration.
 - [ ] Keep SQLite on a persistent disk; use one controlled writer/worker initially.
   Do not deploy it into an ephemeral frontend runtime.
 
@@ -358,7 +401,8 @@ Proposed additions; final schemas must be agreed before frontend integration:
 - [x] Add a typed Chattogram discovery API client and remove glacier-specific
   metrics and labels from the explorer journey.
   _Frontend: `src/lib/chattogram/api.ts`, types generated from the backend OpenAPI schema (`npm run api:types`)._
-- [ ] Add the processed-case provider once the case API is available.
+- [x] Add the processed-case provider once the case API is available.
+  _`CaseProvider` loads and polls the curated case; `usePilot()` loads the pilot (live or from the snapshot)._
 - [x] Separate the real Chattogram discovery workspace from the Jakobshavn sample dashboard in navigation.
 - [x] Simplify navigation to **Explore**, **Compare**, **Evidence**, and **About**.
   _Frontend: `/chattogram` has these four views, plus an Overview front door and the Scene catalogue (formerly `/explore`), in the shared dashboard shell._
@@ -410,8 +454,8 @@ observation dates, and data source above the map. Avoid a wall of small metric c
 - [x] Handle unavailable tiles, no observations, partial coverage, and backend failure
   with useful UI rather than silent blank maps or invented values.
   _Frontend: backend down shows how to start it with a working Try again; empty catalogue, missing quicklook, basemap failure and missing /cases each say so on screen._
-- [ ] Save a link that restores case, dates, selected finding, and extent.
-  _Frontend: the /chattogram URL restores stack, before/after dates, map extent and selected acquisition. Selected finding waits for findings to exist._
+- [x] Save a link that restores case, dates, selected finding, and extent.
+  _Frontend: the /chattogram URL restores stack, before/after dates, map extent, selected acquisition and the selected finding (`f`). Untested with real findings until the curated case is processed._
 
 ## 8. Build milestones and stop conditions
 
