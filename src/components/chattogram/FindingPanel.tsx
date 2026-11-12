@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { FileText, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
-import { fmtDate } from "@/lib/chattogram/acquisitions";
+import { fmtDate } from "@/lib/i18n/format";
 import { CASE_ID, fmtDb, fmtKm2, type CaseDetail, type Finding, type FindingDetail } from "@/lib/chattogram/case-api";
 import { FINDING } from "./MapKey";
 

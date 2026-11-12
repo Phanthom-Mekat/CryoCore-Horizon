@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { BrandMark } from "./BrandMark";
+import { ThemeToggle } from "./ThemeToggle";
 
 const SECTIONS = [
   { id: "clouds", label: "Why radar" },
@@ -55,6 +56,7 @@ export function SiteNav() {
           </a>
         ))}
       </nav>
+      <ThemeToggle />
       <Link href="/dashboard" className="nav-link-plain">
         Glacier sample
       </Link>

@@ -8,11 +8,13 @@ See its README for setup, endpoints, and current limitations. The frontend below
 still demonstrates the original Jakobshavn sample dataset; connecting it to the
 Chattogram backend is a subsequent step.
 
-## Chattogram observation explorer
+## Chattogram case
 
-The first integrated feature is at **[/explore](http://localhost:3000/explore)**:
-NASA GCOV catalog footprints, an attributed division boundary, date filtering,
-scene evidence, and a tilted MapLibre map with NASA GIBS Blue Marble context.
+The case study is at **[/chattogram](http://localhost:3000/chattogram)**: Overview, Explore map,
+Compare dates, Evidence & brief, Scene catalogue (formerly `/explore`, which redirects) and About;
+see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md). It shows NASA GCOV catalog footprints, an attributed
+division boundary, real NISAR browse quicklooks, date filtering, scene evidence, and interactive Mapbox GL maps. All geographic maps use Mapbox
+Standard for context; NASA imagery and scientific layers retain their attribution.
 It discovers observations; it does not yet compute environmental changes.
 
 Start the backend using [its instructions](backend/README.md), then run `pnpm dev`.
@@ -20,6 +22,15 @@ The frontend proxies its two explorer requests to `http://127.0.0.1:8000` by
 default; set server-side `BACKEND_URL` for another backend location. No client
 secret or Earthdata login is needed for this metadata feature. A fresh database
 starts empty: use **Discover observations**, then **Load next page** if offered.
+
+**Frozen case (no backend needed).** `public/data/chattogram/case/` holds a versioned snapshot of the case: the
+division view, every intersecting scene, and the processed quicklooks for the stacks over Chattogram city. The pages
+use it automatically when the backend is unreachable, open it on purpose with `?source=frozen`, and say so on every
+page. For a deployment without the backend, set `NEXT_PUBLIC_CASE_SOURCE=frozen`. Refresh the snapshot with the
+backend running: `pnpm freeze-case`.
+
+**Rainfall context.** Daily rainfall at Chattogram city from the NASA POWER API (modelled, MERRA-2) is saved in
+`public/data/chattogram/rain.json`; refresh it with `pnpm fetch-rain`.
 
 Use pnpm for Node dependencies (`pnpm install`, `pnpm build`). See
 [the explorer implementation notes](docs/EXPLORER.md) for architecture, data
@@ -31,6 +42,15 @@ Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing 
 - `/dashboard`: ice speed map, speed over time, calving front position, radar before/after
 
 ## Run the site
+
+Interactive geographic maps require a public Mapbox token in `.env.local`:
+`NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token`. See [Mapbox setup](docs/MAPBOX.md)
+for URL restrictions, deployment configuration, and map behavior.
+
+The site defaults to light mode. Use the sun/moon button in the landing navigation
+or dashboard header to switch themes. Your choice is saved in browser local
+storage and shared across pages and tabs. UI themes do not recolor satellite
+imagery or change scientific color scales.
 
 ```bash
 pnpm install
@@ -74,6 +94,8 @@ node --experimental-strip-types scripts/check-sun.mts          # sun position be
 
 - `node scripts/make-sample-data.mjs <basemap-hls.png>`: the sample dataset
 - `node scripts/make-textures.mjs <folder>`: Earth textures for the 3D view (sources listed in the script)
+- `pnpm freeze-case`: the frozen Chattogram case (needs the backend running and network access to ASF)
+- `pnpm fetch-rain`: NASA POWER daily rainfall for the case (no login needed)
 
 ## Credits
 

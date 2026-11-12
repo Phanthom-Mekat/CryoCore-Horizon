@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { DashboardProvider } from "@/components/dashboard/DashboardProvider";
 import { Shell } from "@/components/dashboard/Shell";
 import "./dashboard.css";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 // The glacier data is read in the browser from public/data (so new pipeline output shows up without a rebuild),
 // which means navigating into the dashboard may wait on it. The shell still renders straight away.

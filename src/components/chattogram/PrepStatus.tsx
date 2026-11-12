@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, CircleDashed, Clock, KeyRound, LoaderCircle, RotateCw, type LucideIcon } from "lucide-react";
-import { fmtDate } from "@/lib/chattogram/acquisitions";
+import { fmtDate } from "@/lib/i18n/format";
 import { CASE_ID, isBusy, methodId, type CaseDetail } from "@/lib/chattogram/case-api";
 import { useCase } from "./CaseProvider";
 
@@ -30,7 +30,7 @@ function Steps({ credentials }: { credentials: boolean }) {
       {credentials && (
         <li>
           Create a free NASA Earthdata Login and a user token at <span className="c-mono">urs.earthdata.nasa.gov</span>, then add{" "}
-          <code>CRYO_EARTHDATA_TOKEN=&lt;your token&gt;</code> to <code>backend/.env</code>.
+          <code>EARTHDATA_TOKEN=&lt;your token&gt;</code> to <code>backend/.env</code>.
         </li>
       )}
       <li>
@@ -60,7 +60,7 @@ export function PrepStatus({ compact = false }: { compact?: boolean }) {
         <h2>{processed.status === "unavailable" ? "The backend doesn’t serve the processed case yet" : "The backend returned an error for the processed case"}</h2>
         <p className="c-hint">
           {processed.reason.replace(/\.?$/, ".")} The scene catalogue, quicklooks and comparisons above still work; calibrated layers and findings appear once the backend
-          serves <code>/api/v1/cases/{CASE_ID}</code>.
+          serves <code>/api/v1/curated-cases/{CASE_ID}</code>.
         </p>
         <button type="button" className="c-btn" onClick={reload}>
           <RotateCw size={15} aria-hidden="true" />

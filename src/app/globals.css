@@ -10,9 +10,9 @@
   --ice: #5fd4e6; /* water, actions and selection */
   --silt: #e0a347; /* silt, receding water, attention */
   --radar: #8fdcb8; /* radar echoes in diagrams */
-  --serif: var(--font-serif), Georgia, serif;
-  --sans: var(--font-sans), system-ui, sans-serif;
-  --mono: var(--font-mono), ui-monospace, monospace;
+  --serif: var(--font-serif), var(--font-bn-serif), Georgia, serif;
+  --sans: var(--font-sans), var(--font-bn-sans), system-ui, sans-serif;
+  --mono: var(--font-mono), var(--font-bn-sans), ui-monospace, monospace;
   --gutter: clamp(20px, 4vw, 56px);
 }
 

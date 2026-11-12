@@ -4,6 +4,8 @@
 import { compatibility, type Acquisition } from "./acquisitions";
 import type { Region } from "./api";
 import { methodId, type ProcessedCase } from "./case-api";
+import { rainBefore, type RainSeries } from "./rain";
+import type { CaseSource } from "@/components/chattogram/CaseProvider";
 
 export const METHOD_VERSION = "visual-quicklook-comparison/0.1";
 export const CLAIM =
@@ -52,14 +54,26 @@ const source = (a: Acquisition) => ({
   polarizations: a.polarizations,
   hdf5_md5: a.md5,
   qa_report: a.qaReport,
+  quicklook: a.frozen ? { frozen_case_file: a.frozen.src, sha256: a.frozen.sha256, corners: a.frozen.corners, corners_from: a.frozen.cornersFrom } : "live from ASF",
 });
 
-export function briefJson(region: Region, before: Acquisition, after: Acquisition, shareUrl: string, pc?: ProcessedCase | null) {
+export function briefJson(
+  region: Region,
+  before: Acquisition,
+  after: Acquisition,
+  shareUrl: string,
+  origin: CaseSource,
+  replayUrl: string | null,
+  rain: RainSeries | null = null,
+  pc?: ProcessedCase | null,
+) {
   const p = processedSection(pc, before, after);
   return {
     title: `Observed radar change, ${region.name}: ${before.day} vs ${after.day}`,
     generated_utc: new Date().toISOString(),
     share_url: shareUrl,
+    replay_url: replayUrl,
+    data_source: origin.mode === "frozen" ? { mode: "frozen case", captured_utc: origin.frozenAt } : { mode: "live backend", frozen_case_captured_utc: origin.frozenAt },
     method_version: p?.same_pair_as_compared ? methodId(p) : METHOD_VERSION,
     claim: p?.same_pair_as_compared ? p.claim : CLAIM,
     region: {
@@ -74,7 +88,33 @@ export function briefJson(region: Region, before: Acquisition, after: Acquisitio
     compared: { before: source(before), after: source(after), days_apart: Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5) },
     compatibility: compatibility(before, after),
     processed_case: p,
+    rainfall_context: rain && rainfallContext(rain, before, after),
     attribution: "NISAR data: NASA and ISRO, distributed by the Alaska Satellite Facility DAAC (nisar-docs.asf.alaska.edu); discovered through NASA Earthdata CMR.",
+  };
+}
+
+/** Contextual evidence only (plan F13): the rain in the week up to each date, never a cause of the change. */
+function rainfallContext(rain: RainSeries, before: Acquisition, after: Acquisition) {
+  const week = (a: Acquisition) => {
+    const w = rainBefore(rain, a.day, 7);
+    return { window_days: w.of, days_with_values: w.days, total_mm: w.days ? Math.round(w.mm * 10) / 10 : null };
+  };
+  return {
+    note: "Context, not proof: rain is one possible reason radar brightness changes; tide, wind and crops are others.",
+    before_7_days: week(before),
+    after_7_days: week(after),
+    source: {
+      provider: rain.provider,
+      api_version: rain.apiVersion,
+      parameter: `${rain.parameter} (${rain.longname}, ${rain.units})`,
+      based_on: rain.sources,
+      kind: rain.kind,
+      resolution: rain.resolution,
+      point: rain.point,
+      day_boundaries: rain.timeStandard,
+      retrieved_utc: rain.retrievedAt,
+      request_url: rain.url,
+    },
   };
 }
 

@@ -1,10 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Newsreader, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Newsreader, IBM_Plex_Sans, IBM_Plex_Mono, Noto_Sans_Bengali, Noto_Serif_Bengali } from "next/font/google";
+import { LANG_BOOT_SCRIPT } from "@/lib/i18n/locale";
 import "./globals.css";
+import "./theme.css";
 
 const serif = Newsreader({ variable: "--font-serif", subsets: ["latin"], weight: ["400", "500"], style: ["normal"] });
 const sans = IBM_Plex_Sans({ variable: "--font-sans", subsets: ["latin"], weight: ["400", "500", "600"] });
 const mono = IBM_Plex_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["400", "500"] });
+// Bangla interface (plan F15): only the Bengali subset, so English-only pages never download these
+const bnSans = Noto_Sans_Bengali({ variable: "--font-bn-sans", subsets: ["bengali"], weight: ["400", "500", "600"], preload: false });
+const bnSerif = Noto_Serif_Bengali({ variable: "--font-bn-serif", subsets: ["bengali"], weight: ["400", "500"], preload: false });
 
 const title = "CryoCore Horizon: Chattogram through the clouds with NISAR radar";
 const description =
@@ -22,11 +27,17 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title, description },
 };
 
-export const viewport: Viewport = { themeColor: "#050B14", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#ffffff", colorScheme: "light dark" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
+    <html lang="en" data-theme="light" suppressHydrationWarning data-scroll-behavior="smooth" className={`${serif.variable} ${sans.variable} ${mono.variable} ${bnSans.variable} ${bnSerif.variable}`}>
+      <head>
+        {/* Restore an explicit preference before paint; new visitors always start in light mode. */}
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem("cryocore-theme")==="dark"?"dark":"light";document.documentElement.dataset.theme=t;document.querySelector('meta[name="theme-color"]')?.setAttribute("content",t==="dark"?"#04080f":"#ffffff")}catch{}` }} />
+        {/* the saved interface language, applied before paint like the theme (src/lib/i18n/locale.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: LANG_BOOT_SCRIPT }} />
+      </head>
       {/* browser extensions (Grammarly, ColorZilla) add attributes to <body> before hydration */}
       <body suppressHydrationWarning>{children}</body>
     </html>

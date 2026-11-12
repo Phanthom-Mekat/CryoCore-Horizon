@@ -1,6 +1,6 @@
 """Authenticated, resumable NISAR downloads from NASA Earthdata / ASF.
 
-Credentials come from CRYO_EARTHDATA_TOKEN (bearer) or ~/.netrc / ~/_netrc (machine urs.earthdata.nasa.gov).
+Credentials come from EARTHDATA_TOKEN (bearer) or ~/.netrc / ~/_netrc (machine urs.earthdata.nasa.gov).
 Redirects are followed by hand so every hop is checked against an allowlist, and Authorization is only ever
 sent to Earthdata Login (URS) or *.earthdatacloud.nasa.gov, never to the S3 host that serves the bytes.
 Nothing here logs headers, URLs with query strings, or credentials.
@@ -18,7 +18,7 @@ import httpx
 from .config import Settings
 
 URS = "urs.earthdata.nasa.gov"
-TOKEN_HELP = ("Add CRYO_EARTHDATA_TOKEN=<token> to backend/.env (generate one at https://urs.earthdata.nasa.gov/ "
+TOKEN_HELP = ("Add EARTHDATA_TOKEN=<token> to backend/.env (generate one at https://urs.earthdata.nasa.gov/ "
               "-> Generate Token), or add 'machine urs.earthdata.nasa.gov login <user> password <pass>' to ~/.netrc, "
               "then queue the job again.")
 _S3 = re.compile(r"([a-z0-9.-]+\.)?s3([.-][a-z0-9-]+)*\.amazonaws\.com")

@@ -8,19 +8,31 @@ import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "
 import { CASE_ID, isBusy, type ProcessedCase } from "@/lib/chattogram/case-api";
 
 const POLL_MS = 3000;
+import { FOCUS, loadFrozen } from "@/lib/chattogram/frozen";
+import { publishCaseSource } from "@/lib/chattogram/sourceStore";
+import { loadRain, type RainSeries } from "@/lib/chattogram/rain";
 
-/** The curated starting point: the city, which the most NISAR dates cover. Changing it only changes the default view. */
-export const FOCUS = { name: "Chattogram city", lonLat: [91.8317, 22.3569] as [number, number] };
+export { FOCUS };
 export const DEFAULT_VIEW = { lon: 91.85, lat: 22.4, zoom: 8.2 };
 
 export type View = { lon: number; lat: number; zoom: number };
 export type Stack = { id: string; items: Acquisition[] };
 
 type Data = { region: Region; explorer: ExplorerData; acquisitions: Acquisition[]; stacks: Stack[] };
+/**
+ * Where the case came from. `live`: the backend's stored NASA catalogue (images still come from the frozen case when it
+ * has them: same granule, same processing). `frozen`: the snapshot in public/data/chattogram/case, replayed with no
+ * backend, NASA or ASF request — chosen with ?source=frozen or NEXT_PUBLIC_CASE_SOURCE=frozen, or used because the
+ * backend is down (`fallback`).
+ */
+export type CaseSource = { mode: "live" | "frozen"; frozenAt: string | null; fallback: boolean };
 type Ctx = {
   load: Load<Data>;
   /** The backend's division view (boundary, footprints, counts). Present even when no scene overlaps yet. */
   explorer: ExplorerData | null;
+  source: CaseSource;
+  /** Rainfall context (plan F13), a static file, so it is the same live or frozen. Null if not shipped. */
+  rain: RainSeries | null;
   reload: () => void;
   /** Selection, all of it mirrored in the URL so any view can be shared as a link. */
   stack: Stack | null;
@@ -47,30 +59,63 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const params = useSearchParams();
   const [load, setLoad] = useState<Load<Data>>({ status: "loading" });
   const [explorer, setExplorer] = useState<ExplorerData | null>(null);
+  const [source, setSource] = useState<CaseSource>({ mode: "live", frozenAt: null, fallback: false });
   const [tick, setTick] = useState(0);
   const [processed, setProcessed] = useState<Load<ProcessedCase>>({ status: "loading" });
+  const [rain, setRain] = useState<RainSeries | null>(null);
+  useEffect(() => {
+    loadRain().then(setRain);
+  }, []);
+  const wanted = params.get("source") ?? process.env.NEXT_PUBLIC_CASE_SOURCE ?? "live";
 
   useEffect(() => {
     let live = true;
-    Promise.all([api.explorer(), allScenes("GCOV")])
-      .then(([explorer, scenes]) => {
+    const apply = (ex: ExplorerData, acquisitions: Acquisition[], src: CaseSource) => {
+      setExplorer(ex);
+      setSource(src);
+      publishCaseSource(src); // for the header's Live | Frozen switch
+      if (!acquisitions.length)
+        return setLoad({ status: "empty", reason: "No stored NISAR GCOV scene overlaps the division yet. Open the Scene catalogue and run “Discover observations” to fetch them from NASA." });
+      // stacks over the focus point first: those are the ones a before/after comparison can use there
+      const over = stacks(acquisitions.filter((a) => covers(a, FOCUS.lonLat)));
+      const rest = stacks(acquisitions).filter((s) => !over.some((o) => o.id === s.id));
+      setLoad({ status: "ready", data: { region: ex.region, explorer: ex, acquisitions, stacks: [...over, ...rest] } });
+    };
+    (async () => {
+      const frozen = await loadFrozen();
+      if (!live) return;
+      const replay = (fallback: boolean) => {
+        if (!frozen) return false;
+        apply(frozen.explorer, frozen.acquisitions, { mode: "frozen", frozenAt: frozen.frozenAt, fallback });
+        return true;
+      };
+      if (wanted === "frozen") {
+        if (!replay(false)) setLoad({ status: "unavailable", reason: "This copy of the site has no frozen case. Run `pnpm freeze-case` with the backend running." });
+        return;
+      }
+      try {
+        const [ex, scenes] = await Promise.all([api.explorer(), allScenes("GCOV")]);
         if (!live) return;
-        setExplorer(explorer);
         // only scenes the backend found intersecting the division polygon (not just its bounding box)
-        const inside = new Set(explorer.scenes.features.map((f) => f.properties.id));
-        const acquisitions = scenes.map(toAcquisition).filter((a) => inside.has(a.conceptId) && a.footprint.length >= 3 && a.day);
-        if (!acquisitions.length)
-          return setLoad({ status: "empty", reason: "No stored NISAR GCOV scene overlaps the division yet. Open the Scene catalogue and run “Discover observations” to fetch them from NASA." });
-        // stacks over the focus point first: those are the ones a before/after comparison can use there
-        const over = stacks(acquisitions.filter((a) => covers(a, FOCUS.lonLat)));
-        const rest = stacks(acquisitions).filter((s) => !over.some((o) => o.id === s.id));
-        setLoad({ status: "ready", data: { region: explorer.region, explorer, acquisitions, stacks: [...over, ...rest] } });
-      })
-      .catch((e) => live && setLoad(toLoadError(e)));
+        const inside = new Set(ex.scenes.features.map((f) => f.properties.id));
+        const assets = new Map((frozen?.acquisitions ?? []).flatMap((a) => (a.frozen ? [[a.conceptId, a.frozen] as const] : [])));
+        const acquisitions = scenes
+          .map(toAcquisition)
+          .filter((a) => inside.has(a.conceptId) && a.footprint.length >= 3 && a.day)
+          .map((a) => (assets.has(a.conceptId) ? { ...a, frozen: assets.get(a.conceptId) } : a));
+        apply(ex, acquisitions, { mode: "live", frozenAt: frozen?.frozenAt ?? null, fallback: false });
+      } catch (e) {
+        if (!live) return;
+        const err = toLoadError(e);
+        // the backend is down: replay the frozen case rather than show nothing, and say so on every page
+        if (err.status === "unavailable" && replay(true)) return;
+        setLoad(err);
+      }
+    })();
     return () => {
       live = false;
     };
-  }, [tick]);
+  }, [tick, wanted]);
 
   // The processed case loads on its own, so a backend without /cases (or a case still processing) never blocks the
   // catalogue views. While the backend is working on it, the case (with its job) is polled every few seconds.
@@ -78,6 +123,10 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const empty = { layers: [], findings: { type: "FeatureCollection" as const, features: [] }, timeseries: { units: "dB" as const, points: [] } };
+    if (wanted === "frozen") {
+      setProcessed({ status: "unavailable", reason: "The frozen case replays without the backend, so the processed case is not loaded" });
+      return;
+    }
     const poll = () =>
       api
         .case(CASE_ID)
@@ -101,7 +150,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
       live = false;
       clearTimeout(timer);
     };
-  }, [tick]);
+  }, [tick, wanted]);
 
   const data = load.status === "ready" ? load.data : null;
   const q = (k: string) => params.get(k);
@@ -154,6 +203,8 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   const value: Ctx = {
     load,
     explorer,
+    source,
+    rain,
     reload: () => setTick((t) => t + 1),
     stack,
     before,

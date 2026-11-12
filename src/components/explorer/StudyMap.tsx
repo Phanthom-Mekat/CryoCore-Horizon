@@ -1,25 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapRef } from "react-map-gl/maplibre";
-import type { StyleSpecification } from "maplibre-gl";
+import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapRef } from "react-map-gl/mapbox";
+import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme } from "@/lib/mapbox";
+import { MapUnavailable } from "@/components/maps/MapUnavailable";
 import type { ExplorerData, SceneCollection } from "@/lib/explorer-data";
 import { Focus, Layers3 } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-
-// A contextual map only. These tiles are not NISAR imagery.
-const style: StyleSpecification = {
-  version: 8,
-  sources: { basemap: { type: "raster", tiles: ["https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg"], tileSize: 256, maxzoom: 8,
-    attribution: '<a href="https://earthdata.nasa.gov/engage/open-data-services-and-software/earthdata-developer-portal/gibs-api">NASA GIBS / Blue Marble</a> · static context, not NISAR' } },
-  layers: [{ id: "background", type: "background", paint: { "background-color": "#04080f" } },
-    { id: "basemap", type: "raster", source: "basemap", paint: { "raster-opacity": 0.8, "raster-saturation": -0.5, "raster-brightness-max": 0.65 } }],
-};
 
 export default function StudyMap({ data, scenes, selected, onSelect }: {
   data: ExplorerData; scenes: SceneCollection; selected: string | null; onSelect: (id: string) => void;
 }) {
   const ref = useRef<MapRef>(null);
+  const [style] = useState(mapStyle);
+  const disposeTheme = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => () => disposeTheme.current?.(), []);
   const reduced = useReducedMotion();
   const [tilted, setTilted] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -44,27 +39,31 @@ export default function StudyMap({ data, scenes, selected, onSelect }: {
     });
   }, [selected, scenes, loaded, reduced]);
 
+  if (!MAPBOX_CONFIGURED) return <div className="atlas-map"><MapUnavailable /></div>;
+
   return <div className="atlas-map">
-    <Map ref={ref} initialViewState={{ longitude: 91.65, latitude: 22.5, zoom: 6.8 }} mapStyle={style}
+    <Map ref={ref} initialViewState={{ longitude: 91.65, latitude: 22.5, zoom: 6.8 }} mapStyle={style} mapboxAccessToken={MAPBOX_TOKEN} mapLib={loadMapbox()} projection="mercator"
       maxZoom={14} minZoom={3} style={{ width: "100%", height: "100%" }}
-      onLoad={() => { setLoaded(true); focusRegion(); }}
+      onLoad={() => { setLoaded(true); focusRegion(); if (ref.current) disposeTheme.current = followMapTheme(ref.current.getMap()); }}
       onError={event => { if (!loaded && /webgl|context/i.test(event.error.message)) setFatalError(true); else setTileError(true); }}
       interactiveLayerIds={["scene-fill"]} cursor={hover ? "pointer" : "grab"}
       onMouseMove={event => setHover(Boolean(event.features?.length))}
       onMouseLeave={() => setHover(false)}
       onClick={event => { const id = event.features?.[0]?.properties?.id; if (id) onSelect(String(id)); }}>
+      {loaded && <>
       <Source id="division" type="geojson" data={data.region.boundary}>
-        <Layer id="division-fill" type="fill" paint={{ "fill-color": "#8fe3ff", "fill-opacity": 0.055 }} />
-        <Layer id="division-glow" type="line" paint={{ "line-color": "#8fe3ff", "line-width": 7, "line-opacity": 0.1 }} />
-        <Layer id="division-line" type="line" paint={{ "line-color": "#8fe3ff", "line-width": 1.6, "line-opacity": 0.85 }} />
+        <Layer id="division-fill" type="fill" paint={{ "fill-color": "#1686b0", "fill-opacity": 0.055 }} />
+        <Layer id="division-glow" type="line" paint={{ "line-color": "#1686b0", "line-width": 7, "line-opacity": 0.1 }} />
+        <Layer id="division-line" type="line" paint={{ "line-color": "#1686b0", "line-width": 1.6, "line-opacity": 0.85 }} />
       </Source>
       <Source id="scenes" type="geojson" data={scenes}>
         <Layer id="scene-fill" type="fill" paint={{ "fill-color": ["case", ["==", ["get", "id"], selected ?? ""], "#ffb454", "#3987e5"], "fill-opacity": ["case", ["==", ["get", "id"], selected ?? ""], 0.23, 0.003] }} />
         <Layer id="scene-line" type="line" paint={{ "line-color": "#3987e5", "line-opacity": 0.12, "line-width": 0.7 }} />
         <Layer id="selected-line" type="line" filter={["==", ["get", "id"], selected ?? ""]} paint={{ "line-color": "#ffb454", "line-width": 2.2 }} />
       </Source>
-      <Layer id="division-top" source="division" type="line" paint={{ "line-color": "#8fe3ff", "line-width": 1.4 }} />
+      <Layer id="division-top" source="division" type="line" paint={{ "line-color": "#1686b0", "line-width": 1.4 }} />
       <Marker longitude={91.7832} latitude={22.3569} anchor="bottom"><div className="atlas-place"><span />Chattogram city</div></Marker>
+      </>}
       <NavigationControl position="bottom-right" visualizePitch />
       <ScaleControl position="bottom-left" unit="metric" />
     </Map>

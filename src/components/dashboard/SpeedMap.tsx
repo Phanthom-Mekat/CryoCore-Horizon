@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DATA_ROOT, SERIES_COLORS, UNIT_LABEL, fmtDayShort, nearestIndex, rampColor, toGrid, toLonLat, toUnit, type Fronts, type Manifest, type Pair, type SpeedUnit } from "@/lib/dashboard-data";
+import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapRef } from "react-map-gl/mapbox";
+import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme, mapError, cameraDuration } from "@/lib/mapbox";
+import { MapUnavailable } from "@/components/maps/MapUnavailable";
+import { DATA_ROOT, SERIES_COLORS, UNIT_LABEL, fmtDayShort, nearestIndex, rampColor, toGrid, toUnit, type Fronts, type Manifest, type Pair, type SpeedUnit } from "@/lib/dashboard-data";
 
 export type Layers = { speed: boolean; fronts: boolean; probes: boolean };
 
 type Grid = { code: Uint8ClampedArray; ok: Uint8ClampedArray };
-const cache = new Map<string, Promise<Grid>>();
+const cache = new globalThis.Map<string, Promise<Grid>>();
 
 /** Decodes a speed PNG (gray = speed, alpha = valid) into arrays. Cached per file. */
 function loadGrid(src: string, w: number, h: number) {
@@ -37,132 +40,115 @@ function loadGrid(src: string, w: number, h: number) {
   return cache.get(src)!;
 }
 
-export function SpeedMap({
-  manifest,
-  fronts,
-  pair,
-  layers,
-  units = "mday",
-  frontDate,
-}: {
-  manifest: Manifest;
-  fronts: Fronts;
-  pair: Pair;
-  layers: Layers;
-  units?: SpeedUnit;
-  frontDate?: string;
+/** The source assets are geographic grids; Mapbox image quads are Mercator.
+ * Reproject rows for display, keeping numeric reads on the original grid. */
+function mercatorCanvas(source: HTMLCanvasElement | HTMLImageElement, south: number, north: number) {
+  const width = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+  const height = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+  const out = document.createElement("canvas");
+  out.width = width; out.height = height;
+  const ctx = out.getContext("2d")!;
+  ctx.imageSmoothingEnabled = false;
+  const merc = (lat: number) => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+  const top = merc(north), bottom = merc(south);
+  for (let row = 0; row < height; row++) {
+    const y = top + ((row + 0.5) / height) * (bottom - top);
+    const lat = (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
+    const srcRow = Math.min(height - 1, Math.max(0, Math.floor((north - lat) / (north - south) * height)));
+    ctx.drawImage(source, 0, srcRow, width, 1, 0, row, width, 1);
+  }
+  return out.toDataURL("image/png");
+}
+
+export function SpeedMap({ manifest, fronts, pair, layers, units = "mday", frontDate }: {
+  manifest: Manifest; fronts: Fronts; pair: Pair; layers: Layers; units?: SpeedUnit; frontDate?: string;
 }) {
   const { width: W, height: H } = manifest.grid;
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const scroller = useRef<HTMLDivElement>(null);
-  const [grid, setGrid] = useState<Grid | null>(null);
+  const [w, s, e, n] = manifest.bbox;
+  const coordinates: [[number, number], [number, number], [number, number], [number, number]] = [[w,n], [e,n], [e,s], [w,s]];
+  const ref = useRef<MapRef>(null);
+  const disposeTheme = useRef<(() => void) | undefined>(undefined);
+  const [style] = useState(mapStyle);
+  const [loaded, setLoaded] = useState(false);
+  const [raster, setRaster] = useState<{ path: string; grid: Grid; url: string } | null>(null);
+  const [base, setBase] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
+  const [hover, setHover] = useState<{ lon: number; lat: number } | null>(null);
+  useEffect(() => () => disposeTheme.current?.(), []);
 
   useEffect(() => {
     let live = true;
-    loadGrid(pair.speed, W, H).then(
-      (g) => {
-        if (!live) return;
-        setGrid(g);
-        setError(null);
-        const ctx = canvas.current!.getContext("2d")!;
-        const img = ctx.createImageData(W, H);
-        for (let i = 0; i < W * H; i++) {
-          if (!g.ok[i]) continue;
-          const v = g.code[i] / 255;
-          const [r, gg, b] = rampColor(v / 0.75); // 0.75 × max saturates the ramp: most ice is far below max
-          img.data.set([r, gg, b, Math.round(255 * 0.92 * Math.min(1, Math.max(0, (v * manifest.speedMax - 0.6) / 5)))], i * 4); // ice slower than ~0.6 m/day stays untinted
-        }
-        ctx.putImageData(img, 0, 0);
-      },
-      (e: Error) => live && setError(e.message),
-    );
-    // warm the cache for neighbouring pairs so stepping feels instant
+    const image = new Image();
+    image.onload = () => { if (live) setBase(mercatorCanvas(image, s, n)); };
+    image.onerror = () => { if (live) setError("The NASA context image could not load."); };
+    image.src = DATA_ROOT + manifest.basemap.src;
+    return () => { live = false; };
+  }, [manifest.basemap.src, s, n]);
+
+  useEffect(() => {
+    let live = true;
+    loadGrid(pair.speed, W, H).then(g => {
+      if (!live) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext("2d")!;
+      const img = ctx.createImageData(W, H);
+      for (let i = 0; i < W * H; i++) {
+        if (!g.ok[i]) continue;
+        const v = g.code[i] / 255;
+        const [r, green, b] = rampColor(v / 0.75);
+        img.data.set([r, green, b, Math.round(255 * 0.92 * Math.min(1, Math.max(0, (v * manifest.speedMax - 0.6) / 5)))], i * 4);
+      }
+      ctx.putImageData(img, 0, 0);
+      setRaster({ path: pair.speed, grid: g, url: mercatorCanvas(canvas, s, n) });
+    }).catch(() => { if (live) setError("The speed layer could not load. Try another date."); });
     const i = manifest.pairs.indexOf(pair);
     for (const j of [i - 1, i + 1]) if (manifest.pairs[j]) loadGrid(manifest.pairs[j].speed, W, H).catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, [pair, W, H, manifest]);
+    return () => { live = false; };
+  }, [pair, W, H, manifest, s, n]);
 
-  // on narrow screens the map scrolls sideways; start it centred on the first probe (the calving front)
-  useEffect(() => {
-    const el = scroller.current;
-    const p = manifest.probes[0];
-    if (!el || !p || el.scrollWidth <= el.clientWidth) return;
-    el.scrollLeft = (toGrid(manifest, p.lon, p.lat)[0] / manifest.grid.width) * el.scrollWidth - el.clientWidth / 2;
-  }, [manifest]);
+  const current = raster?.path === pair.speed ? raster : null;
+  const endFront = fronts.fronts.length ? fronts.fronts[nearestIndex(fronts.fronts.map(f => f.date), frontDate ?? pair.end)] : undefined;
+  const lines: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: fronts.fronts.map(f => ({ type: "Feature", properties: { current: f.date === endFront?.date }, geometry: { type: "LineString", coordinates: f.line } })) };
+  const flow: GeoJSON.Feature = { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: fronts.flowline } };
+  const point = hover ? toGrid(manifest, hover.lon, hover.lat).map(Math.floor) : null;
+  const inGrid = point && point[0] >= 0 && point[0] < W && point[1] >= 0 && point[1] < H;
+  const index = inGrid ? point[1] * W + point[0] : -1;
+  const value = current && index >= 0 && current.grid.ok[index] ? current.grid.code[index] / 255 * manifest.speedMax : null;
+  const fit = () => ref.current?.fitBounds([[w,s],[e,n]], { padding: 40, pitch: 0, bearing: 0, duration: cameraDuration() });
 
-  // the front picked closest to the end of this pair (fronts and pairs come from different products), or the one asked for
-  const endFront = fronts.fronts.length ? fronts.fronts[nearestIndex(fronts.fronts.map((f) => f.date), frontDate ?? pair.end)] : undefined;
-  const pts = (line: [number, number][]) => line.map(([lon, lat]) => toGrid(manifest, lon, lat).map((v) => v.toFixed(2)).join(",")).join(" ");
-  const pick = (e: React.PointerEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    setHover({ x: Math.min(W - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * W))), y: Math.min(H - 1, Math.max(0, Math.floor(((e.clientY - r.top) / r.height) * H))) });
-  };
-  const value = hover && grid ? (grid.ok[hover.y * W + hover.x] ? (grid.code[hover.y * W + hover.x] / 255) * manifest.speedMax : null) : undefined;
-  const [hLon, hLat] = hover ? toLonLat(manifest, hover.x + 0.5, hover.y + 0.5) : [0, 0];
-
-  return (
-    <figure className="map">
-      <div className="map-scroll" ref={scroller}>
-      <div
-        className="map-frame"
-        style={{ aspectRatio: `${W} / ${H}` }}
-        data-speed={layers.speed ? "" : undefined}
-        onPointerMove={(e) => pick(e)}
-        onPointerDown={(e) => pick(e)}
-        onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element -- static same-origin raster sized by the frame */}
-        <img src={DATA_ROOT + manifest.basemap.src} alt="" className="map-base" />
-        <canvas ref={canvas} width={W} height={H} className="map-speed" hidden={!layers.speed} />
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="map-svg" aria-hidden="true">
-          {layers.fronts &&
-            fronts.fronts.map((f, i) => (
-              <polyline
-                key={f.date}
-                points={pts(f.line)}
-                className="map-front"
-                style={{ opacity: 0.2 + (0.5 * i) / fronts.fronts.length }}
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-          {layers.fronts && endFront && <polyline points={pts(endFront.line)} className="map-front is-current" vectorEffect="non-scaling-stroke" />}
-          {layers.probes && <polyline points={pts(fronts.flowline)} className="map-flow" vectorEffect="non-scaling-stroke" />}
-          {hover && <path d={`M${hover.x + 0.5} 0V${H}M0 ${hover.y + 0.5}H${W}`} className="map-cross" vectorEffect="non-scaling-stroke" />}
-        </svg>
-        {layers.probes &&
-          manifest.probes.map((p) => {
-            const [gx, gy] = toGrid(manifest, p.lon, p.lat);
-            return (
-              <span key={p.id} className="map-probe" style={{ left: `${(gx / W) * 100}%`, top: `${(gy / H) * 100}%`, ["--c" as string]: SERIES_COLORS[p.id] ?? "#fff" }}>
-                <span>{p.label}</span>
-              </span>
-            );
-          })}
-        {layers.fronts && endFront && (
-          <span className="map-tag" style={{ left: `${(toGrid(manifest, endFront.line[0][0], endFront.line[0][1])[0] / W) * 100}%`, top: "30%" }}>
-            Front, {fmtDayShort(endFront.date)}
-          </span>
-        )}
-        <output className="map-readout" aria-live="off">
-          {hover ? (
-            <>
-              <strong>{value === undefined ? "Loading" : value === null ? "No ice-speed data" : `${toUnit(value, units).toFixed(1)} ${UNIT_LABEL[units]}`}</strong>
-              <span>
-                {hLat.toFixed(3)}° N, {Math.abs(hLon).toFixed(3)}° W
-              </span>
-            </>
-          ) : (
-            <span>Point at the map to read the speed</span>
-          )}
-        </output>
-        {error && <p className="map-error">The speed layer for this pair didn’t load ({error}). Pick another pair or reload the page.</p>}
-      </div>
-      </div>
-      <figcaption>Basemap: {manifest.basemap.caption}.</figcaption>
-    </figure>
-  );
+  if (!MAPBOX_CONFIGURED) return <figure className="map"><MapUnavailable /></figure>;
+  return <figure className="map">
+    <div className="glacier-map">
+      <Map ref={ref} mapLib={loadMapbox()} mapboxAccessToken={MAPBOX_TOKEN} mapStyle={style}
+        projection="mercator" initialViewState={{ bounds: [[w,s],[e,n]], fitBoundsOptions: { padding: 40 } }}
+        style={{ width: "100%", height: "100%" }} maxPitch={60}
+        onLoad={() => { setLoaded(true); if (ref.current) disposeTheme.current = followMapTheme(ref.current.getMap()); }}
+        onError={event => setError(mapError(event.error.message))}
+        onMouseMove={event => setHover({ lon: event.lngLat.lng, lat: event.lngLat.lat })}
+        onClick={event => setHover({ lon: event.lngLat.lng, lat: event.lngLat.lat })}
+        onMouseLeave={() => setHover(null)}>
+        {loaded && <>
+        {base && <Source id="glacier-context" type="image" url={base} coordinates={coordinates}>
+          <Layer id="glacier-context" type="raster" paint={{ "raster-emissive-strength": 1, "raster-fade-duration": 0, "raster-saturation": layers.speed ? -0.9 : -0.25, "raster-brightness-max": layers.speed ? 0.42 : 0.8 }} />
+        </Source>}
+        {layers.speed && current && <Source id="glacier-speed" type="image" url={current.url} coordinates={coordinates}>
+          <Layer id="glacier-speed" type="raster" paint={{ "raster-emissive-strength": 1, "raster-fade-duration": 0, "raster-resampling": "nearest" }} />
+        </Source>}
+        {layers.fronts && <Source id="glacier-fronts" type="geojson" data={lines}>
+          <Layer id="glacier-fronts" type="line" paint={{ "line-color": "#ffffff", "line-width": ["case", ["get","current"], 3, 1.2], "line-opacity": ["case", ["get","current"], 1, 0.4] }} />
+        </Source>}
+        {layers.probes && <Source id="glacier-flow" type="geojson" data={flow}><Layer id="glacier-flow" type="line" paint={{ "line-color": "#ffffff", "line-width": 1.2, "line-dasharray": [4,4] }} /></Source>}
+        {layers.probes && manifest.probes.map(p => <Marker key={p.id} longitude={p.lon} latitude={p.lat}><div className="glacier-probe" style={{ borderColor: SERIES_COLORS[p.id] ?? "#fff" }}><span>{p.label}</span></div></Marker>)}
+        </>}
+        <NavigationControl position="top-right" visualizePitch />
+        <ScaleControl position="bottom-left" unit="metric" />
+      </Map>
+      <div className="map-view-tools"><button type="button" onClick={fit}>Fit glacier</button><button type="button" onClick={() => ref.current?.easeTo({ pitch: 50, duration: cameraDuration() })}>Tilt view</button></div>
+      <output className="map-readout" aria-live="off">{hover ? <><strong>{!current ? "Loading speed layer" : value === null ? "No ice-speed data" : `${toUnit(value, units).toFixed(1)} ${UNIT_LABEL[units]}`}</strong><span>{hover.lat.toFixed(3)}°, {hover.lon.toFixed(3)}°</span></> : <span>Point or tap to read speed · drag to pan</span>}</output>
+      {layers.fronts && endFront && <span className="glacier-front-date">Front, {fmtDayShort(endFront.date)}</span>}
+      {error && <p className="map-error" role="status">{error}</p>}
+    </div>
+    <figcaption>Basemap: {manifest.basemap.caption}. Mapbox provides geographic context; tilted views are illustrative.</figcaption>
+  </figure>;
 }

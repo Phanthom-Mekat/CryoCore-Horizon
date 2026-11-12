@@ -4,12 +4,18 @@ from datetime import date
 import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, Response
+from functools import lru_cache
 
-from . import cases, jobs
-from .config import Settings
+from . import cases as curated_cases, jobs
+from .config import BACKEND_ROOT, Settings
+from .cases import list_cases, read_case
+from .display import preview
+from .sampling import sample_case
 from .database import LATEST_VERSION, Database
 from .explorer import build_explorer
 from .nasa import CMR_URL, CatalogError, NasaCatalog
+from .pairs import assess_pair
 from .region import PRODUCTS, REGION
 from .schemas import Product, Region, Scene, ScenePage, SearchRequest, SearchResponse
 
@@ -65,7 +71,7 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
             "primary": {"mission": "NASA-ISRO NISAR", "catalog": CMR_URL,
                         "distributor": "ASF DAAC", "products": PRODUCTS,
                         "documentation": "https://nisar-docs.asf.alaska.edu/"},
-            "status": "Metadata discovery is live. Curated cases are processed offline by the worker and served from frozen bundles.",
+            "status": "CMR discovery, authenticated preparation and experimental frequency-A calibrated radar-change pilot. No validated flood classification.",
             "download_authentication": "Protected data downloads require NASA Earthdata Login.",
         }
 
@@ -85,6 +91,77 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
                offset: int = Query(0, ge=0)):
         return database.list_scenes(product, limit, offset)
 
+    @app.get("/api/v1/cases", tags=["Processed pilots"])
+    def cases():
+        return {"cases": list_cases(BACKEND_ROOT / "data" / "cases")}
+
+    @app.get("/api/v1/cases/{case_id}", tags=["Processed pilots"])
+    def case(case_id: str):
+        result = read_case(BACKEND_ROOT / "data" / "cases", case_id)
+        if result is None: raise HTTPException(status_code=404, detail="Published case not found.")
+        return result
+
+    @app.get("/api/v1/cases/{case_id}/sample", tags=["Processed pilots"])
+    def case_sample(case_id: str, longitude: float = Query(ge=-180, le=180, allow_inf_nan=False),
+                    latitude: float = Query(ge=-90, le=90, allow_inf_nan=False)):
+        manifest = case(case_id)
+        try:
+            return sample_case(BACKEND_ROOT / "data" / "cases" / case_id, manifest, longitude, latitude)
+        except (OSError, ValueError):
+            raise HTTPException(status_code=422, detail="The location or published raster grid could not be sampled.") from None
+
+    @lru_cache(maxsize=24)
+    def cached_preview(case_id: str, name: str, digest: str):
+        return preview(BACKEND_ROOT / "data" / "cases" / case_id / name, name.startswith("change-"))
+
+    @app.get("/api/v1/cases/{case_id}/display/{name}", tags=["Processed pilots"])
+    def case_display(case_id: str, name: str, bounds: bool = False):
+        result = case(case_id)
+        asset = next((a for a in result["assets"] if a["name"] == name and a["units"] == "dB"), None)
+        if asset is None or "/" in name or "\\" in name:
+            raise HTTPException(status_code=404, detail="Display layer not found.")
+        try:
+            png, corners = cached_preview(case_id, name, asset["sha256"])
+        except OSError:
+            raise HTTPException(status_code=404, detail="Display asset unavailable.") from None
+        if bounds:
+            return {"corners": corners, "scale": [-6,6] if name.startswith("change-") else [-25,0], "units": "dB"}
+        return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=3600"})
+
+    @app.get("/api/v1/cases/{case_id}/assets/{name}", tags=["Processed pilots"])
+    def case_asset(case_id: str, name: str):
+        result = case(case_id)
+        if name not in {a["name"] for a in result["assets"]} or "/" in name or "\\" in name:
+            raise HTTPException(status_code=404, detail="Published asset not found.")
+        path = BACKEND_ROOT / "data" / "cases" / case_id / name
+        if not path.is_file(): raise HTTPException(status_code=404, detail="Published asset not found.")
+        return FileResponse(path, media_type="image/tiff", filename=name)
+
+    @app.get("/api/v1/pairs/assess", tags=["NASA data"])
+    def pair_assessment(before: str, after: str):
+        first, second = database.get_scene(before), database.get_scene(after)
+        if first is None or second is None:
+            raise HTTPException(status_code=404, detail="Both scenes must exist in the local catalog.")
+        return assess_pair(first, second, database.get_inspection(before, first["revision_id"]),
+                           database.get_inspection(after, second["revision_id"]))
+
+    @app.get("/api/v1/scenes/{concept_id}/downloads", tags=["NASA data"])
+    def downloads(concept_id: str):
+        scene = database.get_scene(concept_id)
+        if scene is None:
+            raise HTTPException(status_code=404, detail="Scene not found in the local catalog.")
+        return {"concept_id": concept_id, "revision_id": scene["revision_id"],
+                "downloads": database.scene_downloads(concept_id, scene["revision_id"])}
+
+    @app.get("/api/v1/scenes/{concept_id}/inspection", tags=["NASA data"])
+    def inspection(concept_id: str):
+        scene = database.get_scene(concept_id)
+        if scene is None:
+            raise HTTPException(status_code=404, detail="Scene not found in the local catalog.")
+        report = database.get_inspection(concept_id, scene["revision_id"])
+        return report or {"concept_id": concept_id, "revision_id": scene["revision_id"],
+                          "status": "not_inspected", "analysis_ready": False}
+
     @app.get("/api/v1/scenes/{concept_id}", response_model=Scene, tags=["Stored scenes"])
     def scene(concept_id: str):
         result = database.get_scene(concept_id)
@@ -92,7 +169,7 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
             raise HTTPException(status_code=404, detail="Scene not found in the local catalog.")
         return result
 
-    app.include_router(cases.router(database, settings))
+    app.include_router(curated_cases.router(database, settings))
     app.include_router(jobs.router(database, settings))
     return app
 

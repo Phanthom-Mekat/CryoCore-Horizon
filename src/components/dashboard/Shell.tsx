@@ -5,38 +5,46 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, Bell, BookOpen, Columns2, FileSearch, Gauge, Home, Info, Layers, LayoutDashboard, Map, Menu, Mountain, Radar, Satellite, Search, X, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { CaseSourceToggle } from "@/components/chattogram/CaseSourceToggle";
+import { useT } from "@/lib/i18n/useT";
+import type { Messages } from "@/lib/i18n/messages";
 import { DataGate, useDashboardMaybe } from "./DashboardProvider";
 
-type Item = { href: string; label: string; icon: LucideIcon };
-type Group = { group: string; tag?: { label: string; tone: "live" | "sample" }; items: Item[] };
+type NavKey = keyof Messages["nav"];
+type Item = { href: string; label: NavKey; icon: LucideIcon };
+type Group = { group: NavKey; tag?: { label: NavKey; tone: "live" | "sample" }; items: Item[] };
+// labels are message keys (src/lib/i18n/messages.ts), so the sidebar follows the interface language
 const NAV: Group[] = [
   {
-    group: "Chattogram · NISAR",
-    tag: { label: "Real data", tone: "live" },
+    group: "caseGroup",
+    tag: { label: "realData", tone: "live" },
     items: [
-      { href: "/chattogram", label: "Overview", icon: Home },
-      { href: "/chattogram/explore", label: "Explore map", icon: Map },
-      { href: "/chattogram/compare", label: "Compare dates", icon: Columns2 },
-      { href: "/chattogram/evidence", label: "Evidence & brief", icon: FileSearch },
-      { href: "/chattogram/catalogue", label: "Scene catalogue", icon: Layers },
-      { href: "/chattogram/about", label: "About & sources", icon: Info },
+      { href: "/chattogram", label: "overview", icon: Home },
+      { href: "/chattogram/explore", label: "explore", icon: Map },
+      { href: "/chattogram/compare", label: "compare", icon: Columns2 },
+      { href: "/chattogram/processed", label: "processed", icon: Radar },
+      { href: "/chattogram/evidence", label: "evidence", icon: FileSearch },
+      { href: "/chattogram/catalogue", label: "catalogue", icon: Layers },
+      { href: "/chattogram/about", label: "about", icon: Info },
     ],
   },
   {
-    group: "Jakobshavn · glacier",
-    tag: { label: "Sample", tone: "sample" },
+    group: "glacierGroup",
+    tag: { label: "sample", tone: "sample" },
     items: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-      { href: "/dashboard/speed", label: "Ice speed", icon: Gauge },
-      { href: "/dashboard/fronts", label: "Calving front", icon: Mountain },
-      { href: "/dashboard/radar", label: "Radar images", icon: Radar },
-      { href: "/dashboard/passes", label: "NISAR passes", icon: Satellite },
-      { href: "/dashboard/alerts", label: "Alerts", icon: Bell },
-      { href: "/dashboard/methods", label: "Data and methods", icon: BookOpen },
+      { href: "/dashboard", label: "glacierOverview", icon: LayoutDashboard },
+      { href: "/dashboard/speed", label: "iceSpeed", icon: Gauge },
+      { href: "/dashboard/fronts", label: "calvingFront", icon: Mountain },
+      { href: "/dashboard/radar", label: "radarImages", icon: Radar },
+      { href: "/dashboard/passes", label: "passes", icon: Satellite },
+      { href: "/dashboard/alerts", label: "alerts", icon: Bell },
+      { href: "/dashboard/methods", label: "methods", icon: BookOpen },
     ],
   },
 ];
-const TITLES: Record<string, string> = Object.fromEntries(NAV.flatMap((g) => g.items.map((i) => [i.href, i.label])));
+const TITLES: Record<string, NavKey> = Object.fromEntries(NAV.flatMap((g) => g.items.map((i) => [i.href, i.label])));
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
@@ -44,6 +52,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const data = useDashboardMaybe();
   // the Chattogram case brings its own data and selection; the glacier pages wait for the sample files
   const isCase = path.startsWith("/chattogram");
+  const t = useT();
+  const nav = t.nav;
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const alertCount = data?.alerts.filter((a) => a.kind !== "peak").length ?? 0;
@@ -64,13 +74,13 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="d-shell">
       <a className="skip" href="#d-main">
-        Skip to content
+        {nav.skip}
       </a>
       <aside className={`d-side${open ? " is-open" : ""}`} aria-label="Dashboard">
         <div className="d-brand">
           <BrandMark size={22} />
           CryoCore Horizon
-          <button type="button" className="d-icon-btn d-close" onClick={() => setOpen(false)} aria-label="Close menu">
+          <button type="button" className="d-icon-btn d-close" onClick={() => setOpen(false)} aria-label={nav.closeMenu}>
             <X size={18} />
           </button>
         </div>
@@ -78,8 +88,8 @@ export function Shell({ children }: { children: ReactNode }) {
           {NAV.map((g) => (
             <div key={g.group}>
               <p className="d-nav-group">
-                {g.group}
-                {g.tag && <span className={`d-nav-tag is-${g.tag.tone}`}>{g.tag.label}</span>}
+                {nav[g.group]}
+                {g.tag && <span className={`d-nav-tag is-${g.tag.tone}`}>{nav[g.tag.label]}</span>}
               </p>
               <ul>
                 {g.items.map(({ href, label, icon: Icon }) => (
@@ -96,7 +106,7 @@ export function Shell({ children }: { children: ReactNode }) {
                       }}
                     >
                       <Icon size={17} aria-hidden="true" />
-                      {label}
+                      {nav[label]}
                       {href === "/dashboard/alerts" && alertCount > 0 && <span className="d-badge">{alertCount}</span>}
                     </Link>
                   </li>
@@ -109,7 +119,7 @@ export function Shell({ children }: { children: ReactNode }) {
           {isCase && (
             <p className="d-status is-live">
               <i aria-hidden="true" />
-              Real NISAR catalogue · NASA CMR
+              {nav.caseStatus}
             </p>
           )}
           {data && (
@@ -120,7 +130,7 @@ export function Shell({ children }: { children: ReactNode }) {
           )}
           <Link href="/" className="d-back">
             <ArrowLeft size={16} aria-hidden="true" />
-            Back to the project
+            {nav.back}
           </Link>
         </div>
       </aside>
@@ -128,10 +138,10 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <div className="d-main">
         <header className="d-top">
-          <button type="button" className="d-icon-btn d-menu" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open}>
+          <button type="button" className="d-icon-btn d-menu" onClick={() => setOpen(true)} aria-label={nav.openMenu} aria-expanded={open}>
             <Menu size={20} />
           </button>
-          <p className="d-title">{TITLES[path] ?? "Dashboard"}</p>
+          <p className="d-title">{TITLES[path] ? nav[TITLES[path]] : nav.dashboard}</p>
           {!isCase && <form
             className="d-search"
             role="search"
@@ -147,6 +157,9 @@ export function Shell({ children }: { children: ReactNode }) {
             <Bell size={18} aria-hidden="true" />
             {alertCount > 0 && <span className="d-dot" />}
           </Link>}
+          {isCase && <CaseSourceToggle />}
+          <LanguageToggle />
+          <ThemeToggle />
           <span className="d-avatar" title="Team CryoCore Horizon" aria-hidden="true">
             CH
           </span>

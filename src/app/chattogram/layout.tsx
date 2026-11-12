@@ -3,7 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { Shell } from "@/components/dashboard/Shell";
 import { CaseProvider } from "@/components/chattogram/CaseProvider";
 import { CaseGate } from "@/components/chattogram/CaseGate";
-import "maplibre-gl/dist/maplibre-gl.css";
+import "mapbox-gl/dist/mapbox-gl.css";
 import "../dashboard/dashboard.css";
 import "./chattogram.css";
 

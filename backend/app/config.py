@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -11,12 +11,16 @@ class Settings(BaseSettings):
         env_prefix="CRYO_", env_file=BACKEND_ROOT / ".env", extra="ignore"
     )
     database_path: Path = Path("data/cryocore.sqlite3")
-    # Raw downloads (data/raw) and published case bundles (data/cases) live here, outside SQLite.
+    # Raw downloads (data/raw) and published curated-case bundles (data/cases) live here, outside SQLite.
     data_dir: Path = Path("data")
+    download_directory: Path = Path("data/downloads")
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     nasa_timeout_seconds: float = Field(default=30, gt=0, le=120)
-    # NASA Earthdata Login bearer token for protected NISAR downloads. Falls back to ~/.netrc or ~/_netrc.
-    earthdata_token: SecretStr | None = None
+    # NASA Earthdata Login bearer token for protected NISAR downloads (EARTHDATA_TOKEN; CRYO_EARTHDATA_TOKEN also
+    # works). Server-side only. The curated-case worker falls back to ~/.netrc or ~/_netrc.
+    earthdata_token: SecretStr | None = Field(
+        default=None, exclude=True,
+        validation_alias=AliasChoices("EARTHDATA_TOKEN", "CRYO_EARTHDATA_TOKEN", "earthdata_token"))
     # Required in the X-Admin-Token header for POST /api/v1/jobs. Unset disables job creation.
     admin_token: SecretStr | None = None
     job_max_attempts: int = Field(default=3, ge=1, le=20)
@@ -32,3 +36,7 @@ class Settings(BaseSettings):
     @property
     def resolved_data_dir(self) -> Path:
         return (BACKEND_ROOT / self.data_dir).resolve()
+
+    @property
+    def resolved_download_directory(self) -> Path:
+        return (BACKEND_ROOT / self.download_directory).resolve()

@@ -53,13 +53,13 @@ export const api = {
   explorer: () => call<ExplorerData>("/api/earth/explorer"),
   scenes: (product: Product = "GCOV", limit = 100, offset = 0) => call<ScenePage>(`/api/earth/scenes?product=${product}&limit=${limit}&offset=${offset}`),
   search: (req: SearchRequest) => call<SearchResponse>("/api/earth/search", { method: "POST", body: JSON.stringify(req) }),
-  /** The processed case (plan B3), through the read-only proxy at /api/earth/cases. */
-  case: (id: string) => call<CaseDetail>(`/api/earth/cases/${id}`),
-  layers: (id: string) => call<CaseLayer[]>(`/api/earth/cases/${id}/layers`),
-  findings: (id: string) => call<Findings>(`/api/earth/cases/${id}/findings`),
-  finding: (id: string, fid: string) => call<FindingDetail>(`/api/earth/cases/${id}/findings/${encodeURIComponent(fid)}`),
-  timeseries: (id: string) => call<Timeseries>(`/api/earth/cases/${id}/timeseries`),
-  exportUrl: (id: string, format: "json" | "csv" | "geojson") => `/api/earth/cases/${id}/export?format=${format}`,
+  /** The processed case (plan B3), through the read-only proxy at /api/earth/curated-cases. */
+  case: (id: string) => call<CaseDetail>(`/api/earth/curated-cases/${id}`),
+  layers: (id: string) => call<CaseLayer[]>(`/api/earth/curated-cases/${id}/layers`),
+  findings: (id: string) => call<Findings>(`/api/earth/curated-cases/${id}/findings`),
+  finding: (id: string, fid: string) => call<FindingDetail>(`/api/earth/curated-cases/${id}/findings/${encodeURIComponent(fid)}`),
+  timeseries: (id: string) => call<Timeseries>(`/api/earth/curated-cases/${id}/timeseries`),
+  exportUrl: (id: string, format: "json" | "csv" | "geojson") => `/api/earth/curated-cases/${id}/export?format=${format}`,
 };
 
 /** Every stored scene of one product (the API pages at 100). */

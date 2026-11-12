@@ -1,11 +1,19 @@
-import { CHANGE, WATER, changeColor } from "@/lib/chattogram/palette";
+"use client";
+
+import { CHANGE, WATER, changeColor, type WaterCategory } from "@/lib/chattogram/palette";
+import { fmtNum } from "@/lib/i18n/format";
+import { useT } from "@/lib/i18n/useT";
 
 type Swatch = { label: string; color: string; stripe: number; icon: string };
 
 /** Legend for water-change candidates: colour, stripe direction and an icon, so no category depends on colour alone. */
-export const WaterKey = () => <StripeKey label="Water change candidates" items={WATER} />;
+export function WaterKey() {
+  const t = useT();
+  const labels: Record<WaterCategory, string> = { new_water_candidate: t.keys.newWater, recession_candidate: t.keys.receding };
+  return <StripeKey label={t.keys.water} items={WATER} labels={labels} />;
+}
 
-function StripeKey({ label, items }: { label: string; items: Record<string, Swatch> }) {
+function StripeKey({ label, items, labels }: { label: string; items: Record<string, Swatch>; labels?: Record<string, string> }) {
   return (
     <ul className="c-key-list" aria-label={label}>
       {Object.entries(items).map(([id, w]) => (
@@ -18,7 +26,7 @@ function StripeKey({ label, items }: { label: string; items: Record<string, Swat
           <span aria-hidden="true" className="c-key-icon" style={{ color: w.color }}>
             {w.icon}
           </span>
-          {w.label}
+          {labels?.[id] ?? w.label}
         </li>
       ))}
     </ul>
@@ -27,20 +35,21 @@ function StripeKey({ label, items }: { label: string; items: Record<string, Swat
 
 /** Separate diverging legend for signed backscatter change, so it never reads as a water classification. */
 export function ChangeKey({ limit = CHANGE.limitDb }: { limit?: number }) {
+  const t = useT();
   const ticks = [-limit, -limit / 2, 0, limit / 2, limit];
   const stops = Array.from({ length: 13 }, (_, i) => changeColor(-CHANGE.limitDb + (i * CHANGE.limitDb) / 6));
   return (
-    <figure className="c-change-key" aria-label={`Signed backscatter change, from −${limit} dB (darker) to +${limit} dB (brighter)`}>
-      <p className="c-change-title">Signed backscatter change, dB</p>
+    <figure className="c-change-key" aria-label={t.keys.changeAria(fmtNum(limit))}>
+      <p className="c-change-title">{t.keys.changeTitle}</p>
       <div className="c-change-ramp" style={{ background: `linear-gradient(90deg, ${stops.join(", ")})` }} />
       <div className="c-change-ticks" aria-hidden="true">
-        {ticks.map((t) => (
-          <span key={t}>{t > 0 ? `+${t}` : t < 0 ? `−${-t}` : "0"}</span>
+        {ticks.map((v) => (
+          <span key={v}>{v > 0 ? `+${fmtNum(v)}` : v < 0 ? `−${fmtNum(-v)}` : fmtNum(0)}</span>
         ))}
       </div>
       <figcaption>
-        <span>← darker: smoother or wetter</span>
-        <span>brighter: rougher →</span>
+        <span>{t.keys.darker}</span>
+        <span>{t.keys.brighter}</span>
       </figcaption>
     </figure>
   );

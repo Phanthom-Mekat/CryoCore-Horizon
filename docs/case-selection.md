@@ -1,107 +1,119 @@
-# Case selection: `karnaphuli-estuary`
+# Chattogram NISAR candidate — inspection record
 
-Selected 12 November 2026 from NASA CMR metadata synced into the local catalog
-(`python -m app.cli sync --start 2026-01-01 --end 2026-11-12`: 181 GCOV records, 128 intersecting the division polygon).
-Every value below comes from that metadata. **No NISAR file has been opened yet** (no Earthdata credentials on the
-selection machine), so Gate A's "inspect real files" step is still open; see [What is still unverified](#what-is-still-unverified).
+Verified 12 November 2026. This is a candidate for observed radar-change analysis,
+not a confirmed flood case. Gate A remains open until a small analysis polygon,
+valid common pixels, mixed-mode implications and dated references are evaluated.
 
-## Chosen area
+## Selected acquisitions
 
-| | |
-| --- | --- |
-| Name | Lower Karnaphuli river and Chattogram port |
-| Geometry | Rectangle lon 91.79–91.90 E, lat 22.24–22.38 N (EPSG:4326), in `backend/app/assets/analysis-areas.geojson` |
-| Provenance | Team-drawn analysis rectangle, **not an administrative boundary** |
-| Area | About 175.7 km² (EPSG:6933 equal-area) |
-| Coverage | Inside the footprint of all 11 dated acquisitions of stack `069_A_013` and all 11 of `163_D_077` |
-
-**Relation to the division polygon.** The 2018 BBS/HDX division polygon leaves out the Karnaphuli channel itself. About
-16.7 km² of the rectangle, the river channel and its mouth, is therefore outside that polygon, although it lies between division
-land on both banks. A rectangle wholly inside the polygon would have to drop the river, which is the reason for choosing this
-area. The west edge (91.79 E) is placed so that, apart from the river mouth, the rectangle keeps off the open Bay of Bengal
-(the coast at Patenga is at about 91.776–91.789 E between 22.24 and 22.26 N).
-
-The rectangle replaces the approximate brief (lon 91.75–91.90, lat 22.20–22.38), which was 21.5% outside the polygon,
-mostly open sea west of Patenga and south of the river mouth.
-
-## Chosen pair
-
-The frontend picks the default pair automatically (`src/lib/chattogram/acquisitions.ts`, `CaseProvider.tsx`). It
-takes the stacks covering Chattogram city, sorted by number of dates and then by stack id. In the first stack it chooses
-the widest-spaced pair of dates that passes all four checks: same track, frame and direction; same polarizations; same
-collection (maturity); same product version.
-Stacks `069_A_013` and `163_D_077` both have 11 dates, so `069_A_013` comes first on the id sort. All 11 of its footprints
-contain the rectangle, so the case uses that default pair:
-
-| | Before | After |
+| Field | Before | After |
 | --- | --- | --- |
-| Granule | `NISAR_L2_PR_GCOV_023_069_A_013_4005_DHDH_A_20260618T232102_20260618T232136_P05023_N_F_J_001` | `NISAR_L2_PR_GCOV_033_069_A_013_4005_DHDH_A_20261016T232058_20261016T232133_P05023_N_F_J_001` |
-| CMR concept | `G4240317293-ASF` (revision 1) | `G4376150332-ASF` (revision 1) |
-| Acquired (UTC) | 2026-06-18 23:21:02 | 2026-10-16 23:20:58 |
-| Local time (UTC+6) | 19 Jun 2026, 05:21 | 17 Oct 2026, 05:20 |
-| Track / frame / pass | 69 / 13 / ascending | 69 / 13 / ascending |
-| Frequencies; A polarizations | A, B; HH + HV | A, B; HH + HV |
-| Collection / version | `NISAR_L2_GCOV_PROVISIONAL_V1` / 1.0.11 | `NISAR_L2_GCOV_PROVISIONAL_V1` / 1.0.11 |
-| HDF5 size | 6,136,266,752 bytes (6.1 GB) | 6,253,707,264 bytes (6.3 GB) |
-| MD5 (CMR) | `a52536ee1ab75b4267b4cf74871ff22f` | `898782011736a8ea15df9d361170a71e` |
+| NASA CMR concept | G4241673561-ASF | G4362350526-ASF |
+| Acquisition UTC | 2026-07-07 12:26:37 | 2026-10-11 12:26:35 |
+| Raw file bytes | 8,321,499,136 | 8,141,144,064 |
+| CMR revision | 1 | 1 |
+| Product/version | GCOV 1.0.11 | GCOV 1.0.11 |
+| Collection maturity | PROVISIONAL_V1 | PROVISIONAL_V1 |
+| Product specification | 1.5.0 | 1.5.0 |
+| Track/frame | 163 / 77 | 163 / 77 |
+| Pass/look | Descending / Left | Descending / Left |
+| Frequency A | 20 MHz; HH/HV/VH/VV | 20 MHz; HH/HV/VH/VV |
+| Frequency B | 5 MHz; HH/HV | 5 MHz; HH/HV |
 
-Separation: 120 days, from the early monsoon to its end.
-Storage budget: 12.4 GB of raw downloads (kept in `backend/data/raw/`, never committed), plus a bundle of a few MB.
-Before starting, the worker checks free disk space against the CMR file sizes.
+Both HDF5 files were opened remotely using authenticated range requests; each
+inspection transferred 3,670,016 bytes. Reports are stored by concept/revision in
+SQLite and available through `/api/v1/scenes/{concept_id}/inspection`.
 
-The case pins these concept IDs. If new acquisitions later change the frontend's default stack or pair, the case stays the same.
-In that event, update this document and `analysis-areas.geojson` together.
+Frequency A has matching 16,884 × 17,208 grids, 20 m spacing, EPSG:32646,
+and matching coordinate endpoints: x 309610 to 653750, y 2687030 to 2349370.
+HHHH/HVHV and mask/exception-mask dimensions match. This establishes a metadata
+candidate, not valid coverage or scientific comparability.
 
-## Rejected alternatives
+Frequency B has 4,221 × 4,302 imagery at 80 m, but its inputDataExceptionMask is
+16,884 × 17,208 in **both** files. The assessment excludes B until its semantics
+and alignment are resolved. It does not silently resize a quality mask.
+Both files report `isMixedMode=True`; this needs further processing-metadata review.
 
-- **Stack `163_D_077`, 7 Jul vs 11 Oct 2026** (the earlier candidate in the plan). It is the widest compatible pair in that stack:
-  both dates are quad-pol (HH+HV+VH+VV), provisional and version 1.0.11. The 7 Jul file alone is 8.3 GB. Its footprints also cover the rectangle. It was not
-  chosen, because the rule is to follow the frontend default, so that the case and the default comparison show the same dates.
-  It remains the best second pair, with a descending pass, opposite look geometry and more polarizations.
-- **Pairs that include 9 Nov 2026 (`069_A_013`) or 23 Oct / 4 Nov 2026 (`163_D_077`).** These are in `NISAR_L2_GCOV_V1` at
-  product version 1.0.20, a different collection and version from the provisional 1.0.11 dates. Comparing across them would
-  mix processing changes with surface change.
-- **Stack `091_D_077`.** It covers the city but none of its 8 footprints contains the rectangle. Its dates also mix HH+HV,
-  VH+VV and quad-pol acquisitions.
-- **Feni–Muhuri and the lower Sangu corridor** (candidates in the plan) were not evaluated in this pass. The Karnaphuli is
-  where the most compatible dates overlap, and it is the area the frontend already centres on.
+## Alternatives and limits
 
-## Known confounders
+The inspected 4 November file (G4405731724-ASF) is version 1.0.20/specification
+1.6.0 in a different maturity collection, so it is not substituted into this
+provisional pair. The 23 October acquisition has different frequency-A bandwidth
+and polarizations from 4 November; adjacent dates alone are insufficient.
 
-What can change L-band backscatter between these two dates other than the surface water we would like to talk about:
+CMR footprints overlap inside the reference Chattogram division boundary. A
+smaller analysis polygon has not yet been selected. The reference boundary is
+2018 BBS/HDX via geoBoundaries; current suitability remains unverified.
 
-- **Tide.** The lower Karnaphuli and the port are macro-tidal (range of several metres at springs). The two passes were
-  at about 05:20 local time on different days, so their tidal states are unrelated. Intertidal mud, channel margins and
-  char banks can be exposed on one date and submerged on the other. Tide heights for both times have not been obtained.
-- **Wet soil and rain.** June is early monsoon, mid-October is late monsoon. Soil moisture raises backscatter over
-  bare and cultivated land, independently of any standing water.
-- **Vegetation phenology.** Aman rice is transplanted around July–August and is near maturity in October. Crop growth
-  alone can change HH and especially HV by several dB. Mangrove and homestead vegetation change less.
-- **Built-up areas and ships.** Port cranes, container stacks, moored ships and buildings cause strong double-bounce
-  returns. Ship positions change between passes and look like point-like "change" on the water.
-- **Layover and shadow.** Mostly flat terrain, but the Chattogram hill tracts and the city ridges in the north-east can
-  have layover or shadow. The GCOV mask should flag those pixels, which must be excluded, not interpreted.
-- **Speckle.** Single-date GCOV backscatter is speckled. Change is computed on filtered values, and small isolated regions
-  are dropped. Even so, a few-dB change in a single pixel is not evidence.
-- **Wind on water.** Open water is dark only when calm. Wind roughening on the river or the bay raises its backscatter,
-  which can hide water or create apparent change.
-- **Provisional calibration.** Both products are labelled *provisional*. Absolute calibration can change in later
-  releases. Both dates share the same version, so the difference between them is more robust than either absolute value.
+Seasonal vegetation, soil moisture, tidal/coastal water, speckle, terrain,
+mixed acquisition modes and provisional calibration may affect the comparison.
+No dated independent labels or event attribution have been established. The
+defensible next output is masked, calibrated **observed radar change**. Flood,
+damage and classification accuracy claims remain unsupported.
 
-## The claim the data can support
+## Storage and processing budget
 
-> Between 18 June and 16 October 2026 (UTC), NISAR L-band GCOV backscatter over [valid common area] of the
-> lower Karnaphuli rectangle increased by more than [threshold] dB over [X km²] and decreased over [Y km²].
+The pair totals 16,462,643,200 bytes (15.33 GiB) raw. Reserve 40 GiB of free disk
+before full preparation: about 16 GiB for raw assets and 24 GiB for derived layers,
+temporary outputs and headroom. Initial processing should use a small window
+and bounded chunks, not load two whole covariance products into RAM. The actual
+subset and derived-output budget will be recorded before raster processing.
 
-This is **observed radar change**. It is not flooding, not a water-extent change and not damage. No independent reference
-observation (tide gauge record, optical imagery, field report) has been checked against it. Any statement about water
-needs a separately versioned water method and reference checks (plan, Gates B and C). Until then the product and the
-video say "observed radar change", and they report the excluded area with every number.
+Full raw downloads have **not** completed. A bounded live resume test fetched
+4 MiB then resumed to 8 MiB of the October file. Full integrity verification is
+pending for these NASA files; checksum success/failure and atomic publication
+have been tested using controlled fixtures.
 
-## What is still unverified
+## Reproduce
 
-- The HDF5 layout, masks and per-file metadata (Gate A, "inspect real files"). This needs NASA Earthdata credentials:
-  `CRYO_EARTHDATA_TOKEN` in `backend/.env`, then `python -m app.cli prepare-case karnaphuli-estuary`.
-- That the valid-data mask leaves enough common coverage inside the rectangle. The worker fails the job with a plain
-  message if it does not.
-- Tide heights at both acquisition times. Reference observations for any later water interpretation.
+From `backend/`, with `EARTHDATA_TOKEN` in its ignored `.env`:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.prepare G4241673561-ASF
+.\.venv\Scripts\python.exe -m app.prepare G4362350526-ASF
+.\.venv\Scripts\python.exe -m app.prepare G4362350526-ASF --download --transfer-mib 64
+```
+
+Rerun the download command to resume. It pauses at the transfer budget and never
+publishes `.part` data as complete. Use the read-only pair gate:
+`GET /api/v1/pairs/assess?before=G4241673561-ASF&after=G4362350526-ASF`.
+
+Source interpretation: [ASF GCOV product guide](https://nisar-docs.asf.alaska.edu/gcov/).
+The real file metadata, rather than browse-image appearance, drives these checks.
+
+## Real calibrated-window result
+
+Pilot `6573c8bc5837ede3c0541563` was generated from actual frequency-A HDF5
+pixels, transferring 9,699,328 bytes per scene. The 256×256 window is centered
+near 91.845 E, 22.33 N; projected EPSG:32646 bounds are
+`[378480, 2467260, 383600, 2472380]`. At 20 m spacing its rectangular area is
+26.2144 km². Boundary and footprint clipping retains 54,538 pixels (21.8152 km²)
+and excludes 10,998 pixels (4.3992 km²). All retained pixels pass the applied
+subswath/exception/power checks in both dates and both polarizations.
+
+The river corridor visible in the preview is excluded by this geographic clipping.
+This is a **land-area radar-change pilot**, not evidence of river-water change.
+The reference boundary needs suitability review before choosing a water-focused ROI.
+
+The actual mask descriptions require fully-focused samples (subswath codes
+1 through numberOfSubSwaths); 0 denotes invalid/partially focused samples and
+255 denotes outside-acquisition samples. Input exception code zero means no
+anomaly. The method additionally requires finite positive power. These checks do
+not establish terrain-quality validity: static layover/shadow masks remain pending.
+
+Eight GeoTIFFs preserve the native projected grid without resampling. HH/HV
+backscatter uses `10*log10(power)`; signed change is October minus July over
+common-valid pixels only. Median HH change is −0.69572 dB (5th/95th percentiles
+−5.21238/+4.03985 dB); median HV change is −0.54562 dB (−4.89148/+4.00449 dB).
+These statistics describe this clipped window, not the division as a whole.
+No smoothing, threshold classifier, independent validation or causal attribution
+has been applied. Provisional calibration and mixed-mode flags remain caveats.
+
+The manifest records inputs, mask descriptions, projected area, exclusions,
+ETags, method version and SHA-256 of each output. Full raw-file checksums remain
+unverified because only selected chunks were downloaded. All eight output hashes,
+CRS/grid transforms, counts, no-data pixels and delta arithmetic were verified.
+
+Run `python -m app.subset` from the backend virtual environment to reproduce.
+Inspect the published manifest at `/api/v1/cases/6573c8bc5837ede3c0541563`.
+The processed pilot is available at `/chattogram/processed`, alongside the broader browse-quicklook explorer.

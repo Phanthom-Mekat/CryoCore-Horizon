@@ -63,7 +63,7 @@ def test_missing_credentials_fail_before_network(tmp_path):
     with httpx.Client(transport=httpx.MockTransport(no_network)) as client, pytest.raises(DownloadError) as err:
         download(client, URL, tmp_path / "G.h5", None, len(DATA), MD5)
     assert err.value.code == "needs_credentials" and not err.value.retryable
-    assert "CRYO_EARTHDATA_TOKEN" in str(err.value) and "Generate Token" in str(err.value)
+    assert "EARTHDATA_TOKEN" in str(err.value) and "Generate Token" in str(err.value)
 
 
 @pytest.mark.parametrize("response, code", [

@@ -30,7 +30,7 @@ upstream failure, missing-geometry, and no-intersection states are distinguished
 
 | Library | Decision | Reason |
 | --- | --- | --- |
-| [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/docs/) | Installed, version 5 line | WebGL geospatial layers, camera tilt, navigation, accurate raster/GeoJSON overlay; version 5 avoids a separate worker configuration in this Next.js integration |
+| [Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js/) | Installed, version 3 line | Shared Mapbox Standard context, theme-aware lighting, camera tilt, navigation, raster and GeoJSON overlays; public token required |
 | [react-map-gl](https://visgl.github.io/react-map-gl/docs/get-started) | Installed | Typed React source/layer components and clean map lifecycle |
 | [Motion](https://motion.dev/docs/react-animate-presence) | Installed | Short evidence-panel transitions with reduced-motion support |
 | [deck.gl](https://deck.gl/docs) | Evaluated, deferred | Useful for large GPU-driven datasets; unnecessary for this scene count |
@@ -64,11 +64,7 @@ Regenerate with `python scripts/prepare_boundary.py` from `backend/`.
 - Distributor metadata: <https://www.geoboundaries.org/api/current/gbHumanitarian/BGD/ADM1/>
 - License: <https://creativecommons.org/licenses/by/3.0/igo/>
 
-**Basemap:** NASA GIBS `BlueMarble_ShadedRelief_Bathymetry`, WMTS EPSG:3857,
-`GoogleMapsCompatible_Level8`. Static contextual imagery, not current conditions
-or NISAR radar imagery. Native maximum tile zoom is 8; higher map zoom overzooms it.
-Layer URL verified against GIBS capabilities. Initial CARTO tiles displayed a key
-requirement during QA and were replaced with this public NASA service.
+**Basemap:** Mapbox Standard geographic context, with Mapbox/OpenStreetMap attribution. It is not NISAR imagery and is not used to compute scientific measurements. See [Mapbox setup](MAPBOX.md).
 
 - [NASA GIBS map-library guidance](https://nasa-gibs.github.io/gibs-api-docs/map-library-usage/)
 
@@ -100,7 +96,7 @@ error. The development application is not intended for unauthenticated public de
   selection opens its evidence panel, tilt/reset works, and real NASA pagination
   progresses from 100/178 to 178/178. A 390-pixel viewport has no horizontal overflow.
 - Fixed a development-time vendor CSS collision by excluding foreign
-  (`node_modules`) files from the Tailwind Turbopack loader. MapLibre's stylesheet
+  (`node_modules`) files from the Tailwind Turbopack loader. Mapbox's stylesheet
   is imported at the route level so controls and canvas positioning load reliably.
 - The original glacier landing page/dashboard remains separate. The main navigation
   now links to the Chattogram explorer; a full landing-page rewrite is deferred.

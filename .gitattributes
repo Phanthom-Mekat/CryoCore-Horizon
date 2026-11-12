@@ -1,0 +1,5 @@
+# Preserve exact shared dataset bytes and provenance hashes across platforms.
+backend/data/**/*.tif -text
+backend/data/**/*.json -text
+backend/data/*.json -text
+backend/data/*.geojson -text

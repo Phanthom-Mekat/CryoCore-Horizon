@@ -1,13 +1,13 @@
 # CryoCore Horizon: Chattogram implementation plan
 
-Status (12 Nov 2026): discovery catalogue and the frontend case journey are built on real NISAR metadata and browse quicklooks; scientific processing (calibrated layers, change, validation) remains planned. See the progress tracker below.
+Status (13 Nov 2026): discovery catalogue and the frontend case journey use real NISAR metadata and browse quicklooks; the case replays from a frozen snapshot without the backend (F09), in English and Bangla (F15), with NASA rainfall context (F13). A small backend pilot now produces calibrated HH/HV layers and signed radar change from real pixels; a dedicated processed Mapbox view is integrated, while terrain-quality checks and independent validation remain pending. See the progress tracker below.
 
 Implementation update: the case lives at `/chattogram` (Overview, Explore map, Compare, Evidence, Scene catalogue, About; see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md)). The first discovery increment is its Scene catalogue.
 It includes an attributed 2018 BBS/HDX reference boundary, real NASA catalog
 footprints, polygon-intersection filtering, date selection, and source inspection.
 See [feature notes](docs/EXPLORER.md). F01 remains incomplete for analysis use until
 the boundary's current suitability and a smaller analysis polygon are verified;
-F02 still needs real-file inspection and a scientifically compatible pair.
+F02 has an initial authenticated real-file metadata inspection; the candidate pair and pixel validity still need verification.
 Prepared: 12 November 2026.
 
 ### Completed discovery increment
@@ -16,7 +16,7 @@ Prepared: 12 November 2026.
 - [x] Filter actual scene polygons against the division polygon; report excluded and missing footprints separately.
 - [x] Add reproducible boundary preparation, pinned source metadata, checksum, and license attribution.
 - [x] Connect real NASA CMR search and pagination to the SQLite catalog through server-side frontend routes.
-- [x] Build a MapLibre explorer with NASA GIBS context, selectable scenes, date filtering, and source inspection.
+- [x] Build a Mapbox GL explorer with attributed geographic context, selectable scenes, date filtering, and source inspection.
 - [x] Match the existing landing/dashboard aesthetic using the shared brand, dashboard shell, navigation, page header, KPI components, and color tokens.
 - [x] Adopt pnpm with a committed lockfile and document frontend/backend setup and data limitations.
 - [x] Pass 17 backend tests, the production frontend build, and TypeScript checking; inspect desktop and 390 px mobile layouts.
@@ -35,34 +35,112 @@ surface-change findings. F01/F02 and the scientific milestones remain incomplete
 - [x] Legends and map layers ready for processed results: water-change candidates (cyan/amber with stripes) and signed dB change (separate diverging scale), colours checked with a CVD/contrast validator.
 - [x] Lint, TypeScript and production build pass; all case pages checked at 1920×1080 and 390 px; backend-down and empty states tested.
 
+### Completed replay increment (F09)
+
+- [x] `pnpm freeze-case` (`scripts/freeze-case.mts`) writes a versioned snapshot to `public/data/chattogram/case/`: `case.json` (capture time, generator, display processing settings, sources, the backend's division view, all 125 intersecting scenes, the frozen stacks) and 29 processed quicklooks for the 3 stacks over Chattogram city, each with SHA-256, size, corners and corner method.
+- [x] Live proxy and freeze script share one implementation (`src/lib/chattogram/browse.ts`), so replayed images are processed exactly like live ones.
+- [x] The case pages use the snapshot automatically when the backend is unreachable, on purpose with `?source=frozen`, or for a whole deployment with `NEXT_PUBLIC_CASE_SOURCE=frozen`; every page then says “Frozen case, captured …” with a way back to live data.
+- [x] Replay makes no live request: tested with the backend stopped and `?source=frozen` across all six case pages — 0 requests to the backend, the image proxy, ASF or CMR, and no console errors.
+- [x] Evidence offers **Copy replay link** (same dates and map view from the snapshot); the brief records `data_source`, `replay_url` and each quicklook's checksum. NASA search is disabled while replaying.
+- [x] Live mode also serves quicklooks from the snapshot where it has them: 3 ms per image instead of 7.8 s through the proxy on a cold cache.
+- [x] **Live | Frozen** switch in the header of the case pages: changes source without a reload and keeps the selection; hidden when there is no snapshot or the backend is down. Checked by mouse and keyboard, in both languages and at 390 px.
+
+### Completed Bangla increment (F15)
+
+- [x] Translation-ready text: every string of the case journey in `src/lib/i18n/messages.ts`; the Bangla object is type-checked against the English one, so a missing translation fails the build.
+- [x] Curated Bangla copy for Overview, Explore map, Compare, Evidence, About, the sidebar, the frozen-case notice, map notes, timeline and legends; mission, product and unit names kept as published.
+- [x] **EN | বাংলা** switch in the header, remembered per browser and applied to `<html lang>` before paint (no flash; screen readers switch voice); works by keyboard.
+- [x] Bengali dates and digits (`bn-BD`), Noto Sans/Serif Bengali loaded only for Bengali text, no letter-spacing or uppercase on Bengali labels.
+- [x] Map place names shaped correctly: Bangla landmark labels as HTML (WebGL map text can't shape Bengali), with the basemap's English place labels hidden in Bangla, so names never overlap.
+- [x] Checked in a browser: no untranslated English left on the five case pages (only the kept technical names), all six case pages fit 390 px in both languages, no console errors.
+
+### Completed rainfall increment (F13)
+
+- [x] Source checked before use: GPM IMERG needs an Earthdata login, so this increment uses the **NASA POWER Daily API** (no login), parameter `PRECTOTCORR`, which is modelled reanalysis precipitation (MERRA-2 / GEOS-IT) on a 0.5° × 0.625° grid. Labelled as modelled on every page; the file format is source-agnostic so an IMERG series can replace it.
+- [x] `pnpm fetch-rain` (`scripts/fetch-rain.mts`) saves the series at Chattogram city to `public/data/chattogram/rain.json` (1 Jun 2026 → yesterday) with provider, API version, sources, resolution, day boundaries (local solar time), retrieval time and the request URL. The pages read only this file, so the chart works in frozen mode and offline.
+- [x] Rainfall card on **Explore** (the stack's season with every NISAR pass marked, Before and After emphasised) and on **Compare** (the weeks around the pair, with the rain in the 7 days up to each date: 389 mm before 7 Jul, 8 mm before 11 Oct 2026).
+- [x] One-hue bar chart on a true time axis, hover readout, a “Show the numbers” table for screen readers, scrolls sideways on phones instead of shrinking; English and Bangla.
+- [x] Shown as context, never cause: a caveat under every chart; Evidence lists the 7-day rain per acquisition and the brief JSON carries `rainfall_context` with its full source.
+- [x] Checked in a browser: Explore and Compare in both languages, 1440 px and 390 px (no page overflow), frozen mode (0 backend/proxy requests), no new console errors.
+
 ### Progress tracker
 
-Updated 12 November 2026. "Partial" means the interface exists on real metadata and quicklooks, waiting for processed data.
+Updated 13 November 2026. "Partial" includes implemented pilots with remaining scientific validation or broader product work.
 
 | ID | Feature | Status | Done | Still needed |
 | --- | --- | --- | --- | --- |
 | F01 | Verified study area | Partial | 2018 BBS/HDX boundary with provenance; scenes filtered by the polygon; drawn on every map | Confirm current suitability; add the smaller analysis polygon |
-| F02 | Real NISAR case selection | Partial | Acquisition details from CMR metadata (dates, track/frame, polarizations, maturity, version); compatibility check; candidate pair 7 Jul vs 11 Oct 2026, track 163 frame 77 | Gate A: inspect the real files and confirm the pair |
-| F03 | Reliable data preparation | Not started | – | Earthdata-authenticated worker, resumable downloads, job states |
-| F04 | Processed radar layers | Not started | Quicklooks stand in for display; map can take raster layers | Calibrated γ⁰ (dB), masks, common grid, display tiles |
-| F05 | Defensible change map | Not started | Legends and map styling ready | Signed dB change; water candidates only if reference checks support them |
-| F06 | Before/after comparison | Partial | Swipe, badges, keyboard, synced zoom, same extent and scale | Swap quicklooks for processed paired layers on one contrast scale |
-| F07 | Click-to-explain evidence | Partial | Evidence page with sources, checks, limitations | `/cases/{id}/findings` polygons to click; local statistics |
+| F02 | Real NISAR case selection | Partial | Real July/October HDF5 metadata inspected; frequency-A metadata gate passes; frequency B blocked on exception-mask dimensions; case-selection notes recorded | Gate A: validate mixed-mode implications, subset, valid common pixels and reference observations |
+| F03 | Reliable data preparation | Partial | Authenticated inspection and resumable download CLI; durable checkpoints/states; ETag/MD5 verification and SHA-256 provenance; atomic file publication; read-only progress API | Full NASA assets still partial; automatic worker queue, cancellation/retry policy and preparation UI |
+| F04 | Processed radar layers | Partial | Real frequency-A HH/HV GeoTIFF pilot; documented masks, common grid, hashes, downloads and georeferenced Mapbox overlays with fixed scales | Static terrain quality, mixed-mode review, larger-area tiling |
+| F05 | Defensible change map | Partial | Signed after-minus-before dB change over common valid pilot pixels; coverage/exclusion statistics | Confounder assessment, independent validation and frontend map; no water classification yet |
+| F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB display scale at `/chattogram/processed` | Extend to additional validated acquisitions |
+| F07 | Click-to-explain evidence | Partial | Native HH/HV pixel inspection, map pin, source-linked JSON and explicit exclusions; evidence page | `/cases/{id}/findings` polygons, area statistics and reference validation |
 | F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison | Observed area, eligible comparison area, change summaries |
-| F09 | Reproducible case replay | Not started | Shareable URLs restore the view | Frozen case bundle (also fixes 8–11 s first loads of a new date) |
+| F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying | Add processed layers, findings and the selected finding to the snapshot once they exist; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
 | F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata | Add findings and statistics once they exist |
-| F13 | NASA rainfall context | Not started | – | Verify GPM/IMERG access, then a small contextual chart |
+| F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
-| F15 | Local accessibility | Partial | Keyboard use, reduced motion, colour plus pattern, 390 px layouts | Bangla copy |
+| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages | A native speaker's review of the Bangla text; translate the Scene catalogue, the landing page and the glacier sample if they stay in the demo |
 | F16 | Terrain storytelling | Not started | – | P2 |
 | F17 | Evidence-based narration | Not started | – | P2 |
 
+### Completed preparation increment — 12 November 2026
+
+- [x] Add ordered transactional SQLite migrations through schema v3, preserving previous inspection reports.
+- [x] Add resumable operator downloads with durable byte checkpoints and OS locks preventing duplicate writers.
+- [x] Verify catalog MD5 before atomic publication; record SHA-256 and recheck completed assets before reuse.
+- [x] Test interrupted transfers, recovery of uncheckpointed bytes, duplicate locks, checksum failures and migration persistence.
+- [x] Verify real NASA resume: October scene progressed from 4 MiB to 8 MiB on the second invocation.
+- [x] Inspect both candidate HDF5 files and expose frequency-specific compatibility reasons through the read-only pair API.
+- [x] Pass 32 backend tests and verify new endpoints against the already-running backend.
+- [ ] Complete queued-worker lifecycle, processing and frontend preparation status (F03 remains partial).
+
+- [x] Verify the configured Earthdata bearer token against a real NISAR HDF5 asset.
+- [x] Inspect real file metadata within a bounded transfer budget; persist revision-specific reports without exposing credentials or signed URLs.
+- [x] Verify scene `G4405731724-ASF`: 8,371,830,784-byte asset; 3,670,016 bytes fetched; frequency A 16,884 × 17,208 at 20 m; frequency B 4,221 × 4,302 at 80 m; EPSG:32646; mask datasets present. Pixel validity and full checksum remain unchecked.
+
+### Completed calibrated-window increment — 12 November 2026
+
+- [x] Extract real HH/HV power and documented frequency-A quality masks for both dates with bounded reads (9,699,328 bytes per source).
+- [x] Generate eight georeferenced GeoTIFFs on the identical native 20 m grid: before/after HH/HV, signed HH/HV change and two common-valid masks.
+- [x] Preserve no-data and reject zero valid coverage; report inside/outside ROI and date-specific/common coverage.
+- [x] Publish an atomic case bundle with source IDs, revisions, ETags, method, mask definitions, asset hashes and limitations.
+- [x] Add read-only case list/detail and asset-download endpoints; verify against the running server.
+- [x] Pass 37 backend tests and verify all eight real GeoTIFF hashes, CRS, grids, common counts and numeric delta values.
+- [x] Integrate the processed pilot into the frontend with consistent contrast, coverage display and evidence labels.
+
+Pilot `6573c8bc5837ede3c0541563`: 21.8152 km² retained/common-valid area;
+4.3992 km² excluded by boundary/footprint clipping. River-corridor clipping means
+this pilot cannot demonstrate river-water change. See `docs/case-selection.md`.
+
+### Completed Mapbox pilot interface — 13 November 2026
+
+- [x] Add `/chattogram/processed` in the shared light/dark dashboard aesthetic, linked from navigation, Explore and Compare.
+- [x] Render georeferenced, transparent Web Mercator previews from calibrated GeoTIFFs; keep raw downloads available.
+- [x] Add HH/HV, before/after, keyboard swipe, signed-change and opacity controls with fixed scientific legends.
+- [x] Add 2D analysis / 3D terrain controls with true-scale terrain, camera tilt, compass and theme-aware Mapbox Standard context. Comparison stays terrain-free for consistent geometry.
+- [x] Show coverage, exclusions, median change, source provenance, caveats and evidence downloads.
+- [x] Prevent stale layers from persisting during failed or pending date/layer changes; add bounded loading requests and explicit error/empty states.
+- [x] Fix in-app development hydration by keeping React debug data in the RSC response instead of the separate dev WebSocket.
+- [x] Verify desktop and 390 px mobile layouts, dark mode, 3D controls, polarization and keyboard slider in the in-app browser; confirm both production and development rendering.
+- [x] Pass TypeScript, ESLint, production build and 38 backend tests.
+
+### Native pixel evidence — 13 November 2026
+
+- [x] Sample containing native GeoTIFF pixels through a read-only API, with grid checks and coordinate validation.
+- [x] Show HH/HV before, after and signed change in dB on map click, with a selection pin and keyboard-accessible inspect-centre action.
+- [x] Distinguish valid zero change, excluded pixels and locations outside the processed window; never substitute zero for missing evidence.
+- [x] Add JSON evidence export containing source revisions, acquisition dates, method and asset hashes.
+- [x] Pass 48 backend tests, TypeScript, lint and production build; verify real values and map selection on desktop in the in-app browser.
+- [ ] Finish inspector-specific mobile and browser-download verification: browser automation stopped responding during these checks.
+
 ### Next up
 
-- **Backend:** run Gate A on the candidate pair (download the two GCOV files, inspect layers and masks); build the processing worker (F03) and the first γ⁰ layers (F04); serve `/api/v1/cases` and findings (B3); freeze a replay bundle (F09).
-- **Frontend:** connect `/cases` and findings to Explore, Compare and Evidence; pixel-value hover on processed layers; rework the landing page around the Chattogram case (needs a team decision).
+- **Backend:** resolve mixed-mode and static terrain quality; select a water-suitable ROI and dated reference evidence; complete queued-worker lifecycle and frozen replay assets.
+- **Frontend:** finish inspector mobile/export verification; add area findings once supported; extend processed comparisons to additional validated dates; connect pilot evidence to the observation brief; translate the Calibrated radar page into Bangla; swap the modelled rainfall for GPM IMERG when an Earthdata login is available; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission
@@ -173,13 +251,13 @@ Priority definitions:
 - [x] Obtain a versioned reference administrative polygon and record provenance/license
   (2018 BBS/HDX boundary via pinned geoBoundaries source).
 - [ ] Verify the reference boundary's current suitability for the selected analysis.
-- [ ] Choose a manageable analysis subset with actual overlapping NISAR coverage.
-- [ ] Inspect real files and record acquisition times, product versions, maturity,
+- [x] Choose a manageable analysis subset with actual overlapping NISAR coverage.
+- [x] Inspect real files and record acquisition times, product versions, maturity,
   orbit/track, frequency, polarization, and relevant quality metadata.
 - [ ] Confirm a compatible before/after pair; three or more dates unlock playback.
 - [ ] Identify reference observations appropriate to those dates and the phenomenon.
-- [ ] Record file sizes and an achievable storage/processing budget before bulk downloads.
-- [ ] Write `case-selection.md` with chosen location/dates, rejected alternatives,
+- [x] Record file sizes and an achievable storage/processing budget before bulk downloads.
+- [x] Write `case-selection.md` with chosen location/dates, rejected alternatives,
   known confounders, and the claim the data can support.
 
 **Exit condition:** a real pair can be processed and compared. If this fails, change
@@ -191,16 +269,16 @@ GCOV provides geocoded, terrain-corrected radar covariance/backscatter, with
 available polarizations dependent on the acquisition. Confirm the actual file
 layout and metadata rather than assuming every file provides the same layers.
 
-- [ ] Read calibrated intensity layers and documented masks; preserve no-data.
-- [ ] Convert positive valid power values using `10 * log10(power)` where dB is needed.
-- [ ] Align acquisitions to a common projected grid; document resampling choices.
-- [ ] Compute signed dB change only over valid common coverage.
+- [x] Read calibrated intensity layers and documented masks; preserve no-data (pilot frequency A; static terrain quality remains pending).
+- [x] Convert positive valid power values using `10 * log10(power)` where dB is needed.
+- [x] Align acquisitions to a common projected grid; document resampling choices (identical native grids; no resampling).
+- [x] Compute signed dB change only over valid common coverage.
 - [ ] Treat a water classifier as a separate, versioned method, not an automatic
   interpretation of every dark pixel or backscatter decrease.
 - [ ] Account for permanent water, tide, wet soil, vegetation, built-up areas,
   shadow/layover, speckle, and differing acquisition conditions as applicable.
-- [ ] Calculate area in a suitable projected/equal-area system, not degree pixels.
-- [ ] Report observed area and excluded/unknown area alongside change estimates.
+- [x] Calculate area in a suitable projected/equal-area system, not degree pixels (EPSG:32646 projected grid area).
+- [x] Report observed area and excluded/unknown area alongside change estimates.
 
 ### Gate C — test the central claim
 
@@ -219,7 +297,7 @@ layout and metadata rather than assuming every file provides the same layers.
 
 ### B1. Data models and migrations
 
-- [ ] Add explicit SQLite schema migrations before expanding the current schema.
+- [x] Add explicit SQLite schema migrations before expanding the current schema.
 - [ ] Add `regions`, `cases`, `processing_jobs`, `assets`, `analysis_runs`,
   `findings`, and `validation_records`, linked to existing scene records.
 - [ ] Store source concept/revision IDs, acquisition metadata, timestamps, checksums,
@@ -231,12 +309,12 @@ layout and metadata rather than assuming every file provides the same layers.
 
 - [ ] Start with one separate Python worker and a durable SQLite-backed job queue.
   Atomic claiming, restart recovery, retry limits, and idempotency are required.
-- [ ] Keep heavy raster work out of FastAPI request handlers. Use bounded/windowed
+- [x] Keep heavy raster work out of FastAPI request handlers. Use bounded/windowed
   reads where possible rather than loading full scenes into memory.
 - [ ] Implement queued/running/succeeded/failed/cancelled states, progress, and errors.
-- [ ] Authenticate downloads server-side; validate source hosts, handle redirects
+- [x] Authenticate downloads server-side; validate source hosts, handle redirects
   safely, and never log credentials. Browser requests select scene IDs, not arbitrary URLs.
-- [ ] Write assets to temporary locations; publish completed bundles atomically.
+- [x] Write assets to temporary locations; publish completed bundles atomically.
 - [ ] Add tests for interrupted downloads, duplicate jobs, missing layers, masks,
   grid mismatches, zero valid coverage, and repeatable statistics.
 
@@ -285,9 +363,9 @@ Target desktop composition: a dominant map occupying about two thirds of the
 screen, a compact evidence panel, and a bottom timeline. Put the case name,
 observation dates, and data source above the map. Avoid a wall of small metric cards.
 
-- [x] Use MapLibre with georeferenced catalog polygons and attributed NASA GIBS raster context.
+- [x] Use Mapbox GL with georeferenced catalog polygons, NASA image overlays, and attributed Mapbox context.
   _Frontend: `/chattogram` also draws the real NISAR GCOV browse quicklooks, georeferenced from ASF's KML or the CMR footprint._
-- [ ] Evaluate the map against the first real processed NISAR raster layer.
+- [x] Evaluate the map against the first real processed NISAR raster layer.
 - [x] Reuse the established navy surfaces, ice-blue accents, typography, and shared components across the explorer, dashboard, and landing navigation.
 - [x] Use ink/navy surfaces, warm white text, cyan for new water candidates, and
   amber for recession candidates, with patterns/icons for accessibility.
@@ -299,7 +377,7 @@ observation dates, and data source above the map. Avoid a wall of small metric c
   _Frontend: `/chattogram` names eight landmarks (Chattogram, Cox’s Bazar, Feni, Noakhali, Sandwip, Hatiya, Maheshkhali, Kaptai Lake)._
 - [x] Add hover values, selected-area outlines, and smooth transitions lasting
   roughly 150–300 ms. Respect reduced-motion settings.
-  _Frontend: hover shows each acquisition's date, time, track and polarizations; pixel values follow once processed rasters exist._
+  _Frontend: hover shows each acquisition's date, time, track and polarizations; the processed view supports click-to-inspect native HH/HV pixel values and a selection pin._
 - [x] At 1920×1080 recording size, make dates, the selected finding, and primary
   numbers readable without zooming into the footage.
 
@@ -318,7 +396,7 @@ observation dates, and data source above the map. Avoid a wall of small metric c
 - [x] Preload the curated demo case and next playback frame; lazy-load secondary content.
 - [x] Target a usable initial view within three seconds on the rehearsed setup,
   and cached date changes within 300 ms. Measure and report actual results.
-  _Measured on /chattogram (1920×1080, software-rendered test browser): panel and dates 1.3–1.4 s; first radar quicklook 2.8–3.3 s once the server has it cached; switching to an already-loaded date 31–276 ms (one 1.2 s outlier). A date never fetched before takes 8–11 s from ASF; the frozen replay bundle (F09) removes that._
+  _Measured on /chattogram (1920×1080, software-rendered test browser): panel and dates 1.3–1.4 s; first radar quicklook 2.8–3.3 s once the server has it cached; switching to an already-loaded date 31–276 ms (one 1.2 s outlier). A date never fetched before took 8–11 s from ASF; with the frozen case each quicklook file loads in about 3 ms (measured), and what remains of a date change is the map redraw._
 - [x] Keep interactions responsive on the recording laptop; test mobile at 390 px width.
   _Frontend: all four /chattogram views checked at 390 px: no sideways scroll, nav fits, the reveal works by touch._
 - [x] Handle unavailable tiles, no observations, partial coverage, and backend failure
@@ -387,7 +465,8 @@ counts, and labels such as “live” on historical observations.
 - [ ] No credentials, large raw downloads, or local databases are committed.
 - [ ] API tests, raster checks, frontend build, and end-to-end demo checks pass.
 - [ ] Public demo is reachable; job endpoints are protected; data persists across restarts.
-- [ ] Frozen assets replay without upstream access; cached/replayed observations are labeled honestly.
+- [x] Frozen assets replay without upstream access; cached/replayed observations are labeled honestly.
+  _Frontend: `?source=frozen` replays with no backend, NASA or ASF request; every page shows the capture time (see docs/CHATTOGRAM.md)._
 - [ ] Video is exactly within the verified submission limit, captioned, and legible on a laptop.
 - [ ] Submission explains the local problem, NASA data use, method, finding, limitations,
   team contributions, and future work. Awards or real-world adoption are not implied.

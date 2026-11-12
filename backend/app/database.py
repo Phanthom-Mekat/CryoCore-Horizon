@@ -30,6 +30,24 @@ MIGRATIONS = {
         );
     """,
     2: """
+        CREATE TABLE inspections (
+            concept_id TEXT NOT NULL,
+            revision_id INTEGER NOT NULL,
+            inspected_at TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            PRIMARY KEY (concept_id, revision_id)
+        );
+    """,
+    3: """
+        CREATE TABLE downloads (
+            asset_id TEXT PRIMARY KEY,
+            concept_id TEXT NOT NULL,
+            revision_id INTEGER NOT NULL,
+            payload TEXT NOT NULL
+        );
+        CREATE INDEX downloads_scene ON downloads(concept_id, revision_id);
+    """,
+    4: """
         CREATE TABLE regions (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -207,6 +225,32 @@ class Database:
             row = db.execute("SELECT payload FROM scenes WHERE concept_id = ?", (concept_id,)).fetchone()
         return json.loads(row["payload"]) if row else None
 
+    def save_inspection(self, report):
+        with self.connect() as db:
+            db.execute("INSERT OR REPLACE INTO inspections VALUES (?, ?, ?, ?)",
+                       (report["concept_id"], report["revision_id"], report["inspected_at"],
+                        json.dumps(report, allow_nan=False)))
+
+    def get_inspection(self, concept_id, revision_id):
+        with self.connect() as db:
+            row = db.execute("SELECT payload FROM inspections WHERE concept_id=? AND revision_id=?",
+                             (concept_id, revision_id)).fetchone()
+        return json.loads(row["payload"]) if row else None
+
+    def save_download(self, report):
+        with self.connect() as db:
+            db.execute("INSERT OR REPLACE INTO downloads VALUES (?, ?, ?, ?)",
+                       (report["asset_id"], report["concept_id"], report["revision_id"], json.dumps(report, allow_nan=False)))
+
+    def get_download(self, asset_id):
+        with self.connect() as db:
+            row = db.execute("SELECT payload FROM downloads WHERE asset_id=?", (asset_id,)).fetchone()
+        return json.loads(row["payload"]) if row else None
+
+    def scene_downloads(self, concept_id, revision_id):
+        with self.connect() as db:
+            rows = db.execute("SELECT payload FROM downloads WHERE concept_id=? AND revision_id=?", (concept_id, revision_id)).fetchall()
+        return [json.loads(row["payload"]) for row in rows]
 
 def _current_version(db) -> int:
     has_table = db.execute("SELECT 1 FROM sqlite_master WHERE name = 'schema_version'").fetchone()

@@ -1,7 +1,12 @@
-"""Curated cases: definitions (committed asset) + frozen bundles on disk.
+"""Two kinds of case bundle under data/cases/, told apart by their id.
 
-Every GET here reads only SQLite and data/cases/<id>/, never NASA, so a recorded demo replays offline.
-A bundle counts as published only once its directory exists with manifest.json (the worker swaps it in atomically).
+Published pilots (24-hex ids, GeoTIFF bundles written by app.subset): `read_case` / `list_cases`, served by
+app.main at /api/v1/cases. Staging output is never discoverable.
+
+Curated cases (slug ids, definitions in a committed asset, PNG layers + findings written by the worker): the router
+below, at /api/v1/curated-cases. Every GET reads only SQLite and data/cases/<id>/, never NASA, so a recorded demo
+replays offline. A bundle counts as published only once its directory exists with manifest.json (the worker swaps
+it in atomically).
 """
 import csv
 import io
@@ -132,26 +137,26 @@ def router(database: Database, settings: Settings) -> APIRouter:
             case_row(db, case_id)
         return manifest(case_id)
 
-    @api.get("/cases", response_model=list[CaseSummary])
+    @api.get("/curated-cases", response_model=list[CaseSummary])
     def cases():
         with database.connect() as db:
             return [summary(db, row)[0] for row in db.execute("SELECT * FROM cases ORDER BY id").fetchall()]
 
-    @api.get("/cases/{case_id}", response_model=CaseDetail)
+    @api.get("/curated-cases/{case_id}", response_model=CaseDetail)
     def case(case_id: str):
         return detail(case_id)
 
-    @api.get("/cases/{case_id}/layers", response_model=list[Layer])
+    @api.get("/curated-cases/{case_id}/layers", response_model=list[Layer])
     def layers(case_id: str):
         found = ready(case_id)
         if not found:
             return []
         version = found.get("job_id") or found.get("published_at", "")
         return [{**{k: v for k, v in layer.items() if k != "file"},
-                 "url": f"/api/v1/cases/{case_id}/assets/{layer.get('file') or layer['id'] + '.png'}?v={version}"}
+                 "url": f"/api/v1/curated-cases/{case_id}/assets/{layer.get('file') or layer['id'] + '.png'}?v={version}"}
                 for layer in found.get("layers", [])]
 
-    @api.get("/cases/{case_id}/assets/{name}", response_class=FileResponse, responses={200: {"content": {"image/png": {}}}})
+    @api.get("/curated-cases/{case_id}/assets/{name}", response_class=FileResponse, responses={200: {"content": {"image/png": {}}}})
     def asset(case_id: str, name: str):
         if not ASSET_NAME.fullmatch(name):
             raise HTTPException(status_code=404, detail="Asset not found.")
@@ -162,13 +167,13 @@ def router(database: Database, settings: Settings) -> APIRouter:
             raise HTTPException(status_code=404, detail="Asset not found.")
         return FileResponse(path, media_type="image/png", headers={"Cache-Control": CACHE})
 
-    @api.get("/cases/{case_id}/findings", response_model=FindingCollection)
+    @api.get("/curated-cases/{case_id}/findings", response_model=FindingCollection)
     def findings(case_id: str):
         if not ready(case_id):
             return {"type": "FeatureCollection", "features": []}
         return bundle_json(case_id, "findings.geojson")
 
-    @api.get("/cases/{case_id}/timeseries", response_model=Timeseries)
+    @api.get("/curated-cases/{case_id}/timeseries", response_model=Timeseries)
     def timeseries(case_id: str):
         if not ready(case_id):
             return {"units": "dB", "points": []}
@@ -196,7 +201,7 @@ def router(database: Database, settings: Settings) -> APIRouter:
                 "method_version": method.get("version"), "reference_checks": checks}}
         raise HTTPException(status_code=404, detail="Finding not found.")
 
-    @api.get("/cases/{case_id}/export", tags=["Cases"], responses={200: {"content": {
+    @api.get("/curated-cases/{case_id}/export", tags=["Cases"], responses={200: {"content": {
         "application/json": {}, "text/csv": {}, "application/geo+json": {}}}})
     def export(case_id: str, format: str = Query("json", pattern="^(json|csv|geojson)$")):
         info = detail(case_id)
@@ -234,3 +239,15 @@ def router(database: Database, settings: Settings) -> APIRouter:
                         headers={"Content-Disposition": f'attachment; filename="{name}.{format}"'})
 
     return api
+
+
+def read_case(root: Path, case_id: str):
+    if not re.fullmatch(r"[a-f0-9]{24}", case_id): return None
+    path = root / case_id / "manifest.json"
+    if not path.is_file(): return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def list_cases(root: Path):
+    if not root.exists(): return []
+    return [case for child in sorted(root.iterdir()) if (case := read_case(root, child.name)) is not None]

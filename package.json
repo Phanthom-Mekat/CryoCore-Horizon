@@ -8,11 +8,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "api:types": "openapi-typescript http://127.0.0.1:8000/openapi.json -o src/lib/chattogram/api-schema.d.ts"
+    "api:types": "openapi-typescript http://127.0.0.1:8000/openapi.json -o src/lib/chattogram/api-schema.d.ts",
+    "freeze-case": "node --experimental-strip-types scripts/freeze-case.mts",
+    "fetch-rain": "node --experimental-strip-types scripts/fetch-rain.mts"
   },
   "dependencies": {
     "lucide-react": "^1.72.0",
-    "maplibre-gl": "^5.24.0",
+    "mapbox-gl": "^3.34.2",
     "motion": "^14.12.0",
     "next": "16.4.6",
     "react": "19.3.0",

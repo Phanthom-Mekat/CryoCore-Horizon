@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app import jobs, worker
 from app.cases import definitions
 from app.config import Settings
-from app.database import MIGRATIONS, Database
+from app.database import LATEST_VERSION, MIGRATIONS, Database
 from app.main import create_app
 
 CASE = "karnaphuli-estuary"
@@ -108,8 +108,8 @@ def test_migrates_existing_v1_database_in_place(tmp_path):
     database.initialize()
     database.initialize()  # idempotent
     with database.connect() as db:
-        assert [r[0] for r in db.execute("SELECT version FROM schema_version ORDER BY version")] == [1, 2]
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert [r[0] for r in db.execute("SELECT version FROM schema_version ORDER BY version")] == [1, 2, 3, 4]
+        assert db.execute("PRAGMA user_version").fetchone()[0] == LATEST_VERSION
         assert db.execute("SELECT payload FROM scenes WHERE concept_id = 'G1'").fetchone()[0] == "{}"
         tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         assert {"regions", "cases", "processing_jobs", "assets", "analysis_runs", "findings", "validation_records"} <= tables
@@ -150,10 +150,10 @@ def test_missing_credentials_fail_job_and_case_shows_needs_credentials(database,
     seed_scenes(database)
     job = worker.run_job(database, settings, jobs.enqueue(database, CASE))
     assert job["state"] == "failed" and job["error_code"] == "needs_credentials" and not job["retryable"]
-    assert "CRYO_EARTHDATA_TOKEN" in job["error"] and "Generate Token" in job["error"]
+    assert "EARTHDATA_TOKEN" in job["error"] and "Generate Token" in job["error"]
     with TestClient(create_app(settings)) as client:
-        assert client.get("/api/v1/cases").json()[0]["status"] == "needs_credentials"
-        detail = client.get(f"/api/v1/cases/{CASE}").json()
+        assert client.get("/api/v1/curated-cases").json()[0]["status"] == "needs_credentials"
+        detail = client.get(f"/api/v1/curated-cases/{CASE}").json()
         assert detail["job"]["state"] == "failed" and detail["metrics"] is None
         assert detail["sources"][0]["size_bytes"] == 10  # provenance from the local catalog
 
@@ -221,7 +221,7 @@ def test_job_api_is_protected(settings, database):
         job = client.get(f"/api/v1/jobs/{ok.json()['job_id']}").json()
         assert job["state"] == "queued" and job["case_id"] == CASE and job["attempts"] == 0
         assert client.get("/api/v1/jobs/999").status_code == 404
-        assert client.get("/api/v1/cases").json()[0]["status"] == "queued"
+        assert client.get("/api/v1/curated-cases").json()[0]["status"] == "queued"
     disabled = settings.model_copy(update={"admin_token": None})
     with TestClient(create_app(disabled)) as client:
         response = client.post("/api/v1/jobs", json={"case_id": CASE}, headers={"X-Admin-Token": ""})
@@ -237,22 +237,22 @@ def test_synthetic_fixture_bundle_runs_real_pipeline_but_is_served_only_for_qa(d
     assert manifest["synthetic_fixture"] is True and manifest["caveats"][0].startswith("SYNTHETIC QA DATA")
 
     with TestClient(create_app(settings)) as client:  # default: refused, as if never published
-        case = client.get(f"/api/v1/cases/{CASE}").json()
+        case = client.get(f"/api/v1/curated-cases/{CASE}").json()
         assert case["status"] == "not_processed" and case["synthetic_fixture"] is False and case["metrics"] is None
-        assert client.get(f"/api/v1/cases/{CASE}/layers").json() == []
-        assert client.get(f"/api/v1/cases/{CASE}/findings").json()["features"] == []
-        assert client.get(f"/api/v1/cases/{CASE}/assets/change_db.png").status_code == 404
-        assert client.get(f"/api/v1/cases/{CASE}/export").status_code == 409
+        assert client.get(f"/api/v1/curated-cases/{CASE}/layers").json() == []
+        assert client.get(f"/api/v1/curated-cases/{CASE}/findings").json()["features"] == []
+        assert client.get(f"/api/v1/curated-cases/{CASE}/assets/change_db.png").status_code == 404
+        assert client.get(f"/api/v1/curated-cases/{CASE}/export").status_code == 409
 
     qa = settings.model_copy(update={"allow_synthetic_qa": True})
     with TestClient(create_app(qa)) as client:
-        case = client.get(f"/api/v1/cases/{CASE}").json()
+        case = client.get(f"/api/v1/curated-cases/{CASE}").json()
         assert case["status"] == "ready" and case["synthetic_fixture"] is True
-        assert client.get("/api/v1/cases").json()[0]["synthetic_fixture"] is True
-        assert {(f["properties"]["kind"]) for f in client.get(f"/api/v1/cases/{CASE}/findings").json()["features"]} \
+        assert client.get("/api/v1/curated-cases").json()[0]["synthetic_fixture"] is True
+        assert {(f["properties"]["kind"]) for f in client.get(f"/api/v1/curated-cases/{CASE}/findings").json()["features"]} \
             == {"increase", "decrease"}
-        layers = client.get(f"/api/v1/cases/{CASE}/layers").json()
+        layers = client.get(f"/api/v1/curated-cases/{CASE}/layers").json()
         assert [layer["id"] for layer in layers] == ["before_db", "after_db", "change_db"]
         png = client.get(layers[2]["url"])
         assert png.status_code == 200 and png.content.startswith(b"\x89PNG")
-        assert client.get(f"/api/v1/cases/{CASE}/export").json()["provenance"]["synthetic_fixture"] is True
+        assert client.get(f"/api/v1/curated-cases/{CASE}/export").json()["provenance"]["synthetic_fixture"] is True

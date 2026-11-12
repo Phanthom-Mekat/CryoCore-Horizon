@@ -3,6 +3,7 @@
 // Every number in these shapes comes from the backend's processing of real NISAR files (or, only when
 // `synthetic_fixture` is true, from QA test fixtures, which the UI labels loudly); the UI never fills gaps.
 import type { components } from "./api-schema";
+import type { ProcessedImage } from "./processed";
 
 type S = components["schemas"];
 
@@ -98,10 +99,16 @@ export function assetUrl(caseId: string, layer: CaseLayer, updatedAt: string) {
   const u = new URL(layer.url, "http://backend");
   const name = u.pathname.split("/").pop() ?? "";
   const v = u.searchParams.get("v") || updatedAt;
-  return `/api/earth/cases/${encodeURIComponent(caseId)}/assets/${encodeURIComponent(name)}?v=${encodeURIComponent(v)}`;
+  return `/api/earth/curated-cases/${encodeURIComponent(caseId)}/assets/${encodeURIComponent(name)}?v=${encodeURIComponent(v)}`;
 }
 
 export const fmtKm2 = (v: number) => `${v < 10 ? v.toFixed(2) : v.toFixed(1)} km²`;
 export const fmtDb = (v: number, signed = false) => `${signed && v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} dB`;
 /** "name/version" of the case's method, or a plain statement that none was recorded. */
 export const methodId = (d: Pick<CaseDetail, "method">) => (d.method ? `${d.method.name}/${d.method.version}` : "method not recorded");
+
+/** A processed layer as the map draws it (CaseMap's `processed` image): our proxy URL and the layer's four corners. */
+export const layerImage = (caseId: string, layer: CaseLayer, updatedAt: string): ProcessedImage => ({
+  url: assetUrl(caseId, layer, updatedAt),
+  corners: layer.corners as ProcessedImage["corners"],
+});

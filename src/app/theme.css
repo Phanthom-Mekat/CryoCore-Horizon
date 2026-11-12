@@ -1,0 +1,213 @@
+/* Shared appearance. Satellite imagery and scientific colour scales stay unchanged. */
+:root { color-scheme: dark; }
+:root:not([data-theme="dark"]) {
+  color-scheme: light;
+  --night: #ffffff;
+  --surface: #f1f6fa;
+  --line: #d7e2eb;
+  --snow: #142b40;
+  --text: #354e63;
+  --muted: #526b80;
+  --ice: #006c94;
+  --radar: #147447;
+  --silt: #966010;
+}
+html:not([data-theme="dark"]) .d-shell {
+  --d-bg: #f5f8fb;
+  --d-side: #ffffff;
+  --d-card: #ffffff;
+  --d-field: #edf3f8;
+  --d-line: #dbe5ed;
+  --d-line-2: #bfcedb;
+  --d-warn: #976000;
+  --d-good: #197347;
+  --d-bad: #b83229;
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--snow);
+  font: 500 0.8rem var(--sans);
+  cursor: pointer;
+}
+.theme-toggle:hover { border-color: var(--ice); color: var(--ice); }
+.map-unavailable { display: grid; align-content: center; gap: 10px; min-height: 320px; height: 100%; padding: 32px; text-align: center; background: var(--d-card); color: var(--muted); }
+.map-unavailable p { max-width: 38em; margin-inline: auto; }
+.map-view-tools { position: absolute; z-index: 4; bottom: 54px; left: 12px; display: flex; gap: 6px; }
+.map-view-tools button { padding: 8px 12px; min-height: 44px; border: 1px solid var(--d-line-2); border-radius: 6px; background: var(--d-card); color: var(--snow); cursor: pointer; font: 500 0.8rem var(--sans); }
+.map-view-tools button:hover { border-color: var(--ice); }
+.glacier-map { position: relative; height: clamp(360px, 48vw, 560px); border-radius: 8px; overflow: hidden; }
+.glacier-probe { width: 12px; height: 12px; border: 3px solid; border-radius: 50%; background: #04101c; }
+.glacier-probe span { position: absolute; top: 14px; left: 10px; padding: 2px 6px; border-radius: 3px; white-space: nowrap; background: var(--d-card); color: var(--snow); font-size: 12px; }
+.glacier-front-date { position: absolute; bottom: 108px; left: 12px; padding: 4px 8px; background: var(--d-card); color: var(--snow); border-radius: 4px; font: 12px var(--mono); }
+html:not([data-theme="dark"]) .nav,
+html:not([data-theme="dark"]) .nav[data-scrolled="true"],
+html:not([data-theme="dark"]) .d-top {
+  background: rgb(255 255 255 / 0.94);
+  border-bottom-color: var(--line);
+  backdrop-filter: blur(12px);
+}
+html:not([data-theme="dark"]) :is(.nav-cta, .hud-toggle, .dl-tip, .compare-tag, .compare-badge, .compare-grip, .callout-pin .callout-tag) {
+  background: rgb(255 255 255 / 0.94);
+  border-color: var(--line);
+}
+html:not([data-theme="dark"]) :is(.btn, .d-btn.is-primary, .c-btn.is-primary, .atlas-primary) { color: #ffffff; }
+html:not([data-theme="dark"]) :is(.btn:hover, .d-btn.is-primary:hover, .c-btn.is-primary:hover) { background: #005575; }
+html:not([data-theme="dark"]) .d-toggle input:checked::before { background: #ffffff; }
+html:not([data-theme="dark"]) .hero { background: #f1f6fa; }
+html:not([data-theme="dark"]) .stage::after {
+  background: linear-gradient(90deg, #f1f6fa 0%, rgb(241 246 250 / 0.97) 25%, rgb(241 246 250 / 0.8) 44%, rgb(241 246 250 / 0.05) 78%),
+    linear-gradient(0deg, #f1f6fa 0%, transparent 32%);
+}
+html:not([data-theme="dark"]) .hud { background: rgb(255 255 255 / 0.95); border-color: var(--line); }
+html:not([data-theme="dark"]) .hud > div { border-color: var(--line); }
+html:not([data-theme="dark"]) .hud dt { color: var(--muted); }
+html:not([data-theme="dark"]) .callout-craft { --snow: #e9f0f6; --muted: #c4d2de; }
+html:not([data-theme="dark"]) .section-deep { background: var(--surface); }
+html:not([data-theme="dark"]) :is(.build li, .radar-list li:has(button[aria-expanded="true"])) { background: var(--surface); }
+html:not([data-theme="dark"]) .radar-stage { background: #eaf2f8; }
+html:not([data-theme="dark"]) .radar-bar { background: #ffffff; }
+html:not([data-theme="dark"]) .clouds-dates button { background: #ffffff; }
+html:not([data-theme="dark"]) .clouds-dates button[aria-pressed="true"] { background: #e2f2f7; border-color: var(--ice); }
+html:not([data-theme="dark"]) :is(.map-probe span, .map-tag, .map-readout, .map-error,
+  .c-map-tip, .c-map-note, .c-badge, .c-hero-map-cap, .c-map .mapboxgl-ctrl-scale, .c-map .mapboxgl-ctrl-attrib) {
+  background: rgb(255 255 255 / 0.95);
+}
+html:not([data-theme="dark"]) .d-body.is-case { --c-dim: #526b80; }
+html:not([data-theme="dark"]) .c-step:hover { background: var(--d-field); border-color: var(--ice); }
+html:not([data-theme="dark"]) .c-feature-pair figure { background: var(--d-card); }
+html:not([data-theme="dark"]) .c-map .mapboxgl-ctrl-icon { filter: none; }
+html:not([data-theme="dark"]) .atlas-place { color: #ffffff; }
+.atlas-legend .division { border-color: #1686b0; background: rgb(22 134 176 / 0.1); }
+/* Keep the switch available on small screens without crowding navigation. */
+@media (max-width: 1100px) {
+  .nav { gap: 14px; }
+  .nav nav { gap: 16px; }
+  .nav .theme-toggle span { display: none; }
+}
+@media (max-width: 760px) {
+  section[id]:not(#top) { scroll-margin-top: 170px; }
+  .nav .brand { grid-column: 1; grid-row: 1; }
+  .nav .theme-toggle { grid-column: 2; grid-row: 1; }
+  .nav .nav-cta { grid-column: 1 / -1; grid-row: 3; justify-self: stretch; justify-content: center; }
+  .nav nav { grid-row: 2; }
+  .d-top .theme-toggle { padding-inline: 10px; }
+  .d-top .theme-toggle span { display: none; }
+  html:not([data-theme="dark"]) .stage::after {
+    background: linear-gradient(90deg, rgb(241 246 250 / 0.96), rgb(241 246 250 / 0.75)),
+      linear-gradient(0deg, #f1f6fa, transparent);
+  }
+}
+
+
+/* language switch (plan F15), styled like the theme toggle */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+  min-height: 44px;
+  padding: 3px 3px 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.lang-toggle svg {
+  margin-right: 4px;
+}
+.lang-toggle button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font: 500 0.8rem var(--sans);
+  cursor: pointer;
+}
+.lang-toggle button:hover {
+  color: var(--snow);
+}
+.lang-toggle button[aria-pressed="true"] {
+  background: var(--ice);
+  color: var(--surface);
+}
+.lang-toggle button:focus-visible {
+  outline: 2px solid var(--ice);
+  outline-offset: 1px;
+}
+/* Bengali script has no capitals and its conjuncts break apart under letter-spacing; it also needs taller lines */
+:lang(bn) .c-eyebrow,
+:lang(bn) .c-label,
+:lang(bn) .d-nav-group,
+:lang(bn) .d-nav-tag,
+:lang(bn) .c-tick-mark,
+:lang(bn) .c-step-n {
+  letter-spacing: 0;
+  text-transform: none;
+}
+:lang(bn) .c-hero h1,
+:lang(bn) .c-bar h1,
+:lang(bn) .c-doc h1,
+:lang(bn) .c-ev-head h1,
+:lang(bn) .c-feature h2 {
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+:lang(bn) .d-body.is-case {
+  line-height: 1.75;
+}
+
+/* Live | Frozen switch (case pages), same look as the language switch */
+.source-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 760px) {
+  /* phones: icons only, the full meaning stays in each button's label */
+  .source-toggle > svg,
+  .source-toggle button span {
+    display: none;
+  }
+  .source-toggle {
+    padding-left: 3px;
+  }
+}
+/* phones: the header holds menu, title and three switches, so it sheds decoration rather than overflow */
+@media (max-width: 760px) {
+  .d-top {
+    gap: 8px;
+  }
+  .d-top .d-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .d-top .d-avatar,
+  .d-top .lang-toggle > svg,
+  .d-top .theme-toggle span {
+    display: none;
+  }
+  .d-top .lang-toggle {
+    padding-left: 3px;
+  }
+  .d-top .lang-toggle button {
+    padding: 0 8px;
+  }
+  .d-top .theme-toggle {
+    padding: 0 10px;
+  }
+}
