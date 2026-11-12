@@ -36,7 +36,7 @@ export function HeroGlobe() {
     let cancelled = false;
     const start = () =>
       import("@/lib/globe")
-        .then(({ mountGlobe, sunElevation, SIM_SPEED }) => {
+        .then(({ mountGlobe, sunElevation, SIM_SPEED, TARGET }) => {
           if (cancelled || !ref.current) return;
           globeRef.current = mountGlobe(ref.current, {
             reduced,
@@ -47,7 +47,7 @@ export function HeroGlobe() {
               if (!cancelled) setReady(r);
             },
             onTick: (x) => {
-              if (!cancelled) setT({ ...x, sun: sunElevation(69.17, -49.9, x.simTime), speed: reduced ? 0 : SIM_SPEED });
+              if (!cancelled) setT({ ...x, sun: sunElevation(TARGET.lat, TARGET.lon, x.simTime), speed: reduced ? 0 : SIM_SPEED });
             },
           });
         })
@@ -79,7 +79,7 @@ export function HeroGlobe() {
         <canvas
           ref={ref}
           role="img"
-          aria-label={`View from beside the NISAR spacecraft in orbit 747 km above Greenland${lighting}. Its radar swath reveals the ice below.`}
+          aria-label={`View from beside the NISAR spacecraft in orbit 747 km above the Bay of Bengal, with Chattogram below${lighting}. Its radar swath reveals the ground through cloud.`}
         />
         <div ref={craft} className="callout callout-craft" data-edge="left" aria-hidden="true">
           <span className="callout-origin" />
@@ -91,8 +91,8 @@ export function HeroGlobe() {
         <div ref={pin} className="callout callout-pin" data-edge="left" aria-hidden="true">
           <span className="callout-reticle" />
           <span className="callout-tag">
-            <strong>Jakobshavn Glacier</strong>
-            <small>69.2° N · 49.9° W</small>
+            <strong>Chattogram</strong>
+            <small>22.3° N, 91.8° E</small>
           </span>
         </div>
       </div>
@@ -118,14 +118,14 @@ export function HeroGlobe() {
           </dd>
         </div>
         <div>
-          <dt>Sun at the glacier</dt>
+          <dt>Sun at Chattogram</dt>
           <dd>{t ? `${sign(t.sun)} ${t.sun < -6 ? "dark" : t.sun < 0 ? "twilight" : "daylight"}` : "–"}</dd>
         </div>
         <div>
-          <dt>Slant range to Jakobshavn</dt>
+          <dt>Slant range to Chattogram</dt>
           <dd className={inView ? "is-live" : undefined}>
             {inView && <span className="hud-dot" aria-hidden="true" />}
-            {t ? `${Math.round(t.toJakKm).toLocaleString("en-GB")} km${inView ? ", in the swath" : ""}` : "–"}
+            {t ? `${Math.round(t.toTargetKm).toLocaleString("en-GB")} km${inView ? ", in the swath" : ""}` : "–"}
           </dd>
         </div>
         <div>

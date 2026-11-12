@@ -3,11 +3,12 @@ import * as THREE from "three";
 /*
  * "Ride with NISAR": the camera flies beside the spacecraft at its real altitude.
  * - Earth is drawn at true scale (1 unit = Earth radius) with NASA Blue Marble / VIIRS Black Marble,
- *   plus a sharper regional texture over Greenland and Baffin Bay.
+ *   plus a sharper regional texture over the Bengal delta.
  * - The Sun is placed for the simulated UTC time; NISAR flies a dawn-dusk sun-synchronous orbit
- *   (747 km, 98.4°), so the spacecraft stays sunlit while the ground below can be in polar night.
+ *   (747 km, 98.4°), crossing the equator northbound at about 06:00 local time, so the ascending pass
+ *   reaches Chattogram around dawn (real passes in our catalog: about 05:20 Bangladesh time).
  * - The radar looks to one side, imaging a ~240 km swath at ~29–41° look angle.
- * - The pass is simulated from the orbit geometry and chosen so the swath crosses Jakobshavn.
+ * - The pass is simulated from the orbit geometry and chosen so the swath crosses Chattogram.
  *   It is not NISAR's real schedule.
  * - The spacecraft is drawn in metres in its own render pass (true scale, no float jitter).
  */
@@ -21,8 +22,8 @@ const PERIOD_S = 99.5 * 60;
 const SWATH_NEAR = 0.066; // radians of ground arc off the track (~420 km)
 const SWATH_FAR = 0.104; // (~660 km), so ~240 km wide
 const D2R = Math.PI / 180;
-const JAK = { lat: 69.17, lon: -49.9 };
-const REGION = new THREE.Vector4(50, 85, -95, 5); // lat min/max, lon min/max of the regional texture
+export const TARGET = { lat: 22.34, lon: 91.83 }; // Chattogram
+const REGION = new THREE.Vector4(10, 35, 80, 100); // lat min/max, lon min/max of the regional texture
 
 /** Earth-fixed unit vector. Matches three.js SphereGeometry UVs on an equirectangular map. */
 export function fromLatLon(lat: number, lon: number, out = new THREE.Vector3()) {
@@ -55,20 +56,21 @@ export function sunElevation(lat: number, lon: number, date: Date) {
 function orbitAt(ms: number) {
   const s = subsolar(new Date(ms));
   const sun = fromLatLon(s.lat, s.lon);
-  const node = fromLatLon(0, s.lon + 90); // ascending node at 18:00 local solar time
+  const node = fromLatLon(0, s.lon - 90); // ascending node at 06:00 local solar time, like NISAR
   const n = new THREE.Vector3(0, 1, 0).applyAxisAngle(node, INC);
   const b = new THREE.Vector3().crossVectors(n, node);
   return { sun, node, n, b };
 }
 
-/** Next time (from `from`) when Jakobshavn sits mid-swath, scanning a day in 20 s steps. */
-export function nextJakobshavnPass(from: number) {
-  const jak = fromLatLon(JAK.lat, JAK.lon);
+/** Next dawn (ascending) pass from `from` with the target mid-swath, scanning a day in 20 s steps. */
+export function nextTargetPass(from: number) {
+  const target = fromLatLon(TARGET.lat, TARGET.lon);
   const mid = Math.sin((SWATH_NEAR + SWATH_FAR) / 2);
-  let prev = jak.dot(orbitAt(from).n) - mid;
+  let prev = target.dot(orbitAt(from).n) - mid;
   for (let t = from + 20000; t < from + 86400000; t += 20000) {
-    const f = jak.dot(orbitAt(t).n) - mid;
-    if (Math.sign(f) !== Math.sign(prev)) return t;
+    const o = orbitAt(t);
+    const f = target.dot(o.n) - mid;
+    if (Math.sign(f) !== Math.sign(prev) && target.dot(o.node) > 0) return t; // ascending half of the orbit
     prev = f;
   }
   return from;
@@ -106,7 +108,7 @@ const earthFrag = /* glsl */ `
   void main() {
     vec3 day = texture2D(uDay, vUv).rgb;
     vec3 night = texture2D(uNight, vUv).rgb;
-    // sharper NASA imagery over Greenland and Baffin Bay, feathered into the global map
+    // sharper NASA imagery over the Bengal delta, feathered into the global map
     float lat = degrees(asin(clamp(vObj.y, -1.0, 1.0)));
     float lon = degrees(atan(-vObj.z, vObj.x));
     vec2 ruv = vec2((lon - uRegion.z) / (uRegion.w - uRegion.z), (lat - uRegion.x) / (uRegion.y - uRegion.x));
@@ -235,7 +237,7 @@ function buildNisar() {
 }
 
 export type Globe = { dispose: () => void; setPaused: (paused: boolean) => void };
-export type Telemetry = { simTime: Date; satLat: number; satLon: number; toJakKm: number; inSwath: boolean };
+export type Telemetry = { simTime: Date; satLat: number; satLon: number; toTargetKm: number; inSwath: boolean };
 
 export function mountGlobe(
   canvas: HTMLCanvasElement,
@@ -395,15 +397,15 @@ export function mountGlobe(
     craftCam.quaternion.copy(camLocalQuat);
   }
 
-  // ---- simulation: start shortly before a pass whose swath crosses Jakobshavn ----
-  const passTime = nextJakobshavnPass(Date.now());
+  // ---- simulation: start shortly before a pass whose swath crosses the target ----
+  const passTime = nextTargetPass(Date.now());
   const LEAD = 0.13; // radians of orbit before closest approach (~830 km)
   let simMs = passTime - (LEAD / (Math.PI * 2)) * PERIOD_S * 1000;
   const orbit0 = orbitAt(passTime);
-  const jak = fromLatLon(JAK.lat, JAK.lon);
-  let argLat = Math.atan2(jak.dot(orbit0.b), jak.dot(orbit0.node)) - LEAD;
+  const target = fromLatLon(TARGET.lat, TARGET.lon);
+  let argLat = Math.atan2(target.dot(orbit0.b), target.dot(orbit0.node)) - LEAD;
   if (opts.reduced) {
-    simMs = passTime; // one still frame with the swath right over the glacier
+    simMs = passTime; // one still frame with the swath right over the target
     argLat += LEAD;
   }
 
@@ -427,7 +429,7 @@ export function mountGlobe(
     const along = Math.atan2(q.dot(velE), q.dot(satE));
     return along < 0 ? band * Math.exp(along * 3) : band * (1 - smoothstep(0, 0.004, along));
   };
-  const jakFacing = () => jak.dot(tmpV.copy(earthCam.position).sub(jak).normalize());
+  const targetFacing = () => target.dot(tmpV.copy(earthCam.position).sub(target).normalize());
 
   function syncCameras() {
     placeCameras();
@@ -464,13 +466,13 @@ export function mountGlobe(
     placeLabels();
     if (opts.onTick && now - lastTick > 250) {
       lastTick = now;
-      const slantKm = (tmpV.copy(satE).multiplyScalar(R).sub(jak).length() * EARTH_R_M) / 1000;
+      const slantKm = (tmpV.copy(satE).multiplyScalar(R).sub(target).length() * EARTH_R_M) / 1000;
       opts.onTick({
         simTime: new Date(simMs),
         satLat: Math.asin(THREE.MathUtils.clamp(satE.y, -1, 1)) / D2R,
         satLon: Math.atan2(-satE.z, satE.x) / D2R,
-        toJakKm: slantKm,
-        inSwath: swathAt(jak, 0.0015) > 0.15 && jakFacing() > 0,
+        toTargetKm: slantKm,
+        inSwath: swathAt(target, 0.0015) > 0.15 && targetFacing() > 0,
       });
     }
   }
@@ -511,7 +513,7 @@ export function mountGlobe(
   }
   function placeLabels() {
     craftCam.updateMatrixWorld();
-    project(opts.marker, pv.copy(jak), earthCam, Math.max(0, Math.min(1, jakFacing() * 8)));
+    project(opts.marker, pv.copy(target), earthCam, Math.max(0, Math.min(1, targetFacing() * 8)));
     project(opts.craftLabel, pv.copy(dishCenter).add(tmpV.set(0, 7, 0)), craftCam, 1);
   }
 
