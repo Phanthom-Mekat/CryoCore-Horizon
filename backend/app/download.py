@@ -16,6 +16,7 @@ from pathlib import Path
 import httpx
 
 from .config import Settings
+from .inspection import HOSTS as ASF_DATA_HOSTS  # ASF's NISAR origin and its CloudFront distribution
 
 URS = "urs.earthdata.nasa.gov"
 TOKEN_HELP = ("Add EARTHDATA_TOKEN=<token> to backend/.env (generate one at https://urs.earthdata.nasa.gov/ "
@@ -57,7 +58,7 @@ def is_auth_host(host: str) -> bool:
 
 
 def is_allowed_host(host: str) -> bool:
-    return is_auth_host(host) or host.endswith(".asf.alaska.edu") or bool(_S3.fullmatch(host))
+    return is_auth_host(host) or host in ASF_DATA_HOSTS or host.endswith(".asf.alaska.edu") or bool(_S3.fullmatch(host))
 
 
 def _auth_headers(auth, host: str) -> dict:

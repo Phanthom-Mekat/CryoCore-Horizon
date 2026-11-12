@@ -1,7 +1,7 @@
 # The Chattogram case in the frontend
 
-One case study, one journey, in the shared dashboard shell (`src/components/dashboard/Shell.tsx`). The sidebar keeps it
-apart from the Jakobshavn sample: **Chattogram · NISAR** is tagged *Real data*, **Jakobshavn · glacier** *Sample*.
+One case study, one journey, in the dashboard shell (`src/components/dashboard/Shell.tsx`). The sidebar group
+**Chattogram · NISAR** is tagged *Real data*. (The earlier Jakobshavn glacier sample dashboard was removed on 13 Nov 2026.)
 
 | Page | Route | What it answers |
 | --- | --- | --- |

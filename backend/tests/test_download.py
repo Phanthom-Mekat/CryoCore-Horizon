@@ -107,6 +107,9 @@ def test_authorization_only_reaches_earthdata_hosts():
     assert _auth_headers(bearer, "x.s3.us-west-2.amazonaws.com") == {}
     assert is_allowed_host("bucket.s3.us-west-2.amazonaws.com") and is_allowed_host("datapool.asf.alaska.edu")
     assert not is_allowed_host("s3.amazonaws.com.evil.com") and not is_allowed_host("earthdatacloud.nasa.gov.evil.com")
+    # ASF serves NISAR bytes from one pinned CloudFront distribution (signed URL, no credentials sent); others stay refused
+    assert is_allowed_host("d1mv8zhcvry6x4.cloudfront.net") and not is_allowed_host("evil.cloudfront.net")
+    assert _auth_headers(("bearer", "t"), "d1mv8zhcvry6x4.cloudfront.net") == {}
 
 
 def test_credentials_from_token_or_netrc(tmp_path, monkeypatch):

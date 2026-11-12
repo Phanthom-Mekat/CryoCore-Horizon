@@ -9,6 +9,7 @@ import { FOCUS, loadFrozen, type FrozenPilot } from "@/lib/chattogram/frozen";
 import { CASE_ID, isBusy, type ProcessedCase } from "@/lib/chattogram/case-api";
 
 const POLL_MS = 3000;
+const FROZEN_PROCESSED: Load<never> = { status: "unavailable", reason: "The frozen case replays without the backend, so the processed case is not loaded" };
 import { publishCaseSource } from "@/lib/chattogram/sourceStore";
 import { pilotOf, type ProcessedCase as PilotCase } from "@/lib/chattogram/processed";
 import { loadRain, type RainSeries } from "@/lib/chattogram/rain";
@@ -128,10 +129,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const empty = { layers: [], findings: { type: "FeatureCollection" as const, features: [] }, timeseries: { units: "dB" as const, points: [] } };
-    if (wanted === "frozen") {
-      setProcessed({ status: "unavailable", reason: "The frozen case replays without the backend, so the processed case is not loaded" });
-      return;
-    }
+    if (wanted === "frozen") return; // a replay asks nothing live (see `shownProcessed`)
     const poll = () =>
       api
         .case(CASE_ID)
@@ -157,6 +155,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     };
   }, [tick, wanted]);
 
+  const shownProcessed: Load<ProcessedCase> = wanted === "frozen" ? FROZEN_PROCESSED : processed;
   const data = load.status === "ready" ? load.data : null;
   const q = (k: string) => params.get(k);
 
@@ -189,7 +188,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   }, []);
   const href = useCallback((p: string) => (params.size ? `${p}?${params}` : p), [params]);
 
-  const pd = processed.status === "ready" ? processed.data.detail : null;
+  const pd = shownProcessed.status === "ready" ? shownProcessed.data.detail : null;
   const isCasePair = !!pd && before?.granule === pd.before.granule && after?.granule === pd.after.granule;
   const caseHref = useCallback(
     (p: string) => {
@@ -220,7 +219,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     finding: q("f"),
     set,
     href,
-    processed,
+    processed: shownProcessed,
     isCasePair,
     caseHref,
   };

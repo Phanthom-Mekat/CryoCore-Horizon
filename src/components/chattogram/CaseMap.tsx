@@ -6,7 +6,7 @@ import type { Acquisition } from "@/lib/chattogram/acquisitions";
 import { fmtDate, fmtNum, fmtTime } from "@/lib/i18n/format";
 import { useLang, useT } from "@/lib/i18n/useT";
 import { useCase, type View } from "./CaseProvider";
-import { WATER, stripeTile } from "@/lib/chattogram/palette";
+import { stripeTile } from "@/lib/chattogram/palette";
 import { FINDING } from "./MapKey";
 
 import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme, mapError, cameraDuration } from "@/lib/mapbox";

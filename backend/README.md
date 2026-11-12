@@ -39,14 +39,14 @@ install command when updating an existing environment.
 | POST | `/api/v1/nasa/search` | Discover and persist one page of NISAR metadata |
 | GET | `/api/v1/scenes?product=GCOV&limit=25&offset=0` | Browse stored scenes |
 | GET | `/api/v1/scenes/{concept_id}` | Full provenance and source URLs |
-| GET | `/api/v1/cases` | Curated cases: status, stack, before/after granules, analysis area |
-| GET | `/api/v1/cases/{id}` | Case plus method, metrics, caveats, sources, latest job |
-| GET | `/api/v1/cases/{id}/layers` | Before/after/change dB PNGs: URL, corners, units, scale, palette (`[]` until ready) |
-| GET | `/api/v1/cases/{id}/assets/{name}.png` | Layer image, `Cache-Control: immutable` (URLs carry `?v=<job>`) |
-| GET | `/api/v1/cases/{id}/findings` | GeoJSON "Observed radar change" polygons (empty until ready) |
+| GET | `/api/v1/curated-cases` | Curated cases: status, stack, before/after granules, analysis area |
+| GET | `/api/v1/curated-cases/{id}` | Case plus method, metrics, caveats, sources, latest job |
+| GET | `/api/v1/curated-cases/{id}/layers` | Before/after/change dB PNGs: URL, corners, units, scale, palette (`[]` until ready) |
+| GET | `/api/v1/curated-cases/{id}/assets/{name}.png` | Layer image, `Cache-Control: immutable` (URLs carry `?v=<job>`) |
+| GET | `/api/v1/curated-cases/{id}/findings` | GeoJSON "Observed radar change" polygons (empty until ready) |
 | GET | `/api/v1/findings/{id}` | One finding plus evidence: sources, parameters, method version, reference checks |
-| GET | `/api/v1/cases/{id}/timeseries` | Per-date dB statistics over pixels valid on both dates |
-| GET | `/api/v1/cases/{id}/export?format=json\|csv\|geojson` | Download with provenance (409 until ready) |
+| GET | `/api/v1/curated-cases/{id}/timeseries` | Per-date dB statistics over pixels valid on both dates |
+| GET | `/api/v1/curated-cases/{id}/export?format=json\|csv\|geojson` | Download with provenance (409 until ready) |
 | POST | `/api/v1/jobs` `{case_id}` | Queue processing (202). Needs `X-Admin-Token` = `CRYO_ADMIN_TOKEN`; 403 if unset |
 | GET | `/api/v1/jobs/{id}` | Job state, stage, progress, error, retryable, attempts |
 

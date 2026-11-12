@@ -98,8 +98,7 @@ error. The development application is not intended for unauthenticated public de
 - Fixed a development-time vendor CSS collision by excluding foreign
   (`node_modules`) files from the Tailwind Turbopack loader. Mapbox's stylesheet
   is imported at the route level so controls and canvas positioning load reliably.
-- The original glacier landing page/dashboard remains separate. The main navigation
-  now links to the Chattogram explorer; a full landing-page rewrite is deferred.
+- The original glacier sample dashboard has been removed; the landing page and navigation lead to the Chattogram case.
 
 Next increment: select a small candidate area and compatible pair, then add a
 download/inspection workflow. That may require the user's NASA Earthdata login.

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { fmtNum } from "@/lib/i18n/format";
 import { useLang, useT } from "@/lib/i18n/useT";
@@ -92,11 +91,6 @@ export function AboutView() {
           {ab.srcBasemapsNote}
         </li>
       </ul>
-
-      <p className="c-aside">
-        {ab.glacierAside} <Link href="/dashboard">{ab.glacierLink}</Link>
-        {lang === "en" ? "." : "।"}
-      </p>
     </article>
   );
 }

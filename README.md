@@ -1,56 +1,54 @@
 # CryoCore Horizon
 
-## Backend development
+Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing with the SARs**. We use radar from
+NISAR (NASA–ISRO) to follow surface change around Chattogram, Bangladesh, through the monsoon cloud.
 
-The new [FastAPI + SQLite backend](backend/README.md) focuses on **Chattogram
-Division, Bangladesh**, using NASA-ISRO NISAR metadata from NASA Earthdata CMR.
-See its README for setup, endpoints, and current limitations. The frontend below
-still demonstrates the original Jakobshavn sample dataset; connecting it to the
-Chattogram backend is a subsequent step.
+- `/`: project page with a live 3D view beside the NISAR spacecraft
+- `/chattogram`: the case study (see below)
+
+Plan and progress: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
+## Backend
+
+The [FastAPI + SQLite backend](backend/README.md) serves the NISAR catalogue for Chattogram Division (NASA Earthdata
+CMR metadata), the calibrated pilot, and the curated `karnaphuli-estuary` case with its processing worker. See its
+README for setup, endpoints, processing jobs and current limitations.
 
 ## Chattogram case
 
-The case study is at **[/chattogram](http://localhost:3000/chattogram)**: Overview, Explore map,
-Compare dates, Evidence & brief, Scene catalogue (formerly `/explore`, which redirects) and About;
-see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md). It shows NASA GCOV catalog footprints, an attributed
-division boundary, real NISAR browse quicklooks, date filtering, scene evidence, and interactive Mapbox GL maps. All geographic maps use Mapbox
-Standard for context; NASA imagery and scientific layers retain their attribution.
-It discovers observations; it does not yet compute environmental changes.
+The case study is at **[/chattogram](http://localhost:3000/chattogram)**: Overview, Explore map, Compare dates,
+Calibrated radar, Evidence & brief, Scene catalogue (formerly `/explore`, which redirects) and About;
+see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md). It shows NASA GCOV catalog footprints, an attributed division boundary,
+real NISAR browse quicklooks, calibrated radar change, scene evidence and interactive Mapbox GL maps. All geographic
+maps use Mapbox Standard for context; NASA imagery and scientific layers keep their attribution. Every processed
+result is labelled observed radar change, not flooding or water change.
 
-Start the backend using [its instructions](backend/README.md), then run `pnpm dev`.
-The frontend proxies its two explorer requests to `http://127.0.0.1:8000` by
-default; set server-side `BACKEND_URL` for another backend location. No client
-secret or Earthdata login is needed for this metadata feature. A fresh database
-starts empty: use **Discover observations**, then **Load next page** if offered.
+Start the backend using [its instructions](backend/README.md), then run `pnpm dev`. The frontend proxies its requests
+to `http://127.0.0.1:8000` by default; set server-side `BACKEND_URL` for another backend location. The browser never
+needs an Earthdata login. A fresh database starts empty: use **Discover observations**, then **Load next page** if
+offered.
 
 **Frozen case (no backend needed).** `public/data/chattogram/case/` holds a versioned snapshot of the case: the
-division view, every intersecting scene, and the processed quicklooks for the stacks over Chattogram city. The pages
-use it automatically when the backend is unreachable, open it on purpose with `?source=frozen`, and say so on every
-page. For a deployment without the backend, set `NEXT_PUBLIC_CASE_SOURCE=frozen`. Refresh the snapshot with the
-backend running: `pnpm freeze-case`.
+division view, every intersecting scene, the processed quicklooks for the stacks over Chattogram city and the
+calibrated pilot. The pages use it automatically when the backend is unreachable, open it on purpose with
+`?source=frozen`, and say so on every page. For a deployment without the backend, set
+`NEXT_PUBLIC_CASE_SOURCE=frozen`. Refresh the snapshot with the backend running: `pnpm freeze-case`.
 
 **Rainfall context.** Daily rainfall at Chattogram city from the NASA POWER API (modelled, MERRA-2) is saved in
 `public/data/chattogram/rain.json`; refresh it with `pnpm fetch-rain`.
 
-Use pnpm for Node dependencies (`pnpm install`, `pnpm build`). See
-[the explorer implementation notes](docs/EXPLORER.md) for architecture, data
-provenance, library choices, validation, and remaining work.
-
-Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing with the SARs**. We use radar from NISAR (NASA–ISRO) to track Jakobshavn Glacier (Sermeq Kujalleq), Greenland's fastest glacier, through cloud and polar night.
-
-- `/`: project page with a live 3D view beside the NISAR spacecraft
-- `/dashboard`: ice speed map, speed over time, calving front position, radar before/after
+See [the explorer implementation notes](docs/EXPLORER.md) for architecture, data provenance, library choices,
+validation and remaining work.
 
 ## Run the site
 
 Interactive geographic maps require a public Mapbox token in `.env.local`:
-`NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token`. See [Mapbox setup](docs/MAPBOX.md)
-for URL restrictions, deployment configuration, and map behavior.
+`NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token`. See [Mapbox setup](docs/MAPBOX.md) for URL restrictions,
+deployment configuration and map behaviour.
 
-The site defaults to light mode. Use the sun/moon button in the landing navigation
-or dashboard header to switch themes. Your choice is saved in browser local
-storage and shared across pages and tabs. UI themes do not recolor satellite
-imagery or change scientific color scales.
+The site defaults to light mode. Use the sun/moon button in the landing navigation or the case header to switch
+themes. Your choice is saved in browser local storage and shared across pages and tabs. UI themes do not recolour
+satellite imagery or change scientific colour scales.
 
 ```bash
 pnpm install
@@ -58,45 +56,24 @@ pnpm dev        # http://localhost:3000
 pnpm build      # production check
 ```
 
-## Dashboard data
-
-The dashboard reads static files from `public/data/jakobshavn/`. The file format is described in [docs/DATA_CONTRACT.md](docs/DATA_CONTRACT.md) (types in `src/lib/dashboard-data.ts`); malformed files show a list of problems on screen instead of crashing.
-
-The files in the repo are **sample data** (`"sample": true` in `manifest.json`). They are synthetic placeholders, and the dashboard shows a "Sample data" banner while they're in use. The basemap is a real image: Sentinel-2 via NASA HLS, 14 July 2025, from NASA GIBS.
-
-### Replace the sample with real NISAR data (at the hackathon)
-
-You need Python 3.10+ and a free NASA Earthdata login (https://urs.earthdata.nasa.gov).
-
-```bash
-pip install asf_search h5py numpy pyproj scipy pillow
-export EARTHDATA_USERNAME=...   # or put urs.earthdata.nasa.gov in ~/.netrc; never commit credentials
-export EARTHDATA_PASSWORD=...
-
-python scripts/nisar_pipeline.py search --start 2025-10-01   # track 170, frame 53 by default
-python scripts/nisar_pipeline.py download                     # ~31 GB into data/raw (git-ignored)
-python scripts/nisar_pipeline.py inspect data/raw/<a GOFF file>.h5   # confirm the offset layer names
-python scripts/nisar_pipeline.py build                        # writes public/data/jakobshavn with sample: false
-```
-
-In November 2026, ASF listed 18 GCOV and 15 GOFF files for track 170 / frame 53 over the glacier, from Oct 2025 to Oct 2026. Run `inspect` before `build`. The GOFF layer paths are matched by name and haven't been checked against a real file yet.
-
-The pipeline's simplifications (2-D speed from offsets, front picked along one flowline) are listed at the top of `scripts/nisar_pipeline.py`. Mention them in the submission.
-
 ### Checks
 
 ```bash
-python scripts/test_pipeline.py                                # pipeline helpers
+pnpm lint
 node --experimental-strip-types scripts/check-sun.mts          # sun position behind the 3D view
 ```
 
+Backend tests: see [backend/README.md](backend/README.md).
+
 ### Regenerate assets
 
-- `node scripts/make-sample-data.mjs <basemap-hls.png>`: the sample dataset
 - `node scripts/make-textures.mjs <folder>`: Earth textures for the 3D view (sources listed in the script)
+- `node scripts/fetch-chattogram.mjs`: the catalogue snapshot behind the landing page
 - `pnpm freeze-case`: the frozen Chattogram case (needs the backend running and network access to ASF)
 - `pnpm fetch-rain`: NASA POWER daily rainfall for the case (no login needed)
 
 ## Credits
 
-NISAR data: NASA and ISRO, distributed by the Alaska Satellite Facility DAAC. Earth imagery: NASA Blue Marble, VIIRS Black Marble and HLS via NASA GIBS. Glacier facts: UNESCO World Heritage Centre. This is not an official NASA or ISRO website.
+NISAR data: NASA and ISRO, distributed by the Alaska Satellite Facility DAAC. Earth imagery: NASA Blue Marble, VIIRS
+Black Marble and HLS via NASA GIBS. Division boundary: Bangladesh Bureau of Statistics (BBS) / HDX via geoBoundaries,
+CC BY 3.0 IGO. Rainfall: NASA POWER. This is not an official NASA or ISRO website.
