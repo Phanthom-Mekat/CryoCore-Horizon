@@ -33,3 +33,26 @@ selected scene) in the URL, so every view can be shared as a link.
 - Before two dates are compared, their geometry, polarizations, data maturity (from the CMR collection name) and product
   version are checked, and any difference is shown. The default pair is the widest-spaced one that passes all four.
 - Until the processing worker publishes results, every difference is called observed radar change, not water change.
+
+## Frozen case (replay without the backend)
+
+Plan F09. `pnpm freeze-case` (`scripts/freeze-case.mts`) reads the stored catalogue from the running backend and writes
+`public/data/chattogram/case/`:
+
+- `case.json`, version 1: capture time, generator, the display processing settings, sources, the backend's division
+  view (boundary with provenance, footprints, counts), every scene that intersects the division, and the stacks frozen.
+- `img/<granule>.webp`: the processed quicklook for every date in the stacks over Chattogram city (3 stacks, 29 dates
+  at the first capture), each with its SHA-256, size, corners, and whether the corners came from ASF's KML or the
+  CMR footprint. The images are made by `src/lib/chattogram/browse.ts`, the same code as the live proxy.
+
+How the pages use it (`CaseProvider`):
+
+| Situation | What loads | What the page says |
+| --- | --- | --- |
+| Backend up | Live catalogue; quicklooks from the frozen files where they exist, the proxy otherwise | Nothing extra; the brief records the snapshot date |
+| Backend down | The frozen case | “Frozen case, captured …” on every page, with *Try live data* |
+| `?source=frozen`, or `NEXT_PUBLIC_CASE_SOURCE=frozen` | The frozen case, with no backend, NASA or ASF request at all | Same notice, with *Switch to live data* |
+
+While replaying, NASA search in the catalogue is off, a scene outside the frozen stacks shows its footprint with a note
+instead of fetching its image, and Evidence offers **Copy replay link**: the same dates and map view, opened from the
+snapshot. The brief's JSON records `data_source`, `replay_url` and each quicklook's checksum.

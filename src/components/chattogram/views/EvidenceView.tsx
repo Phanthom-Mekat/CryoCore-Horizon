@@ -1,30 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Download, FileText, Link2, Printer, X } from "lucide-react";
+import { Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { compatibility, fmtDate, fmtSize, fmtTime, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { CLAIM, METHOD_VERSION, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
 import { useCase } from "../CaseProvider";
 
 export function EvidenceView() {
-  const { load, before, after } = useCase();
+  const { load, before, after, source } = useCase();
   const [findings, setFindings] = useState<Load<unknown[]>>({ status: "loading" });
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"view" | "replay" | null>(null);
 
-  // processed findings come from the backend's planned /cases API; until it exists this says so plainly
+  // processed findings come from the backend's planned /cases API; until it exists this says so plainly.
+  // A frozen replay asks nothing live: the snapshot holds no processed findings yet.
+  const replaying = source.mode === "frozen";
   useEffect(() => {
+    if (replaying) return;
     api.cases().then(
       (c) => setFindings(c.length ? { status: "ready", data: c } : { status: "empty", reason: "The backend has no processed cases yet." }),
       (e) => setFindings(toLoadError(e)),
     );
-  }, []);
+  }, [replaying]);
 
   if (load.status !== "ready" || !before || !after) return null;
   const region = load.data.region;
   const checks = compatibility(before, after);
   const stem = `chattogram-${before.day}_vs_${after.day}`;
   const url = typeof window === "undefined" ? "" : window.location.href;
+  // the same view, forced onto the frozen case: opens these dates and this extent with no live request (plan F09)
+  const replayUrl = (() => {
+    if (!url) return "";
+    const u = new URL(url);
+    u.searchParams.set("source", "frozen");
+    return u.toString();
+  })();
+  const replayable = Boolean(source.frozenAt && before.frozen && after.frozen);
+  const copy = (text: string, which: "view" | "replay") => navigator.clipboard?.writeText(text).then(() => setCopied(which), () => setCopied(null));
 
   return (
     <article className="c-evidence">
@@ -41,7 +53,7 @@ export function EvidenceView() {
             <Printer size={15} aria-hidden="true" />
             Print or save as PDF
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url), null, 2), "application/json")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null), null, 2), "application/json")}>
             <Download size={15} aria-hidden="true" />
             JSON
           </button>
@@ -53,14 +65,21 @@ export function EvidenceView() {
             <Download size={15} aria-hidden="true" />
             GeoJSON
           </button>
-          <button
-            type="button"
-            className="c-btn"
-            onClick={() => navigator.clipboard?.writeText(url).then(() => setCopied(true), () => setCopied(false))}
-          >
+          <button type="button" className="c-btn" onClick={() => copy(url, "view")}>
             <Link2 size={15} aria-hidden="true" />
-            {copied ? "Link copied" : "Copy link to this view"}
+            {copied === "view" ? "Link copied" : "Copy link to this view"}
           </button>
+          {replayable && (
+            <button
+              type="button"
+              className="c-btn"
+              onClick={() => copy(replayUrl, "replay")}
+              title="Opens these two dates from the frozen case, with no live NASA or backend request"
+            >
+              <History size={15} aria-hidden="true" />
+              {copied === "replay" ? "Replay link copied" : "Copy replay link"}
+            </button>
+          )}
         </div>
       </header>
 
@@ -100,7 +119,9 @@ export function EvidenceView() {
 
         <div className="c-ev-card">
           <h2>Processed findings</h2>
-          {findings.status === "loading" ? (
+          {replaying ? (
+            <p className="is-missing">None in the frozen case: it was captured before the processing worker produced findings.</p>
+          ) : findings.status === "loading" ? (
             <p>Checking the backend…</p>
           ) : findings.status === "ready" ? (
             <p>{findings.data.length} processed case(s) available from the backend.</p>
@@ -153,6 +174,12 @@ function Source({ role, a }: { role: string; a: Acquisition }) {
     ["Product", `GCOV v${a.version ?? "?"}${a.produced ? `, produced ${fmtDate(a.produced)}` : ""}`],
     ["HDF5", `${fmtSize(a.sizeBytes)}${a.md5 ? `, MD5 ${a.md5}` : ""}`],
     ["CMR concept", a.conceptId],
+    [
+      "Quicklook",
+      a.frozen
+        ? `Frozen case file, SHA-256 ${a.frozen.sha256.slice(0, 16)}…, corners from ${a.frozen.cornersFrom === "kml" ? "ASF’s KML" : "the CMR footprint"}`
+        : "Loaded live from ASF through our proxy",
+    ],
   ];
   return (
     <div className="c-ev-card">

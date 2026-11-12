@@ -2,6 +2,7 @@
 // Every value comes from the stored NASA metadata or the compatibility checks; nothing is computed from pixels yet.
 import { compatibility, type Acquisition } from "./acquisitions";
 import type { Region } from "./api";
+import type { CaseSource } from "@/components/chattogram/CaseProvider";
 
 export const METHOD_VERSION = "visual-quicklook-comparison/0.1";
 export const CLAIM =
@@ -22,13 +23,16 @@ const source = (a: Acquisition) => ({
   polarizations: a.polarizations,
   hdf5_md5: a.md5,
   qa_report: a.qaReport,
+  quicklook: a.frozen ? { frozen_case_file: a.frozen.src, sha256: a.frozen.sha256, corners: a.frozen.corners, corners_from: a.frozen.cornersFrom } : "live from ASF",
 });
 
-export function briefJson(region: Region, before: Acquisition, after: Acquisition, shareUrl: string) {
+export function briefJson(region: Region, before: Acquisition, after: Acquisition, shareUrl: string, origin: CaseSource, replayUrl: string | null) {
   return {
     title: `Observed radar change, ${region.name}: ${before.day} vs ${after.day}`,
     generated_utc: new Date().toISOString(),
     share_url: shareUrl,
+    replay_url: replayUrl,
+    data_source: origin.mode === "frozen" ? { mode: "frozen case", captured_utc: origin.frozenAt } : { mode: "live backend", frozen_case_captured_utc: origin.frozenAt },
     method_version: METHOD_VERSION,
     claim: CLAIM,
     region: {

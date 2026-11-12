@@ -1084,3 +1084,55 @@
     top: 12px;
   }
 }
+
+/* ---------- frozen case notice (plan F09) ---------- */
+.c-frozen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  border: 1px solid var(--c-line-2);
+  border-left: 3px solid var(--ice);
+  border-radius: 8px;
+  background: var(--c-navy);
+  color: var(--c-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.c-frozen svg {
+  flex: none;
+  color: var(--ice);
+}
+.c-frozen strong {
+  color: var(--c-text);
+}
+.c-frozen-live {
+  flex: none;
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid var(--c-line-2);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--c-text);
+  font: 500 0.82rem var(--sans);
+  cursor: pointer;
+}
+.c-frozen-live:hover {
+  border-color: var(--c-muted);
+}
+.c-thumb-missing {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: var(--c-dim);
+  font-size: 0.82rem;
+}
+@media (max-width: 640px) {
+  .c-frozen {
+    flex-wrap: wrap;
+  }
+  .c-frozen-live {
+    margin-left: 26px;
+  }
+}

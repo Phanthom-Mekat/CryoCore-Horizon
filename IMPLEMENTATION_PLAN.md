@@ -1,6 +1,6 @@
 # CryoCore Horizon: Chattogram implementation plan
 
-Status (12 Nov 2026): discovery catalogue and the frontend case journey are built on real NISAR metadata and browse quicklooks; scientific processing (calibrated layers, change, validation) remains planned. See the progress tracker below.
+Status (12 Nov 2026): discovery catalogue and the frontend case journey are built on real NISAR metadata and browse quicklooks, and the case replays from a frozen snapshot without the backend (F09); scientific processing (calibrated layers, change, validation) remains planned. See the progress tracker below.
 
 Implementation update: the case lives at `/chattogram` (Overview, Explore map, Compare, Evidence, Scene catalogue, About; see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md)). The first discovery increment is its Scene catalogue.
 It includes an attributed 2018 BBS/HDX reference boundary, real NASA catalog
@@ -35,6 +35,15 @@ surface-change findings. F01/F02 and the scientific milestones remain incomplete
 - [x] Legends and map layers ready for processed results: water-change candidates (cyan/amber with stripes) and signed dB change (separate diverging scale), colours checked with a CVD/contrast validator.
 - [x] Lint, TypeScript and production build pass; all case pages checked at 1920×1080 and 390 px; backend-down and empty states tested.
 
+### Completed replay increment (F09)
+
+- [x] `pnpm freeze-case` (`scripts/freeze-case.mts`) writes a versioned snapshot to `public/data/chattogram/case/`: `case.json` (capture time, generator, display processing settings, sources, the backend's division view, all 125 intersecting scenes, the frozen stacks) and 29 processed quicklooks for the 3 stacks over Chattogram city, each with SHA-256, size, corners and corner method.
+- [x] Live proxy and freeze script share one implementation (`src/lib/chattogram/browse.ts`), so replayed images are processed exactly like live ones.
+- [x] The case pages use the snapshot automatically when the backend is unreachable, on purpose with `?source=frozen`, or for a whole deployment with `NEXT_PUBLIC_CASE_SOURCE=frozen`; every page then says “Frozen case, captured …” with a way back to live data.
+- [x] Replay makes no live request: tested with the backend stopped and `?source=frozen` across all six case pages — 0 requests to the backend, the image proxy, ASF or CMR, and no console errors.
+- [x] Evidence offers **Copy replay link** (same dates and map view from the snapshot); the brief records `data_source`, `replay_url` and each quicklook's checksum. NASA search is disabled while replaying.
+- [x] Live mode also serves quicklooks from the snapshot where it has them: 3 ms per image instead of 7.8 s through the proxy on a cold cache.
+
 ### Progress tracker
 
 Updated 12 November 2026. "Partial" means the interface exists on real metadata and quicklooks, waiting for processed data.
@@ -49,7 +58,7 @@ Updated 12 November 2026. "Partial" means the interface exists on real metadata 
 | F06 | Before/after comparison | Partial | Swipe, badges, keyboard, synced zoom, same extent and scale | Swap quicklooks for processed paired layers on one contrast scale |
 | F07 | Click-to-explain evidence | Partial | Evidence page with sources, checks, limitations | `/cases/{id}/findings` polygons to click; local statistics |
 | F08 | Chattogram overview | Partial | Overview page with real catalogue numbers and a featured comparison | Observed area, eligible comparison area, change summaries |
-| F09 | Reproducible case replay | Not started | Shareable URLs restore the view | Frozen case bundle (also fixes 8–11 s first loads of a new date) |
+| F09 | Reproducible case replay | Done for the current case | Versioned frozen case (manifest, 29 quicklooks with SHA-256), automatic fallback, `?source=frozen` replay link, honest labelling; zero live requests when replaying | Add processed layers, findings and the selected finding to the snapshot once they exist; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level shown in About and Evidence | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible | Per-date summaries and a synced chart from processed values |
 | F12 | Local observation brief | Done for current evidence | JSON, CSV, GeoJSON, print; every value traced to NASA metadata | Add findings and statistics once they exist |
@@ -61,7 +70,7 @@ Updated 12 November 2026. "Partial" means the interface exists on real metadata 
 
 ### Next up
 
-- **Backend:** run Gate A on the candidate pair (download the two GCOV files, inspect layers and masks); build the processing worker (F03) and the first γ⁰ layers (F04); serve `/api/v1/cases` and findings (B3); freeze a replay bundle (F09).
+- **Backend:** run Gate A on the candidate pair (download the two GCOV files, inspect layers and masks); build the processing worker (F03) and the first γ⁰ layers (F04); serve `/api/v1/cases` and findings (B3); include processed layers in the frozen case when they exist (F09).
 - **Frontend:** connect `/cases` and findings to Explore, Compare and Evidence; pixel-value hover on processed layers; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** make the GitHub repository public before submission, fill in the team names on the landing page, choose a repository licence.
 
@@ -318,7 +327,7 @@ observation dates, and data source above the map. Avoid a wall of small metric c
 - [x] Preload the curated demo case and next playback frame; lazy-load secondary content.
 - [x] Target a usable initial view within three seconds on the rehearsed setup,
   and cached date changes within 300 ms. Measure and report actual results.
-  _Measured on /chattogram (1920×1080, software-rendered test browser): panel and dates 1.3–1.4 s; first radar quicklook 2.8–3.3 s once the server has it cached; switching to an already-loaded date 31–276 ms (one 1.2 s outlier). A date never fetched before takes 8–11 s from ASF; the frozen replay bundle (F09) removes that._
+  _Measured on /chattogram (1920×1080, software-rendered test browser): panel and dates 1.3–1.4 s; first radar quicklook 2.8–3.3 s once the server has it cached; switching to an already-loaded date 31–276 ms (one 1.2 s outlier). A date never fetched before took 8–11 s from ASF; with the frozen case each quicklook file loads in about 3 ms (measured), and what remains of a date change is the map redraw._
 - [x] Keep interactions responsive on the recording laptop; test mobile at 390 px width.
   _Frontend: all four /chattogram views checked at 390 px: no sideways scroll, nav fits, the reveal works by touch._
 - [x] Handle unavailable tiles, no observations, partial coverage, and backend failure
@@ -387,7 +396,8 @@ counts, and labels such as “live” on historical observations.
 - [ ] No credentials, large raw downloads, or local databases are committed.
 - [ ] API tests, raster checks, frontend build, and end-to-end demo checks pass.
 - [ ] Public demo is reachable; job endpoints are protected; data persists across restarts.
-- [ ] Frozen assets replay without upstream access; cached/replayed observations are labeled honestly.
+- [x] Frozen assets replay without upstream access; cached/replayed observations are labeled honestly.
+  _Frontend: `?source=frozen` replays with no backend, NASA or ASF request; every page shows the capture time (see docs/CHATTOGRAM.md)._
 - [ ] Video is exactly within the verified submission limit, captioned, and legible on a laptop.
 - [ ] Submission explains the local problem, NASA data use, method, finding, limitations,
   team contributions, and future work. Awards or real-world adoption are not implied.

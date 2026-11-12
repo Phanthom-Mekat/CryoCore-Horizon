@@ -4,14 +4,14 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, Columns2, FileSearch, Layers, Map as MapIcon, Radar, ShieldCheck, Satellite } from "lucide-react";
 import { Kpi, KpiStrip } from "@/components/dashboard/ui";
 import { compatibility, covers, fmtDate } from "@/lib/chattogram/acquisitions";
-import { CaseMap, browseUrl } from "../CaseMap";
+import { CaseMap, quicklookSrc } from "../CaseMap";
 import { FOCUS, useCase } from "../CaseProvider";
 
 const OVERVIEW_VIEW = { lon: 91.95, lat: 22.75, zoom: 6.7 };
 
 /** The front door: the question, the numbers, the way through the case, and the comparison to start with. */
 export function OverviewView() {
-  const { load, explorer, stack, before, after, href } = useCase();
+  const { load, explorer, stack, before, after, href, source } = useCase();
   if (load.status !== "ready" || !stack || !before || !after) return null;
 
   const all = load.data.acquisitions;
@@ -133,8 +133,12 @@ export function OverviewView() {
           ].map(([role, a]) =>
             typeof a === "string" ? null : (
               <figure key={role as string}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- quicklook served by our proxy, sized by CSS */}
-                <img src={browseUrl(a)} alt={`NISAR quicklook of ${fmtDate(a.start)}`} loading="lazy" />
+                {a.frozen || source.mode === "live" ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- quicklook from the frozen case or our proxy, sized by CSS
+                  <img src={quicklookSrc(a)} alt={`NISAR quicklook of ${fmtDate(a.start)}`} loading="lazy" />
+                ) : (
+                  <div className="c-thumb-missing">Not in the frozen case</div>
+                )}
                 <figcaption>
                   <strong>{role as string}</strong> {fmtDate(a.start)}
                 </figcaption>

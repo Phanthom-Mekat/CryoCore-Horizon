@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GeoJSONSource, ImageSource, Map as MlMap, MapMouseEvent } from "mapbox-gl";
 import type { Acquisition } from "@/lib/chattogram/acquisitions";
 import { fmtDate, fmtTime } from "@/lib/chattogram/acquisitions";
-import type { View } from "./CaseProvider";
+import { useCase, type View } from "./CaseProvider";
 import { WATER, stripeTile } from "@/lib/chattogram/palette";
 
 import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme, mapError, cameraDuration } from "@/lib/mapbox";
@@ -24,6 +24,9 @@ export const LANDMARKS: { name: string; lonLat: [number, number] }[] = [
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
 const ring = (r: [number, number][]) => (r.length && (r[0][0] !== r.at(-1)![0] || r[0][1] !== r.at(-1)![1]) ? [...r, r[0]] : r);
+/** Where to load an acquisition's quicklook: the frozen case's static file when it has one, else the live proxy. */
+export const quicklookSrc = (a: Acquisition) => a.frozen?.src ?? browseUrl(a);
+
 /** Proxy URL for an acquisition's quicklook, or its corners (with the footprint extremes as a fallback source). */
 export function browseUrl(a: Acquisition, part?: "bounds") {
   const q = `/api/nisar-browse?granule=${encodeURIComponent(a.granule)}&collection=${encodeURIComponent(a.collection)}`;
@@ -74,7 +77,9 @@ export function CaseMap({
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // load state of the quicklook, keyed by acquisition so a new date reads as "loading" until its own result lands
-  const [img, setImg] = useState<{ id: string; state: "shown" | "failed" } | null>(null);
+  const { source } = useCase();
+  const replaying = source.mode === "frozen";
+  const [img, setImg] = useState<{ id: string; state: "shown" | "failed" | "absent" } | null>(null);
   const imgState = !image ? "none" : img?.id === image.conceptId ? img.state : "loading";
   const [hover, setHover] = useState<{ x: number; y: number; a: Acquisition } | null>(null);
   const latest = useRef({ onMove, onPick, footprints });
@@ -234,7 +239,8 @@ export function CaseMap({
     });
   }, [footprints, selected, ready]);
 
-  // the quicklook: fetch its corners, then swap the image source in place (no flash between dates)
+  // the quicklook: its corners (stored in the frozen case, else fetched), then swap the image source in place (no flash
+  // between dates). Replaying the frozen case never reaches ASF: a scene outside it is reported, not fetched.
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
@@ -245,11 +251,19 @@ export function CaseMap({
     }
     let live = true;
     const id = image.conceptId;
-    fetch(browseUrl(image, "bounds"))
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(({ corners }) => {
+    const corners: Promise<[number, number][]> = image.frozen
+      ? Promise.resolve(image.frozen.corners)
+      : replaying
+        ? Promise.reject(new Error("not in the frozen case"))
+        : fetch(browseUrl(image, "bounds"))
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+            .then((j: { corners: [number, number][] }) => j.corners);
+    corners
+      .then((c) => {
         if (!live) return;
-        const url = browseUrl(image);
+        if (c.length !== 4) throw new Error("expected four corners");
+        const corners = c as [[number, number], [number, number], [number, number], [number, number]];
+        const url = quicklookSrc(image);
         const src = m.getSource("browse") as ImageSource | undefined;
         if (src) src.updateImage({ url, coordinates: corners });
         else {
@@ -261,11 +275,11 @@ export function CaseMap({
         }
         m.once("idle", () => live && setImg({ id, state: "shown" }));
       })
-      .catch(() => live && setImg({ id, state: "failed" }));
+      .catch(() => live && setImg({ id, state: replaying && !image.frozen ? "absent" : "failed" }));
     return () => {
       live = false;
     };
-  }, [image, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [image, ready, replaying]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const m = map.current;
@@ -292,8 +306,11 @@ export function CaseMap({
           </span>
         </div>
       )}
-      {imgState === "loading" && <p className="c-map-note">Loading the NISAR quicklook from ASF…</p>}
-      {imgState === "failed" && <p className="c-map-note is-bad">The quicklook for this date couldn’t be loaded from ASF. Footprints and dates are still accurate.</p>}
+      {imgState === "loading" && <p className="c-map-note">{image?.frozen ? "Loading the NISAR quicklook…" : "Loading the NISAR quicklook from ASF…"}</p>}
+      {imgState === "failed" && <p className="c-map-note is-bad">The quicklook for this date couldn’t be loaded. Footprints and dates are still accurate.</p>}
+      {imgState === "absent" && (
+        <p className="c-map-note is-bad">This scene isn’t part of the frozen case, so its quicklook isn’t shown. Its footprint and dates are accurate.</p>
+      )}
       {error && <p className="c-map-note is-bad">{error}</p>}
     </div>
   );

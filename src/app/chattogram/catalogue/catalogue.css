@@ -135,3 +135,4 @@
 }
 @media (prefers-reduced-motion: reduce) { .atlas-spin { animation: none; } .atlas * { transition: none !important; } }
 .atlas-evidence .atlas-open { margin: 12px 0 10px; text-decoration: none; }
+.atlas-primary:disabled { opacity: .45; cursor: not-allowed; }

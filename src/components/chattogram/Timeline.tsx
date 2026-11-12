@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { fmtDate, type Acquisition } from "@/lib/chattogram/acquisitions";
-import { browseUrl } from "./CaseMap";
+import { browseUrl, quicklookSrc } from "./CaseMap";
+import { useCase } from "./CaseProvider";
 
 const FRAME_MS = 1400;
 
@@ -14,6 +15,7 @@ const FRAME_MS = 1400;
 export function Timeline({ items, current, onPick, marks = {} }: { items: Acquisition[]; current: string | null; onPick: (a: Acquisition) => void; marks?: Record<string, string> }) {
   const sorted = useMemo(() => [...items].sort((a, b) => a.start.localeCompare(b.start)), [items]);
   const [playing, setPlaying] = useState(false);
+  const replaying = useCase().source.mode === "frozen";
   const idx = Math.max(0, sorted.findIndex((a) => a.conceptId === current));
   const t0 = Date.parse(sorted[0]?.start ?? "");
   const t1 = Date.parse(sorted.at(-1)?.start ?? "");
@@ -32,13 +34,15 @@ export function Timeline({ items, current, onPick, marks = {} }: { items: Acquis
     (async () => {
       for (const a of order) {
         if (!live) return;
-        await Promise.all([fetch(browseUrl(a, "bounds")), fetch(browseUrl(a))]).catch(() => {});
+        // frozen quicklooks are static files with stored corners; only live ones need the proxy for both
+        if (a.frozen) await fetch(a.frozen.src).catch(() => {});
+        else if (!replaying) await Promise.all([fetch(browseUrl(a, "bounds")), fetch(quicklookSrc(a))]).catch(() => {});
       }
     })();
     return () => {
       live = false;
     };
-  }, [idx, sorted]);
+  }, [idx, sorted, replaying]);
 
   if (!sorted.length) return null;
   return (

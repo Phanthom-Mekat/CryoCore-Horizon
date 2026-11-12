@@ -5,7 +5,7 @@ import type { Map as MlMap } from "mapbox-gl";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeftRight, Check, FileSearch } from "lucide-react";
 import { compatibility, fmtDate, fmtTime, type Acquisition } from "@/lib/chattogram/acquisitions";
-import { CaseMap, browseUrl } from "../CaseMap";
+import { CaseMap, quicklookSrc } from "../CaseMap";
 import { CaseBar } from "../CaseBar";
 import { useCase, type View } from "../CaseProvider";
 
@@ -26,7 +26,7 @@ function useSyncedMaps() {
 }
 
 export function CompareView() {
-  const { load, stack, before, after, view, set, href } = useCase();
+  const { load, stack, before, after, view, set, href, source } = useCase();
   const [pos, setPos] = useState(50);
   const frame = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -35,8 +35,8 @@ export function CompareView() {
 
   // preload both quicklooks so the reveal never waits mid-drag
   useEffect(() => {
-    for (const a of [before, after]) if (a) fetch(browseUrl(a)).catch(() => {});
-  }, [before, after]);
+    for (const a of [before, after]) if (a && (a.frozen || source.mode === "live")) fetch(quicklookSrc(a)).catch(() => {});
+  }, [before, after, source.mode]);
 
   if (load.status !== "ready" || !stack || !before || !after) return null;
   if (stack.items.length < 2)

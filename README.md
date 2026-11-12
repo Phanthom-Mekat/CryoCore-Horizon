@@ -8,11 +8,12 @@ See its README for setup, endpoints, and current limitations. The frontend below
 still demonstrates the original Jakobshavn sample dataset; connecting it to the
 Chattogram backend is a subsequent step.
 
-## Chattogram observation explorer
+## Chattogram case
 
-The first integrated feature is at **[/explore](http://localhost:3000/explore)**:
-NASA GCOV catalog footprints, an attributed division boundary, date filtering,
-scene evidence, and an interactive Mapbox GL map. All geographic maps use Mapbox
+The case study is at **[/chattogram](http://localhost:3000/chattogram)**: Overview, Explore map,
+Compare dates, Evidence & brief, Scene catalogue (formerly `/explore`, which redirects) and About;
+see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md). It shows NASA GCOV catalog footprints, an attributed
+division boundary, real NISAR browse quicklooks, date filtering, scene evidence, and interactive Mapbox GL maps. All geographic maps use Mapbox
 Standard for context; NASA imagery and scientific layers retain their attribution.
 It discovers observations; it does not yet compute environmental changes.
 
@@ -21,6 +22,12 @@ The frontend proxies its two explorer requests to `http://127.0.0.1:8000` by
 default; set server-side `BACKEND_URL` for another backend location. No client
 secret or Earthdata login is needed for this metadata feature. A fresh database
 starts empty: use **Discover observations**, then **Load next page** if offered.
+
+**Frozen case (no backend needed).** `public/data/chattogram/case/` holds a versioned snapshot of the case: the
+division view, every intersecting scene, and the processed quicklooks for the stacks over Chattogram city. The pages
+use it automatically when the backend is unreachable, open it on purpose with `?source=frozen`, and say so on every
+page. For a deployment without the backend, set `NEXT_PUBLIC_CASE_SOURCE=frozen`. Refresh the snapshot with the
+backend running: `pnpm freeze-case`.
 
 Use pnpm for Node dependencies (`pnpm install`, `pnpm build`). See
 [the explorer implementation notes](docs/EXPLORER.md) for architecture, data
@@ -84,6 +91,7 @@ node --experimental-strip-types scripts/check-sun.mts          # sun position be
 
 - `node scripts/make-sample-data.mjs <basemap-hls.png>`: the sample dataset
 - `node scripts/make-textures.mjs <folder>`: Earth textures for the 3D view (sources listed in the script)
+- `pnpm freeze-case`: the frozen Chattogram case (needs the backend running and network access to ASF)
 
 ## Credits
 

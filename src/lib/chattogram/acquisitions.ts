@@ -28,6 +28,16 @@ export type Acquisition = {
   browse: { png: string; kml: string } | null;
   qaReport: string | null;
   dataUrl: string | null;
+  /** Present when the processed quicklook ships in the frozen case (src/lib/chattogram/frozen.ts). */
+  frozen?: FrozenAsset;
+};
+
+export type FrozenAsset = {
+  src: string; // same-origin URL of the processed quicklook
+  corners: [number, number][]; // top-left, top-right, bottom-right, bottom-left
+  cornersFrom: "kml" | "footprint";
+  sha256: string;
+  bytes: number;
 };
 
 type Attr = { Name: string; Values: string[] };
