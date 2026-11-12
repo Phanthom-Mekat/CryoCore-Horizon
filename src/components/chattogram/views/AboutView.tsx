@@ -39,8 +39,8 @@ export function AboutView() {
         )}
       </ul>
 
-      <h2 lang="en">Data preparation</h2>
-      <div className="c-ev-card" lang="en">
+      <h2>{ab.prep}</h2>
+      <div className="c-ev-card">
         <PrepStatus />
       </div>
 

@@ -8,11 +8,13 @@ import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "
 import { FOCUS, loadFrozen, type FrozenCurated, type FrozenPilot } from "@/lib/chattogram/frozen";
 import { CASE_ID, isBusy, type ProcessedCase } from "@/lib/chattogram/case-api";
 
-const POLL_MS = 3000;
+/** How often a case the backend is still working on is checked again. */
+export const POLL_MS = 3000;
 const FROZEN_PROCESSED: Load<never> = { status: "unavailable", reason: "This frozen case was captured before the processed case was published" };
 import { publishCaseSource } from "@/lib/chattogram/sourceStore";
 import { pilotOf, type ProcessedCase as PilotCase } from "@/lib/chattogram/processed";
 import { loadRain, type RainSeries } from "@/lib/chattogram/rain";
+import { useT } from "@/lib/i18n/useT";
 
 export { FOCUS };
 export const DEFAULT_VIEW = { lon: 91.85, lat: 22.4, zoom: 8.2 };
@@ -63,6 +65,7 @@ const CaseContext = createContext<Ctx | null>(null);
 
 export function CaseProvider({ children }: { children: ReactNode }) {
   const params = useSearchParams();
+  const t = useT();
   const [load, setLoad] = useState<Load<Data>>({ status: "loading" });
   const [explorer, setExplorer] = useState<ExplorerData | null>(null);
   const [source, setSource] = useState<CaseSource>({ mode: "live", frozenAt: null, fallback: false });
@@ -234,8 +237,8 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     <CaseContext.Provider value={value}>
       {pd?.synthetic_fixture && (
         <div className="c-synthetic" role="alert">
-          <strong>SYNTHETIC QA DATA — NOT NISAR</strong>
-          <span>This case was processed from generated test fixtures to check the pipeline. Every layer, number and finding on these pages is made up.</span>
+          <strong>{t.synthetic.title}</strong>
+          <span>{t.synthetic.body}</span>
         </div>
       )}
       {children}

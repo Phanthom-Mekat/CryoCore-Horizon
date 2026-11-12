@@ -7,11 +7,13 @@ import { api } from "@/lib/chattogram/api";
 import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { pilotCovers } from "@/lib/chattogram/processed";
 import { rainBefore } from "@/lib/chattogram/rain";
-import { METHOD_VERSION, PROCESSED_CLAIM, SYNTHETIC_CLAIM, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
-import { CASE_ID, fmtDb, fmtKm2, methodId, type ProcessedCase } from "@/lib/chattogram/case-api";
-import { fmtDate, fmtDateTime, fmtNum, fmtSigned, fmtSize } from "@/lib/i18n/format";
+import { METHOD_VERSION, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
+import { CASE_ID, type ProcessedCase } from "@/lib/chattogram/case-api";
+import { fmtArea, fmtDate, fmtDateTime, fmtNum, fmtSigned, fmtSize } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
+import { BackendText } from "../BackendText";
 import { useCase, usePilot } from "../CaseProvider";
+import { MethodName } from "../MethodName";
 import { FINDING } from "../MapKey";
 import { PrepStatus } from "../PrepStatus";
 
@@ -50,12 +52,22 @@ export function EvidenceView() {
   return (
     <article className="c-evidence">
       <header className="c-ev-head">
-        <p className="c-label">{ev.briefLabel(measured ? methodId(measured.detail) : METHOD_VERSION)}</p>
+        <p className="c-label">
+          {ev.briefLabel(
+            measured ? (
+              <MethodName key="method" method={measured.detail.method} />
+            ) : (
+              <span key="method" lang="en" translate="no">
+                {METHOD_VERSION}
+              </span>
+            ),
+          )}
+        </p>
         <h1>
           {t.place.region}: {t.vs(fmtDate(before.start), fmtDate(after.start))}
         </h1>
         <p className="c-ev-claim">
-          <strong>{ev.whatShows}</strong> {measured ? (measured.detail.synthetic_fixture ? SYNTHETIC_CLAIM : PROCESSED_CLAIM) : pilotMeasured ? ev.claimPilot : ev.claim}
+          <strong>{ev.whatShows}</strong> {measured ? (measured.detail.synthetic_fixture ? ev.claimSynthetic : ev.claimProcessed) : pilotMeasured ? ev.claimPilot : ev.claim}
         </p>
         <div className="c-links c-noprint">
           <button type="button" className="c-btn is-primary" onClick={() => window.print()}>
@@ -98,16 +110,20 @@ export function EvidenceView() {
             <div>
               <dt>{ev.measured}</dt>
               {measured?.detail.metrics ? (
-                <dd lang="en">
-                  Signed change in calibrated backscatter (γ⁰, dB) over {fmtKm2(measured.detail.metrics.valid_common_km2)} valid in both dates, of the{" "}
-                  {fmtKm2(measured.detail.metrics.analysis_km2)} analysis rectangle: {fmtKm2(measured.detail.metrics.increase_km2)} brighter and{" "}
-                  {fmtKm2(measured.detail.metrics.decrease_km2)} darker by at least {measured.detail.metrics.threshold_db} dB.
+                <dd>
+                  {ev.measuredCase(
+                    fmtArea(measured.detail.metrics.valid_common_km2),
+                    fmtArea(measured.detail.metrics.analysis_km2),
+                    fmtArea(measured.detail.metrics.increase_km2),
+                    fmtArea(measured.detail.metrics.decrease_km2),
+                    fmtNum(measured.detail.metrics.threshold_db),
+                  )}
                 </dd>
               ) : pilotMeasured ? (
                 <dd>{ev.measuredPilot(fmtSigned(pilot.statistics.HHHH.median_change_db), fmtSigned(pilot.statistics.HVHV.median_change_db), fmtNum(pilot.statistics.HHHH.common_area_km2, 2))}</dd>
               ) : (
                 <dd className="is-missing">
-                  {pc ? "Not for this pair: the processed case uses another pair (see below). " : ""}
+                  {pc ? `${ev.measuredNotPair} ` : ""}
                   {pilotDates ? ev.measuredOther(...pilotDates) : ev.measuredBody}
                 </dd>
               )}
@@ -115,7 +131,7 @@ export function EvidenceView() {
             <div>
               <dt>{ev.interpreted}</dt>
               <dd className="is-missing">
-                {measured ? "Each area is observed radar change, not water change, flooding or damage. " : ""}
+                {measured ? `${ev.interpretedCase} ` : ""}
                 {ev.interpretedBody}
               </dd>
             </div>
@@ -183,7 +199,18 @@ export function EvidenceView() {
               </Link>
             </>
           ) : (
-            <p className="is-missing">{findings.status === "unavailable" ? ev.findingsMissing : findings.status === "failed" ? findings.reason : ev.findingsNone}</p>
+            <p className="is-missing">
+              {findings.status === "unavailable" ? (
+                ev.findingsMissing
+              ) : findings.status === "failed" ? (
+                // the technical detail is for whoever runs the servers, so it stays as the service reported it
+                <span lang="en" translate="no">
+                  {findings.reason}
+                </span>
+              ) : (
+                ev.findingsNone
+              )}
+            </p>
           )}
         </div>
         {!pc && (
@@ -264,33 +291,40 @@ function Source({ role, a }: { role: string; a: Acquisition }) {
 /** The processed case as the backend published it: metrics, findings, method, caveats and sources. */
 function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null }) {
   const { source, frozenCurated } = useCase();
+  const t = useT();
+  const ev = t.evidence;
   const d = pc.detail;
   const m = d.metrics;
   const span = `${fmtDate(d.before.date)} → ${fmtDate(d.after.date)}`;
+  const km2 = (v: number) => `${fmtArea(v)} km²`;
+  const db = (v: number, signed = false) => `${signed ? fmtSigned(v, 1) : fmtNum(v, 1)} dB`;
+  const provenance = d.analysis_area.properties?.provenance;
   return (
     <section className="c-ev-sources">
-      <h2>Processed case: {d.title}</h2>
+      <h2>
+        {ev.caseLabel} <BackendText text={d.title} translated={t.overview.caseTitles[d.id]} />
+      </h2>
       <p className="c-hint">
-        {d.place} · {span} · published {fmtDate(d.updated_at)} · {methodId(d)}
+        <BackendText text={d.place} translated={t.prep.places[d.place]} /> · {span} · {ev.casePublished(fmtDate(d.updated_at))} · <MethodName method={d.method} />
         {toCase && (
           <>
             {" "}
-            · These numbers are for that pair, not the one above. <Link href={toCase}>Open the brief for the case pair</Link>
+            · {ev.caseOtherPair} <Link href={toCase}>{ev.caseOpenPair}</Link>
           </>
         )}
       </p>
       <div className="c-ev-grid">
         <div className="c-ev-card">
-          <h3>Areas, {span}</h3>
+          <h3>{ev.caseAreas(span)}</h3>
           {m ? (
             <dl className="c-ev-src">
               {(
                 [
-                  ["Analysis rectangle", fmtKm2(m.analysis_km2)],
-                  ["Valid in both dates", fmtKm2(m.valid_common_km2)],
-                  ["Excluded (no data or masked)", fmtKm2(m.excluded_km2)],
-                  [`Brighter by ≥ ${m.threshold_db} dB`, fmtKm2(m.increase_km2)],
-                  [`Darker by ≥ ${m.threshold_db} dB`, fmtKm2(m.decrease_km2)],
+                  [ev.analysisRect, km2(m.analysis_km2)],
+                  [ev.validBoth, km2(m.valid_common_km2)],
+                  [ev.excluded, km2(m.excluded_km2)],
+                  [ev.brighterBy(fmtNum(m.threshold_db)), km2(m.increase_km2)],
+                  [ev.darkerBy(fmtNum(m.threshold_db)), km2(m.decrease_km2)],
                 ] as const
               ).map(([k, v]) => (
                 <div key={k}>
@@ -300,13 +334,19 @@ function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null })
               ))}
             </dl>
           ) : (
-            <p className="is-missing">The backend published no metrics for this case.</p>
+            <p className="is-missing">{ev.noMetrics}</p>
           )}
-          <p className="c-hint">{d.analysis_area.properties?.provenance}</p>
+          {provenance && (
+            <p className="c-hint">
+              <BackendText text={provenance} translated={t.overview.areaProvenance[provenance]} />
+            </p>
+          )}
         </div>
         <div className="c-ev-card">
-          <h3>Method parameters</h3>
-          <dl className="c-ev-src">
+          <h3>{ev.methodParams}</h3>
+          <p className="c-hint">{ev.methodParamsNote}</p>
+          {/* parameter names and values are the method's own identifiers */}
+          <dl className="c-ev-src" lang="en" translate="no">
             {Object.entries(d.method?.params ?? {}).map(([k, v]) => (
               <div key={k}>
                 <dt>{k}</dt>
@@ -316,49 +356,55 @@ function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null })
           </dl>
         </div>
         <div className="c-ev-card">
-          <h3>Caveats</h3>
+          <h3>{ev.caveats}</h3>
           <ul>
             {d.caveats.map((c) => (
-              <li key={c}>{c}</li>
+              <li key={c}>
+                <BackendText text={c} translated={ev.caveatTexts[c]} />
+              </li>
             ))}
           </ul>
         </div>
       </div>
 
       <div className="c-ev-card">
-        <h3>Areas of observed radar change ({pc.findings.features.length})</h3>
+        <h3>{ev.caseFindings(fmtNum(pc.findings.features.length))}</h3>
         {pc.findings.features.length ? (
           <div className="d-table-wrap">
             <table className="d-table">
               <thead>
                 <tr>
-                  <th>Area</th>
-                  <th>Kind</th>
-                  <th>Size, km²</th>
-                  <th>Mean change, dB</th>
-                  <th>Median γ⁰ before → after, dB</th>
-                  <th>Valid</th>
-                  <th>Quality</th>
+                  <th>{ev.colArea}</th>
+                  <th>{ev.colKind}</th>
+                  <th>{ev.colSize}</th>
+                  <th>{ev.colMean}</th>
+                  <th>{ev.colMedian}</th>
+                  <th>{ev.colValid}</th>
+                  <th>{ev.colQuality}</th>
                 </tr>
               </thead>
               <tbody>
                 {pc.findings.features.map(({ properties: p }) => (
                   <tr key={p.id}>
-                    <td className="c-mono">{p.id}</td>
+                    <td className="c-mono" lang="en" translate="no">
+                      {p.id}
+                    </td>
                     <td>
-                      <span aria-hidden="true" style={{ color: FINDING[p.kind].color }}>
-                        {FINDING[p.kind].icon}
+                      <span aria-hidden="true" style={{ color: FINDING[p.kind]?.color }}>
+                        {FINDING[p.kind]?.icon}
                       </span>{" "}
-                      {FINDING[p.kind].label}
+                      <BackendText text={p.kind} translated={t.finding.kind[p.kind]} />
                     </td>
-                    <td>{p.area_km2.toFixed(2)}</td>
-                    <td>{fmtDb(p.mean_delta_db, true)}</td>
+                    <td>{fmtArea(p.area_km2)}</td>
+                    <td>{db(p.mean_delta_db, true)}</td>
                     <td>
-                      {fmtDb(p.median_before_db)} → {fmtDb(p.median_after_db)}
+                      {db(p.median_before_db)} → {db(p.median_after_db)}
                     </td>
-                    <td>{Math.round(p.valid_fraction * 100)}%</td>
+                    <td>{fmtNum(Math.round(p.valid_fraction * 100))}%</td>
                     <td>
-                      {p.quality}: {p.quality_reason}
+                      <BackendText text={p.quality} translated={t.finding.quality[p.quality]} />
+                      {": "}
+                      <BackendText text={p.quality_reason} />
                     </td>
                   </tr>
                 ))}
@@ -366,17 +412,19 @@ function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null })
             </table>
           </div>
         ) : (
-          <p>No area passed the method’s change threshold.</p>
+          <p>{ev.noCaseFindings}</p>
         )}
       </div>
 
       <div className="c-ev-card">
-        <h3>Processed from</h3>
+        <h3>{ev.processedFrom}</h3>
         <ul>
           {d.sources.map((s) => (
             <li key={s.granule}>
-              <span className="c-mono">{s.granule}</span> · {s.collection}
-              {s.version ? ` v${s.version}` : ""}
+              <span lang="en" translate="no">
+                <span className="c-mono">{s.granule}</span> · {s.collection}
+                {s.version ? ` v${s.version}` : ""}
+              </span>
               {s.md5 ? ` · MD5 ${s.md5}` : ""}
               {s.size_bytes ? ` · ${fmtSize(s.size_bytes)}` : ""}
               {s.qa_url && (
@@ -384,7 +432,7 @@ function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null })
                   {" "}
                   ·{" "}
                   <a href={s.qa_url} target="_blank" rel="noreferrer">
-                    QA report
+                    {t.finding.qaReport}
                   </a>
                 </>
               )}
@@ -392,7 +440,7 @@ function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null })
           ))}
         </ul>
         <div className="c-links c-noprint">
-          <span className="c-hint">The case as the backend stores it:</span>
+          <span className="c-hint">{ev.stored}</span>
           {(["json", "csv", "geojson"] as const).map((f) => (
             <a key={f} className="c-btn" href={frozenCurated && source.mode === "frozen" ? frozenCurated.exports[f] : api.exportUrl(CASE_ID, f)} download>
               <Download size={15} aria-hidden="true" />

@@ -103,7 +103,6 @@ export function assetUrl(caseId: string, layer: CaseLayer, updatedAt: string) {
   return `/api/earth/curated-cases/${encodeURIComponent(caseId)}/assets/${encodeURIComponent(name)}?v=${encodeURIComponent(v)}`;
 }
 
-export const fmtKm2 = (v: number) => `${v < 10 ? v.toFixed(2) : v.toFixed(1)} km²`;
 export const fmtDb = (v: number, signed = false) => `${signed && v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} dB`;
 /** "name/version" of the case's method, or a plain statement that none was recorded. */
 export const methodId = (d: Pick<CaseDetail, "method">) => (d.method ? `${d.method.name}/${d.method.version}` : "method not recorded");

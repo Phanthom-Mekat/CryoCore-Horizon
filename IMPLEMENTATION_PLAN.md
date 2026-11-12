@@ -83,7 +83,7 @@ Updated 13 November 2026 after the PR #2 merge (`f8c6197`). "Partial" includes i
 | F12 | Local observation brief | Partial | JSON, CSV, GeoJSON, print; brief JSON carries `processed_case` and `calibrated_pilot`; curated exports from the backend, or from the snapshot while replaying; measured-pilot report at `/chattogram/processed/{id}/brief` (distribution chart, coverage, provenance, full-precision JSON/CSV, print styling) | The pilot window in GeoJSON; verify the pilot report's PDF pagination and 390 px layout; the pilot report needs live data |
 | F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
-| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages; a translation guard in `pnpm test` that fails when a translated component shows hard-coded English (`tests/i18n-guard.test.mjs`) | Translate the PR #2 additions (Evidence "Processed" section, `PrepStatus`, synthetic-data banner; the Overview section and `FindingPanel` are done); a native speaker's review; the Scene catalogue and landing page |
+| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages; a translation guard in `pnpm test` that fails when a translated component shows hard-coded English (`tests/i18n-guard.test.mjs`) | Translate the rest of the PR #2 additions (the calibrated page's share, area selection and report; processed-layer text in Explore, Compare, the map key and timeline; the Overview section, `FindingPanel`, Evidence's "Processed" section, `PrepStatus`, About's "Data preparation" and the synthetic-data banner are done); a native speaker's review; the Scene catalogue and landing page |
 | F16 | Terrain storytelling | Not started | – | P2 |
 | F17 | Evidence-based narration | Not started | – | P2 |
 
@@ -167,7 +167,7 @@ Merged from `feat/chattogram-home` and documented in [docs/curated-case.md](docs
 - [x] Tests: 82 backend tests pass after the merge, including interrupted downloads, duplicate jobs, missing layers, masks, grid mismatch, zero coverage, repeatability and a synthetic end-to-end bundle (synthetic data never served unless `CRYO_ALLOW_SYNTHETIC_QA=1`).
 - [x] Run `prepare-case karnaphuli-estuary` on real NISAR files (13 Nov: job 2 succeeded; 175.71 km² valid, 4.91 km² increase, 0.20 km² decrease, 92 regions, 40 listed). Needed the CloudFront host fix above.
 - [ ] Add a cancel action (`cancelled` is allowed by the schema but nothing sets it).
-- [ ] Translate the new UI into Bangla (F15). Done so far: the Overview's processed section, `FindingPanel`.
+- [ ] Translate the new UI into Bangla (F15). Done so far: the Overview's processed section, `FindingPanel`, Evidence's "Processed" section and claim, `PrepStatus` (every state), About's "Data preparation" card and the synthetic-data banner.
 
 ### Cleanup — 13 November 2026
 
@@ -235,7 +235,7 @@ and whether the pilot stays as a secondary view.
 ### Next up
 
 - **Backend:** review the curated findings against tide, ships and port activity; static terrain quality and mixed-mode review; dated reference evidence (tide heights at both pass times); a job cancel action.
-- **Frontend:** translate the PR #2 views (Evidence's curated section, `PrepStatus`, banner) into Bangla; finish inspector mobile/export and pilot-report PDF/mobile checks; translate the share/area/report UI on the calibrated page into Bangla; connect area selections to share links and the report; swap the modelled rainfall for GPM IMERG; rework the landing page around the Chattogram case (needs a team decision).
+- **Frontend:** translate the remaining PR #2 text in Explore, Compare, the map key and timeline into Bangla; finish inspector mobile/export and pilot-report PDF/mobile checks; translate the share/area/report UI on the calibrated page into Bangla; connect area selections to share links and the report; swap the modelled rainfall for GPM IMERG; rework the landing page around the Chattogram case (needs a team decision).
 - **Team:** choose the central processed case (above); make the GitHub repository public before submission; fill in the team names on the landing page; choose a repository licence.
 - **Setup after pulling `main`:** `pip install -e .` in `backend/` (new `scipy` and `pillow` dependencies), then restart the backend. The local database is already at schema v4 (backup: `backend/data/cryocore.sqlite3.bak-before-v4`), so code older than PR #2 refuses to start on it.
 

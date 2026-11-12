@@ -1,9 +1,12 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, CircleDashed, Clock, KeyRound, LoaderCircle, RotateCw, type LucideIcon } from "lucide-react";
-import { fmtDate } from "@/lib/i18n/format";
-import { CASE_ID, isBusy, methodId, type CaseDetail } from "@/lib/chattogram/case-api";
-import { useCase } from "./CaseProvider";
+import { fmtDate, fmtNum } from "@/lib/i18n/format";
+import { useT } from "@/lib/i18n/useT";
+import { CASE_ID, isBusy, type CaseDetail } from "@/lib/chattogram/case-api";
+import { BackendText } from "./BackendText";
+import { MethodName } from "./MethodName";
+import { POLL_MS, useCase } from "./CaseProvider";
 
 const ICON: Record<CaseDetail["status"], LucideIcon> = {
   ready: CheckCircle2,
@@ -14,57 +17,82 @@ const ICON: Record<CaseDetail["status"], LucideIcon> = {
   needs_credentials: KeyRound,
 };
 
-const STATUS: Record<CaseDetail["status"], string> = {
-  ready: "Processed",
-  not_processed: "Not processed yet",
-  queued: "Waiting to be processed",
-  running: "Processing",
-  failed: "Processing failed",
-  needs_credentials: "Needs a NASA Earthdata login",
-};
+// Commands and paths are typed exactly as shown, so they stay English in both languages.
+const COMMAND = `python -m app.cli prepare-case ${CASE_ID}`;
+const backendDir = (key: string) => (
+  <code key={key} lang="en" translate="no">
+    backend/
+  </code>
+);
+const command = (key: string) => (
+  <code key={key} lang="en" translate="no">
+    {COMMAND}
+  </code>
+);
 
 /** The command that prepares the case; it runs on the server, never from this page. */
 function Steps({ credentials }: { credentials: boolean }) {
+  const p = useT().prep;
   return (
     <ol className="c-prep-steps">
       {credentials && (
         <li>
-          Create a free NASA Earthdata Login and a user token at <span className="c-mono">urs.earthdata.nasa.gov</span>, then add{" "}
-          <code>EARTHDATA_TOKEN=&lt;your token&gt;</code> to <code>backend/.env</code>.
+          {p.stepToken(
+            <span key="site" className="c-mono" lang="en" translate="no">
+              urs.earthdata.nasa.gov
+            </span>,
+            <code key="line" lang="en" translate="no">
+              EARTHDATA_TOKEN=&lt;your token&gt;
+            </code>,
+            <code key="file" lang="en" translate="no">
+              backend/.env
+            </code>,
+          )}
         </li>
       )}
-      <li>
-        From <code>backend/</code>, run <code>python -m app.cli prepare-case {CASE_ID}</code> (with the backend’s virtual environment).
-      </li>
-      <li>This page checks again on its own while the job runs; otherwise reload it when the command finishes.</li>
+      <li>{p.stepRun(backendDir("dir"), command("cmd"))}</li>
+      <li>{p.stepWait}</li>
     </ol>
   );
 }
 
 /** Where the processed case stands: honest preparation status instead of numbers. No button here starts a job. */
 export function PrepStatus({ compact = false }: { compact?: boolean }) {
-  const { processed, reload } = useCase();
+  const { processed, reload, source } = useCase();
+  const t = useT();
+  const p = t.prep;
 
   if (processed.status === "loading")
     return (
       <div className="c-prep is-loading" role="status">
-        <p className="c-label">Processed case</p>
+        <p className="c-label">{p.label}</p>
         <p className="c-skel-line" aria-hidden="true" />
-        <p className="c-hint">Checking the processed case…</p>
+        <p className="c-hint">{p.checking}</p>
       </div>
     );
   if (processed.status !== "ready")
     return (
       <div className="c-prep" role="status">
-        <p className="c-label">Processed case</p>
-        <h2>{processed.status === "unavailable" ? "The backend doesn’t serve the processed case yet" : "The backend returned an error for the processed case"}</h2>
+        <p className="c-label">{p.label}</p>
+        <h2>{processed.status === "unavailable" ? p.unavailable : p.failed}</h2>
         <p className="c-hint">
-          {processed.reason.replace(/\.?$/, ".")} The scene catalogue, quicklooks and comparisons above still work; calibrated layers and findings appear once the backend
-          serves <code>/api/v1/curated-cases/{CASE_ID}</code>.
+          {source.mode === "frozen" ? (
+            p.notFrozen
+          ) : (
+            // the technical detail is for whoever runs the servers, so it stays as the service reported it
+            <span lang="en" translate="no">
+              {processed.reason.replace(/\.?$/, ".")}
+            </span>
+          )}{" "}
+          {p.stillWorks(
+            <code key="path" lang="en" translate="no">
+              /api/v1/curated-cases/{CASE_ID}
+            </code>,
+          )}
         </p>
         <button type="button" className="c-btn" onClick={reload}>
           <RotateCw size={15} aria-hidden="true" />
-          Check again
+          {p.checkAgain}
         </button>
       </div>
     );
@@ -75,65 +103,86 @@ export function PrepStatus({ compact = false }: { compact?: boolean }) {
   const Icon = ICON[d.status];
   return (
     <div className={`c-prep is-${d.status}`} role="status" aria-live="polite">
-      <p className="c-label">Processed case · {d.title}</p>
+      <p className="c-label">
+        {p.label} · <BackendText text={d.title} translated={t.overview.caseTitles[d.id]} />
+      </p>
       <h2 className="c-prep-title">
         <Icon size={18} aria-hidden="true" />
-        {STATUS[d.status]}
+        <BackendText text={d.status} translated={p.status[d.status]} />
       </h2>
       {!compact && (
         <p className="c-hint">
-          {d.place}. Pair: {fmtDate(d.before.date)} → {fmtDate(d.after.date)} (<span className="c-mono">{d.before.granule}</span> and{" "}
-          <span className="c-mono">{d.after.granule}</span>).
+          <BackendText text={d.place} translated={p.places[d.place]} />
+          {t.stop}{" "}
+          {p.pair(
+            fmtDate(d.before.date),
+            fmtDate(d.after.date),
+            <span key="before" className="c-mono" lang="en" translate="no">
+              {d.before.granule}
+            </span>,
+            <span key="after" className="c-mono" lang="en" translate="no">
+              {d.after.granule}
+            </span>,
+          )}
+          {t.stop}
         </p>
       )}
       {job && (busy || d.status === "failed") && (
         <dl className="c-facts">
           <div>
-            <dt>Job</dt>
+            <dt>{p.job}</dt>
             <dd>
-              {job.state}
-              {job.stage ? ` · ${job.stage}` : ""}
-              {job.attempts ? ` · attempt ${job.attempts}` : ""}
+              <BackendText text={job.state} translated={p.jobStates[job.state]} />
+              {job.stage && (
+                <>
+                  {" · "}
+                  <BackendText text={job.stage} translated={p.jobStages[job.stage]} />
+                </>
+              )}
+              {job.attempts ? ` · ${p.attempt(fmtNum(job.attempts))}` : ""}
             </dd>
           </div>
           {busy && (
             <div>
-              <dt>Progress</dt>
+              <dt>{p.progress}</dt>
               <dd>
-                <progress max={1} value={job.progress} aria-label="Processing progress" /> {Math.round(job.progress * 100)}%
+                <progress max={1} value={job.progress} aria-label={p.progressAria} /> {fmtNum(Math.round(job.progress * 100))}%
               </dd>
             </div>
           )}
           {job.error && (
             <div>
-              <dt>Error</dt>
-              <dd className="is-warn">{job.error}</dd>
+              <dt>{p.error}</dt>
+              <dd className="is-warn" lang="en" translate="no">
+                {job.error}
+              </dd>
             </div>
           )}
         </dl>
       )}
       {d.status === "needs_credentials" && (
         <>
-          <p>The NISAR GCOV files for this pair are behind NASA Earthdata Login, and the backend has no token yet. To prepare the case:</p>
+          <p>{p.needsCredentials}</p>
           <Steps credentials />
         </>
       )}
       {d.status === "not_processed" && (
         <>
-          <p>The pair is chosen but its calibrated layers haven’t been computed. To prepare the case:</p>
+          <p>{p.notProcessed}</p>
           <Steps credentials={false} />
         </>
       )}
       {d.status === "failed" && (
         <p>
-          {job?.retryable === false
-            ? "This failure needs a fix before retrying; nothing partial is served."
-            : "Nothing partial is served. It is safe to retry: run the same command again."}{" "}
-          <code>python -m app.cli prepare-case {CASE_ID}</code> (from <code>backend/</code>)
+          {job?.retryable === false ? p.failedFix : p.failedRetry} {p.runFrom(command("cmd"), backendDir("dir"))}
         </p>
       )}
-      {busy && <p className="c-hint">Checked every 3 seconds. Nothing is shown as a result until the whole case is published.</p>}
-      {d.status === "ready" && <p className="c-hint">Published {fmtDate(d.updated_at)} · method {methodId(d)}</p>}
+      {busy && <p className="c-hint">{p.polling(fmtNum(POLL_MS / 1000))}</p>}
+      {d.status === "ready" && (
+        <p className="c-hint">
+          {p.published(fmtDate(d.updated_at))} · {p.method} <MethodName method={d.method} />
+        </p>
+      )}
     </div>
   );
 }

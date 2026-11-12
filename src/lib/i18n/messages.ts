@@ -2,9 +2,12 @@
 // build fails if any Bangla entry is missing; adding a language means adding one more object. Mission, product and unit
 // names (NISAR, GCOV, NASA, ASF, HH/HV, dB, γ⁰, SHA-256) stay as published, in both languages.
 // Numbers and dates arrive already formatted for the language (src/lib/i18n/format.ts), so these only place them.
+import type { ReactNode } from "react";
 import type { Lang } from "./locale";
 
 type S = string;
+/** A slot for markup (a command, a path, an identifier) in a message that returns its pieces in reading order. */
+type N = ReactNode;
 
 const en = {
   language: "Language",
@@ -245,7 +248,7 @@ const en = {
       "Both sides are NISAR GCOV browse quicklooks (colour composite of polarizations) from ASF, on the same map extent and scale. Dark is smooth surface such as open water; bright is rough or vegetated ground. These pictures are for looking, not measuring: a measured change map needs the calibrated γ⁰ layers.",
   },
   evidence: {
-    briefLabel: (v: S) => `Observation brief · ${v}`,
+    briefLabel: (method: N): N[] => ["Observation brief · ", method],
     whatShows: "What this shows.",
     claim:
       "Visual comparison of NISAR GCOV browse quicklooks only. No backscatter change has been measured and no water has been classified; any difference seen is observed radar change, not a confirmed flood or recession.",
@@ -304,6 +307,42 @@ const en = {
       `The division outline is the ${year} reference boundary from ${source}, not verified as today’s legal boundary. Pilot areas are projected grid area (UTM 46N), not surveyed area.`,
     limit4: "Provisional products are early releases; NASA advises not mixing maturity levels in one analysis. Each date’s maturity is listed above.",
     foot: "NISAR data: NASA and ISRO, distributed by the Alaska Satellite Facility DAAC. Discovered through NASA Earthdata CMR. Brief generated from the view at",
+    // The processed case as the brief shows it. The claims match PROCESSED_CLAIM / SYNTHETIC_CLAIM in brief.ts, which the
+    // downloaded files keep in English.
+    claimProcessed:
+      "Measured: signed change in calibrated NISAR GCOV backscatter (gamma-0, dB) between two acquisitions of the same orbit track and frame, over pixels valid in both. Not interpreted: each area is observed radar change, not a confirmed water change, flood or damage.",
+    claimSynthetic: "SYNTHETIC QA DATA - NOT NISAR. Processed from generated test fixtures to check the pipeline; no value is an observation of any place or date.",
+    measuredCase: (valid: S, analysis: S, up: S, down: S, db: S) =>
+      `Signed change in calibrated backscatter (γ⁰, dB) over ${valid} km² valid in both dates, of the ${analysis} km² analysis rectangle: ${up} km² brighter and ${down} km² darker by at least ${db} dB.`,
+    measuredNotPair: "Not for this pair: the processed case uses another pair (see below).",
+    interpretedCase: "Each area is observed radar change, not water change, flooding or damage.",
+    caseLabel: "Processed case:",
+    casePublished: (date: S) => `published ${date}`,
+    caseOtherPair: "These numbers are for that pair, not the one above.",
+    caseOpenPair: "Open the brief for the case pair",
+    caseAreas: (span: S) => `Areas, ${span}`,
+    analysisRect: "Analysis rectangle",
+    validBoth: "Valid in both dates",
+    excluded: "Excluded (no data or masked)",
+    brighterBy: (db: S) => `Brighter by ≥ ${db} dB`,
+    darkerBy: (db: S) => `Darker by ≥ ${db} dB`,
+    noMetrics: "The backend published no metrics for this case.",
+    methodParams: "Method parameters",
+    methodParamsNote: "As the backend records them, in English.",
+    caveats: "Caveats",
+    /** Translations of the backend's caveats, keyed by their English text. English shows them as sent. */
+    caveatTexts: {} as Record<string, S>,
+    caseFindings: (n: S) => `Areas of observed radar change (${n})`,
+    colArea: "Area",
+    colKind: "Kind",
+    colSize: "Size, km²",
+    colMean: "Mean change, dB",
+    colMedian: "Median γ⁰ before → after, dB",
+    colValid: "Valid",
+    colQuality: "Quality",
+    noCaseFindings: "No area passed the method’s change threshold.",
+    processedFrom: "Processed from",
+    stored: "The case as the backend stores it:",
   },
   about: {
     eyebrow: "About this case",
@@ -334,6 +373,7 @@ const en = {
     srcBasemaps: "Basemaps:",
     srcOsm: "OpenStreetMap contributors",
     srcBasemapsNote: "Geographic context, not NISAR observations.",
+    prep: "Data preparation",
   },
   processed: {
     noCase: "No processed case yet",
@@ -450,6 +490,51 @@ const en = {
     changeAria: (lim: S) => `Signed backscatter change, from −${lim} dB (darker) to +${lim} dB (brighter)`,
     darker: "← darker: smoother or wetter",
     brighter: "brighter: rougher →",
+  },
+  /** The processed case's preparation status (PrepStatus). Commands and paths go in the slots, as typed. */
+  prep: {
+    label: "Processed case",
+    status: {
+      ready: "Processed",
+      not_processed: "Not processed yet",
+      queued: "Waiting to be processed",
+      running: "Processing",
+      failed: "Processing failed",
+      needs_credentials: "Needs a NASA Earthdata login",
+    },
+    checking: "Checking the processed case…",
+    unavailable: "The backend doesn’t serve the processed case yet",
+    failed: "The backend returned an error for the processed case",
+    notFrozen: "This frozen case was captured before the processed case was published.",
+    stillWorks: (path: N): N[] => ["The scene catalogue, quicklooks and comparisons above still work; calibrated layers and findings appear once the backend serves ", path, "."],
+    checkAgain: "Check again",
+    /** Translations of the backend's case place, keyed by its English text. */
+    places: {} as Record<string, S>,
+    pair: (a: S, b: S, before: N, after: N): N[] => [`Pair: ${a} → ${b} (`, before, " and ", after, ")"],
+    job: "Job",
+    jobStates: { queued: "queued", running: "running", succeeded: "succeeded", failed: "failed", cancelled: "cancelled" },
+    /** Translations of the worker's stage names; English shows the stage as sent. */
+    jobStages: {} as Record<string, S>,
+    attempt: (n: S) => `attempt ${n}`,
+    progress: "Progress",
+    progressAria: "Processing progress",
+    error: "Error",
+    needsCredentials: "The NISAR GCOV files for this pair are behind NASA Earthdata Login, and the backend has no token yet. To prepare the case:",
+    notProcessed: "The pair is chosen but its calibrated layers haven’t been computed. To prepare the case:",
+    stepToken: (site: N, line: N, file: N): N[] => ["Create a free NASA Earthdata Login and a user token at ", site, ", then add ", line, " to ", file, "."],
+    stepRun: (dir: N, cmd: N): N[] => ["From ", dir, ", run ", cmd, " (with the backend’s virtual environment)."],
+    stepWait: "This page checks again on its own while the job runs; otherwise reload it when the command finishes.",
+    failedFix: "This failure needs a fix before retrying; nothing partial is served.",
+    failedRetry: "Nothing partial is served. It is safe to retry: run the same command again.",
+    runFrom: (cmd: N, dir: N): N[] => [cmd, " (from ", dir, ")"],
+    polling: (s: S) => `Checked every ${s} seconds. Nothing is shown as a result until the whole case is published.`,
+    published: (date: S) => `Published ${date}`,
+    method: "method",
+  },
+  /** The banner over every page when the backend serves a QA case made from generated test fixtures. */
+  synthetic: {
+    title: "SYNTHETIC QA DATA — NOT NISAR",
+    body: "This case was processed from generated test fixtures to check the pipeline. Every layer, number and finding on these pages is made up.",
   },
 };
 
@@ -689,7 +774,7 @@ const bn: Messages = {
       "দুই পাশের ছবিই ASF-এর NISAR GCOV প্রিভিউ (পোলারাইজেশনগুলোর রঙিন সমন্বয়), একই মানচিত্র-পরিসর ও স্কেলে। গাঢ় অংশ মানে মসৃণ পৃষ্ঠ, যেমন খোলা পানি; উজ্জ্বল অংশ মানে অমসৃণ বা গাছপালায় ঢাকা জমি। ছবিগুলো দেখার জন্য, মাপার জন্য নয়: পরিবর্তন মাপতে ক্যালিব্রেটেড γ⁰ লেয়ার দরকার।",
   },
   evidence: {
-    briefLabel: (v) => `পর্যবেক্ষণ প্রতিবেদন · ${v}`,
+    briefLabel: (method) => ["পর্যবেক্ষণ প্রতিবেদন · ", method],
     whatShows: "এটি কী দেখায়।",
     claim:
       "শুধু NISAR GCOV প্রিভিউ ছবির চাক্ষুষ তুলনা। কোনো ব্যাকস্ক্যাটার পরিবর্তন মাপা হয়নি এবং কোনো পানি শ্রেণিবদ্ধ করা হয়নি; চোখে পড়া যেকোনো পার্থক্য হলো পর্যবেক্ষিত রাডার পরিবর্তন, নিশ্চিত বন্যা বা পানি সরে যাওয়া নয়।",
@@ -748,6 +833,57 @@ const bn: Messages = {
       `বিভাগের সীমারেখাটি ${source}-এর ${year} সালের রেফারেন্স সীমারেখা, আজকের আইনি সীমারেখা হিসেবে যাচাই করা নয়। পাইলটের আয়তন প্রক্ষিপ্ত গ্রিডের (UTM 46N) হিসাব, জরিপ করা আয়তন নয়।`,
     limit4: "প্রভিশনাল প্রোডাক্টগুলো প্রাথমিক সংস্করণ; NASA একই বিশ্লেষণে ভিন্ন পরিপক্বতার ডেটা না মেশানোর পরামর্শ দেয়। প্রতিটি তারিখের পরিপক্বতা ওপরে দেওয়া আছে।",
     foot: "NISAR ডেটা: NASA ও ISRO, পরিবেশনায় Alaska Satellite Facility DAAC। NASA Earthdata CMR-এর মাধ্যমে খুঁজে পাওয়া। এই প্রতিবেদন তৈরি হয়েছে এই দৃশ্য থেকে:",
+    claimProcessed:
+      "মাপা হয়েছে: একই কক্ষপথ-ট্র্যাক ও ফ্রেমের দুটি ছবির মধ্যে ক্যালিব্রেটেড NISAR GCOV ব্যাকস্ক্যাটারের (γ⁰, dB) চিহ্নযুক্ত পরিবর্তন, শুধু দুই ছবিতেই বৈধ পিক্সেলে। ব্যাখ্যা করা হয়নি: প্রতিটি এলাকা পর্যবেক্ষিত রাডার পরিবর্তন; নিশ্চিত পানির পরিবর্তন, বন্যা বা ক্ষয়ক্ষতি নয়।",
+    claimSynthetic: "কৃত্রিম QA ডেটা — NISAR নয়। পাইপলাইন যাচাইয়ের জন্য বানানো পরীক্ষামূলক ডেটা থেকে প্রক্রিয়াজাত; কোনো মানই কোনো জায়গা বা তারিখের পর্যবেক্ষণ নয়।",
+    measuredCase: (valid, analysis, up, down, db) =>
+      `${analysis} km² বিশ্লেষণ-আয়তক্ষেত্রের মধ্যে দুই তারিখেই বৈধ ${valid} km² জুড়ে ক্যালিব্রেটেড ব্যাকস্ক্যাটারের (γ⁰, dB) চিহ্নযুক্ত পরিবর্তন: ${up} km² অন্তত ${db} dB বেশি উজ্জ্বল এবং ${down} km² অন্তত ${db} dB বেশি গাঢ়।`,
+    measuredNotPair: "এই তারিখ-জোড়ার জন্য নয়: প্রক্রিয়াজাত কেসটি অন্য একটি জোড়া ব্যবহার করে (নিচে দেখুন)।",
+    interpretedCase: "প্রতিটি এলাকা পর্যবেক্ষিত রাডার পরিবর্তন; পানির পরিবর্তন, বন্যা বা ক্ষয়ক্ষতি নয়।",
+    caseLabel: "প্রক্রিয়াজাত কেস:",
+    casePublished: (date) => `প্রকাশিত ${date}`,
+    caseOtherPair: "এই সংখ্যাগুলো ওই জোড়ার, ওপরের জোড়ার নয়।",
+    caseOpenPair: "কেসের তারিখ-জোড়ার প্রতিবেদন খুলুন",
+    caseAreas: (span) => `ক্ষেত্রফল, ${span}`,
+    analysisRect: "বিশ্লেষণ-আয়তক্ষেত্র",
+    validBoth: "দুই তারিখেই বৈধ",
+    excluded: "বাদ পড়েছে (ডেটা নেই বা মাস্ক করা)",
+    brighterBy: (db) => `অন্তত ${db} dB বেশি উজ্জ্বল`,
+    darkerBy: (db) => `অন্তত ${db} dB বেশি গাঢ়`,
+    noMetrics: "ব্যাকএন্ড এই কেসের কোনো পরিমাপ প্রকাশ করেনি।",
+    methodParams: "পদ্ধতির প্যারামিটার",
+    methodParamsNote: "ব্যাকএন্ড যেভাবে নথিভুক্ত করে, ইংরেজিতে।",
+    caveats: "সতর্কতা",
+    caveatTexts: {
+      "Single before/after pair: this is a difference between two dates, not a trend, and it cannot say when between them a change happened.":
+        "একটিমাত্র আগে/পরে তারিখ-জোড়া: এটি দুই তারিখের পার্থক্য, কোনো প্রবণতা নয়; আর দুই তারিখের মাঝে ঠিক কখন পরিবর্তনটি ঘটেছে, তা এ থেকে বলা যায় না।",
+      "Radar speckle: a 5×5 boxcar mean reduces but does not remove it; small or thin regions near the ±3 dB threshold can be noise, and the filter blurs region edges by up to 2 pixels, which enlarges small regions.":
+        "রাডার স্পেকল (ছবির দানাদার নয়েজ): ৫×৫ বক্সকার গড় এটি কমায়, কিন্তু পুরোপুরি দূর করে না; ±৩ dB সীমার কাছাকাছি ছোট বা সরু এলাকা নয়েজও হতে পারে, আর ফিল্টারটি এলাকার কিনারা ২ পিক্সেল পর্যন্ত ঝাপসা করে, ফলে ছোট এলাকা কিছুটা বড় দেখায়।",
+      "Tide state, river stage and wind on water can differ between the two acquisition times; on estuaries and coasts this alone can change backscatter strongly.":
+        "দুই ছবি তোলার সময়ে জোয়ার-ভাটার অবস্থা, নদীর পানির উচ্চতা আর পানির ওপর বাতাস আলাদা হতে পারে; মোহনা ও উপকূলে শুধু এ কারণেই ব্যাকস্ক্যাটার অনেকখানি বদলে যেতে পারে।",
+      "Wet soil after rain, crop growth or harvest, vegetation, construction and moving ships all change backscatter; this method measures the change, not its cause.":
+        "বৃষ্টির পর ভেজা মাটি, ফসল বেড়ে ওঠা বা কাটা, গাছপালা, নির্মাণকাজ আর চলমান জাহাজ — সবই ব্যাকস্ক্যাটার বদলায়; এই পদ্ধতি পরিবর্তনটি মাপে, তার কারণ নয়।",
+      "Layover and shadow on steep slopes are not separately masked; terrain correction (RTC) reduces but does not remove these geometry effects.":
+        "খাড়া ঢালে লেওভার ও ছায়া (রাডারের জ্যামিতিক বিকৃতি) আলাদাভাবে বাদ দেওয়া হয়নি; ভূখণ্ড সংশোধন (RTC) এই প্রভাব কমায়, কিন্তু পুরোপুরি দূর করে না।",
+      "Single polarization (HH); other polarizations can respond differently.": "শুধু একটি পোলারাইজেশন (HH); অন্য পোলারাইজেশনে সাড়া ভিন্ন হতে পারে।",
+      "No independent reference validation yet: each region is an observed radar change, not a confirmed water, flood or damage finding.":
+        "এখনও কোনো স্বাধীন রেফারেন্স যাচাই হয়নি: প্রতিটি এলাকা পর্যবেক্ষিত রাডার পরিবর্তন; নিশ্চিত পানি, বন্যা বা ক্ষয়ক্ষতির ফলাফল নয়।",
+      "Source data maturity is provisional (NISAR_L2_GCOV_PROVISIONAL_V1): calibration and processing may change in later releases.":
+        "উৎস-ডেটার পরিপক্বতা প্রভিশনাল (NISAR_L2_GCOV_PROVISIONAL_V1): পরের সংস্করণগুলোতে ক্যালিব্রেশন ও প্রক্রিয়াকরণ বদলাতে পারে।",
+      "Only the 40 largest of 92 change regions are listed as findings; area totals include all of them.":
+        "৯২টি পরিবর্তন-এলাকার মধ্যে শুধু সবচেয়ে বড় ৪০টি আলাদা করে তালিকায় আছে; মোট ক্ষেত্রফলে সবগুলোই ধরা হয়েছে।",
+    },
+    caseFindings: (n) => `পর্যবেক্ষিত রাডার পরিবর্তনের এলাকা (${n}টি)`,
+    colArea: "এলাকা",
+    colKind: "ধরন",
+    colSize: "ক্ষেত্রফল, km²",
+    colMean: "গড় পরিবর্তন, dB",
+    colMedian: "মধ্যমা γ⁰ আগে → পরে, dB",
+    colValid: "বৈধ",
+    colQuality: "প্রমাণের মান",
+    noCaseFindings: "কোনো এলাকা পদ্ধতির পরিবর্তন-সীমা পার হয়নি।",
+    processedFrom: "যে ফাইলগুলো থেকে প্রক্রিয়া করা হয়েছে",
+    stored: "ব্যাকএন্ডে কেসটি যেভাবে সংরক্ষিত:",
   },
   about: {
     eyebrow: "এই কেস সম্পর্কে",
@@ -779,6 +915,7 @@ const bn: Messages = {
     srcBasemaps: "ভিত্তি-মানচিত্র:",
     srcOsm: "OpenStreetMap অবদানকারীরা",
     srcBasemapsNote: "ভৌগোলিক প্রেক্ষাপট, NISAR-এর পর্যবেক্ষণ নয়।",
+    prep: "ডেটা প্রস্তুতি",
   },
   processed: {
     noCase: "এখনও কোনো প্রক্রিয়াজাত কেস নেই",
@@ -891,6 +1028,47 @@ const bn: Messages = {
     changeAria: (lim) => `ব্যাকস্ক্যাটারের পরিবর্তন, −${lim} dB (গাঢ়) থেকে +${lim} dB (উজ্জ্বল)`,
     darker: "← গাঢ়: মসৃণ বা ভেজা",
     brighter: "উজ্জ্বল: অমসৃণ →",
+  },
+  prep: {
+    label: "প্রক্রিয়াজাত কেস",
+    status: {
+      ready: "প্রক্রিয়াজাত",
+      not_processed: "এখনও প্রক্রিয়া করা হয়নি",
+      queued: "প্রক্রিয়াকরণের অপেক্ষায়",
+      running: "প্রক্রিয়া চলছে",
+      failed: "প্রক্রিয়াকরণ ব্যর্থ হয়েছে",
+      needs_credentials: "NASA Earthdata লগইন দরকার",
+    },
+    checking: "প্রক্রিয়াজাত কেসের অবস্থা দেখা হচ্ছে…",
+    unavailable: "ব্যাকএন্ড এখনও প্রক্রিয়াজাত কেস দিচ্ছে না",
+    failed: "প্রক্রিয়াজাত কেস আনতে গিয়ে ব্যাকএন্ড একটি ত্রুটি ফেরত দিয়েছে",
+    notFrozen: "এই সংরক্ষিত কেসটি প্রক্রিয়াজাত কেস প্রকাশের আগে তৈরি।",
+    stillWorks: (path) => ["ওপরের দৃশ্যের তালিকা, প্রিভিউ ছবি আর তুলনা এখনও কাজ করে; ব্যাকএন্ড ", path, " দেওয়া শুরু করলে ক্যালিব্রেটেড স্তর ও পরিবর্তন-এলাকা দেখা যাবে।"],
+    checkAgain: "আবার দেখুন",
+    places: { "Chattogram, Chattogram Division, Bangladesh": "চট্টগ্রাম, চট্টগ্রাম বিভাগ, বাংলাদেশ" },
+    pair: (a, b, before, after) => [`তারিখ-জোড়া: ${a} → ${b} (`, before, " ও ", after, ")"],
+    job: "কাজ",
+    jobStates: { queued: "অপেক্ষমাণ", running: "চলছে", succeeded: "সম্পন্ন", failed: "ব্যর্থ", cancelled: "বাতিল" },
+    jobStages: { resolve: "ফাইল খোঁজা", download: "ডাউনলোড", process: "প্রক্রিয়াকরণ", publish: "প্রকাশ", published: "প্রকাশিত" },
+    attempt: (n) => `চেষ্টা ${n}`,
+    progress: "অগ্রগতি",
+    progressAria: "প্রক্রিয়াকরণের অগ্রগতি",
+    error: "ত্রুটি",
+    needsCredentials: "এই তারিখ-জোড়ার NISAR GCOV ফাইলগুলো NASA Earthdata Login-এর পেছনে রাখা, আর ব্যাকএন্ডে এখনও কোনো টোকেন নেই। কেসটি প্রস্তুত করতে:",
+    notProcessed: "তারিখ-জোড়া বাছাই করা হয়েছে, কিন্তু এর ক্যালিব্রেটেড স্তরগুলো এখনও হিসাব করা হয়নি। কেসটি প্রস্তুত করতে:",
+    stepToken: (site, line, file) => [site, "-এ বিনামূল্যে একটি NASA Earthdata Login আর একটি ইউজার টোকেন তৈরি করুন, তারপর ", file, " ফাইলে ", line, " যোগ করুন।"],
+    stepRun: (dir, cmd) => [dir, " ফোল্ডার থেকে ", cmd, " চালান (ব্যাকএন্ডের ভার্চুয়াল এনভায়রনমেন্টে)।"],
+    stepWait: "কাজ চলার সময় এই পাতা নিজে থেকেই বারবার দেখে নেয়; নইলে কমান্ড শেষ হলে পাতাটি রিলোড করুন।",
+    failedFix: "আবার চেষ্টা করার আগে এই ত্রুটি ঠিক করতে হবে; আংশিক কোনো ফলাফল দেখানো হয় না।",
+    failedRetry: "আংশিক কোনো ফলাফল দেখানো হয় না। আবার চেষ্টা করা নিরাপদ: একই কমান্ড আবার চালান।",
+    runFrom: (cmd, dir) => ["(", dir, " ফোল্ডার থেকে) ", cmd],
+    polling: (s) => `প্রতি ${s} সেকেন্ডে দেখা হয়। পুরো কেস প্রকাশ না হওয়া পর্যন্ত কোনো ফলাফল দেখানো হয় না।`,
+    published: (date) => `প্রকাশিত ${date}`,
+    method: "পদ্ধতি",
+  },
+  synthetic: {
+    title: "কৃত্রিম QA ডেটা — NISAR নয়",
+    body: "পাইপলাইন যাচাইয়ের জন্য বানানো পরীক্ষামূলক ডেটা থেকে এই কেস প্রক্রিয়া করা হয়েছে। এই পাতাগুলোর প্রতিটি স্তর, সংখ্যা ও পরিবর্তন-এলাকা বানানো।",
   },
 };
 
