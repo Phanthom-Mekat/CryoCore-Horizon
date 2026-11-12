@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { History, Layers, RotateCw } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n/useT";
+import { switchCaseSource } from "@/lib/chattogram/sourceStore";
 import { useCase, type CaseSource } from "./CaseProvider";
 
 /** Loading and failure states for every case page. The catalogue still opens with no scenes stored: that is where they are fetched. */
@@ -70,11 +71,9 @@ function FrozenNotice({ source }: { source: CaseSource }) {
         timeZone: "UTC",
       }) + " UTC"
     : "–";
-  const live = () => {
-    const q = new URLSearchParams(window.location.search);
-    q.delete("source");
-    window.location.search = q.toString(); // a full reload asks the backend again
-  };
+  const { reload } = useCase();
+  // chosen replay: switch the source (no reload); fallback because the backend was down: just ask the backend again
+  const live = () => (source.fallback ? reload() : switchCaseSource("live"));
   return (
     <p className="c-frozen" role="status">
       <History size={16} aria-hidden="true" />

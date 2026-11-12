@@ -53,6 +53,10 @@ How the pages use it (`CaseProvider`):
 | Backend down | The frozen case | “Frozen case, captured …” on every page, with *Try live data* |
 | `?source=frozen`, or `NEXT_PUBLIC_CASE_SOURCE=frozen` | The frozen case, with no backend, NASA or ASF request at all | Same notice, with *Switch to live data* |
 
+The header of every case page has a **Live | Frozen · <date>** switch: it changes source instantly, without a
+reload, keeping the chosen stack, dates and map view (it writes `?source=live` or `?source=frozen`). It hides itself
+when there is no choice: no snapshot shipped, or the backend is down so the snapshot is all there is.
+
 While replaying, NASA search in the catalogue is off, a scene outside the frozen stacks shows its footprint with a note
 instead of fetching its image, and Evidence offers **Copy replay link**: the same dates and map view, opened from the
 snapshot. The brief's JSON records `data_source`, `replay_url` and each quicklook's checksum.

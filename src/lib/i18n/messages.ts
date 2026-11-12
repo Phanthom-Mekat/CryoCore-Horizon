@@ -66,6 +66,13 @@ const en = {
     openCatalogue: "Open the scene catalogue",
     tryAgain: "Try again",
   },
+  source: {
+    label: "Data source",
+    live: "Live",
+    frozen: "Frozen",
+    liveTitle: "Live: the backend's NASA catalogue and images",
+    frozenTitle: (when: S) => `Frozen: the snapshot captured ${when}, with no live request`,
+  },
   frozen: {
     title: (when: S) => `Frozen case, captured ${when}.`,
     fallback: "The live data service isn’t reachable, so this is the saved snapshot.",
@@ -337,6 +344,13 @@ const bn: Messages = {
     noFrozen: "সাইটের এই কপিতে কোনো সংরক্ষিত কেস নেই। ব্যাকএন্ড চালু রেখে `pnpm freeze-case` চালান।",
     openCatalogue: "দৃশ্যের তালিকা খুলুন",
     tryAgain: "আবার চেষ্টা করুন",
+  },
+  source: {
+    label: "ডেটার উৎস",
+    live: "লাইভ",
+    frozen: "সংরক্ষিত",
+    liveTitle: "লাইভ: ব্যাকএন্ডের NASA তালিকা ও ছবি",
+    frozenTitle: (when) => `সংরক্ষিত: ${when}-এ ধারণ করা স্ন্যাপশট, কোনো লাইভ অনুরোধ ছাড়াই`,
   },
   frozen: {
     title: (when) => `সংরক্ষিত কেস, ধারণ করা হয়েছে ${when}।`,

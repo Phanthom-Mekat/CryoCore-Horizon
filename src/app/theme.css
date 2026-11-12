@@ -167,3 +167,47 @@ html:not([data-theme="dark"]) .atlas-place { color: #ffffff; }
 :lang(bn) .d-body.is-case {
   line-height: 1.75;
 }
+
+/* Live | Frozen switch (case pages), same look as the language switch */
+.source-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 760px) {
+  /* phones: icons only, the full meaning stays in each button's label */
+  .source-toggle > svg,
+  .source-toggle button span {
+    display: none;
+  }
+  .source-toggle {
+    padding-left: 3px;
+  }
+}
+/* phones: the header holds menu, title and three switches, so it sheds decoration rather than overflow */
+@media (max-width: 760px) {
+  .d-top {
+    gap: 8px;
+  }
+  .d-top .d-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .d-top .d-avatar,
+  .d-top .lang-toggle > svg,
+  .d-top .theme-toggle span {
+    display: none;
+  }
+  .d-top .lang-toggle {
+    padding-left: 3px;
+  }
+  .d-top .lang-toggle button {
+    padding: 0 8px;
+  }
+  .d-top .theme-toggle {
+    padding: 0 10px;
+  }
+}

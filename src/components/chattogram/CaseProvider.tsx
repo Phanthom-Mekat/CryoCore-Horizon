@@ -6,6 +6,7 @@ import { allScenes, api, toLoadError, type Load, type Region } from "@/lib/chatt
 import type { ExplorerData } from "@/lib/explorer-data";
 import { compatibility, covers, stacks, toAcquisition, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { FOCUS, loadFrozen } from "@/lib/chattogram/frozen";
+import { publishCaseSource } from "@/lib/chattogram/sourceStore";
 
 export { FOCUS };
 export const DEFAULT_VIEW = { lon: 91.85, lat: 22.4, zoom: 8.2 };
@@ -53,6 +54,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
     const apply = (ex: ExplorerData, acquisitions: Acquisition[], src: CaseSource) => {
       setExplorer(ex);
       setSource(src);
+      publishCaseSource(src); // for the header's Live | Frozen switch
       if (!acquisitions.length)
         return setLoad({ status: "empty", reason: "No stored NISAR GCOV scene overlaps the division yet. Open the Scene catalogue and run “Discover observations” to fetch them from NASA." });
       // stacks over the focus point first: those are the ones a before/after comparison can use there

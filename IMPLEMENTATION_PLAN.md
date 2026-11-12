@@ -43,6 +43,7 @@ surface-change findings. F01/F02 and the scientific milestones remain incomplete
 - [x] Replay makes no live request: tested with the backend stopped and `?source=frozen` across all six case pages — 0 requests to the backend, the image proxy, ASF or CMR, and no console errors.
 - [x] Evidence offers **Copy replay link** (same dates and map view from the snapshot); the brief records `data_source`, `replay_url` and each quicklook's checksum. NASA search is disabled while replaying.
 - [x] Live mode also serves quicklooks from the snapshot where it has them: 3 ms per image instead of 7.8 s through the proxy on a cold cache.
+- [x] **Live | Frozen** switch in the header of the case pages: changes source without a reload and keeps the selection; hidden when there is no snapshot or the backend is down. Checked by mouse and keyboard, in both languages and at 390 px.
 
 ### Completed Bangla increment (F15)
 

@@ -7,6 +7,7 @@ import { ArrowLeft, Bell, BookOpen, Columns2, FileSearch, Gauge, Home, Info, Lay
 import { BrandMark } from "@/components/BrandMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { CaseSourceToggle } from "@/components/chattogram/CaseSourceToggle";
 import { useT } from "@/lib/i18n/useT";
 import type { Messages } from "@/lib/i18n/messages";
 import { DataGate, useDashboardMaybe } from "./DashboardProvider";
@@ -155,6 +156,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Bell size={18} aria-hidden="true" />
             {alertCount > 0 && <span className="d-dot" />}
           </Link>}
+          {isCase && <CaseSourceToggle />}
           <LanguageToggle />
           <ThemeToggle />
           <span className="d-avatar" title="Team CryoCore Horizon" aria-hidden="true">
