@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Newsreader, IBM_Plex_Sans, IBM_Plex_Mono, Noto_Sans_Bengali, Noto_Serif_Bengali } from "next/font/google";
+import { Anek_Bangla, Newsreader, IBM_Plex_Sans, IBM_Plex_Mono, Noto_Sans_Bengali, Noto_Serif_Bengali } from "next/font/google";
 import { LANG_BOOT_SCRIPT } from "@/lib/i18n/locale";
 import "./globals.css";
 import "./theme.css";
@@ -9,6 +9,8 @@ const sans = IBM_Plex_Sans({ variable: "--font-sans", subsets: ["latin"], weight
 const mono = IBM_Plex_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["400", "500"] });
 // Bangla interface (plan F15): only the Bengali subset, so English-only pages never download these
 const bnSans = Noto_Sans_Bengali({ variable: "--font-bn-sans", subsets: ["bengali"], weight: ["400", "500", "600"], preload: false });
+// the Overview's display face: one variable-width family that draws Latin and Bengali alike
+const display = Anek_Bangla({ variable: "--font-display", subsets: ["latin", "bengali"], axes: ["wdth"] });
 const bnSerif = Noto_Serif_Bengali({ variable: "--font-bn-serif", subsets: ["bengali"], weight: ["400", "500"], preload: false });
 
 const title = "CryoCore Horizon: Chattogram through the clouds with NISAR radar";
@@ -31,7 +33,7 @@ export const viewport: Viewport = { themeColor: "#ffffff", colorScheme: "light d
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" data-theme="light" suppressHydrationWarning data-scroll-behavior="smooth" className={`${serif.variable} ${sans.variable} ${mono.variable} ${bnSans.variable} ${bnSerif.variable}`}>
+    <html lang="en" data-theme="light" suppressHydrationWarning data-scroll-behavior="smooth" className={`${serif.variable} ${sans.variable} ${mono.variable} ${bnSans.variable} ${bnSerif.variable} ${display.variable}`}>
       <head>
         {/* Restore an explicit preference before paint; new visitors always start in light mode. */}
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem("cryocore-theme")==="dark"?"dark":"light";document.documentElement.dataset.theme=t;document.querySelector('meta[name="theme-color"]')?.setAttribute("content",t==="dark"?"#04080f":"#ffffff")}catch{}` }} />

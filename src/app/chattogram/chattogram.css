@@ -2057,9 +2057,11 @@
 /* ---------- Overview: one radar pass, full bleed, then a quiet page ----------
    The hero is always dark (it is a radar image); everything below follows the app theme. */
 .ov {
-  --ov-slate: #0e1a24;
-  --ov-silver: #dce4ea;
-  --ov-silt: #c9a35f;
+  /* the delta in the monsoon: bottle-green ink, paddy mint, and the red of the flag's disc for the one accent */
+  --ov-slate: #0a2a22;
+  --ov-silver: #cfe8dc;
+  --ov-silt: #e8473c;
+  --ov-display: var(--font-display), var(--sans);
   display: grid;
   gap: 72px;
   padding-bottom: 32px;
@@ -2095,7 +2097,7 @@
   object-fit: cover;
   object-position: 50% 40%;
   transform: scale(1.06);
-  filter: grayscale(1) contrast(1.45) brightness(0.64);
+  filter: grayscale(1) contrast(1.4) brightness(0.8);
   pointer-events: none;
 }
 .ov-img-before {
@@ -2113,9 +2115,9 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgb(14 26 36 / 0.92) 0%, rgb(14 26 36 / 0.55) 38%, rgb(14 26 36 / 0) 62%),
-    linear-gradient(0deg, rgb(14 26 36 / 0.85) 0%, rgb(14 26 36 / 0) 35%),
-    linear-gradient(180deg, rgb(14 26 36 / 0.7) 0%, rgb(14 26 36 / 0) 16%);
+    linear-gradient(90deg, rgb(10 42 34 / 0.92) 0%, rgb(10 42 34 / 0.55) 38%, rgb(10 42 34 / 0) 62%),
+    linear-gradient(0deg, rgb(10 42 34 / 0.85) 0%, rgb(10 42 34 / 0) 35%),
+    linear-gradient(180deg, rgb(10 42 34 / 0.7) 0%, rgb(10 42 34 / 0) 16%);
   mix-blend-mode: normal;
   pointer-events: none;
 }
@@ -2129,7 +2131,18 @@
   mix-blend-mode: screen;
   pointer-events: none;
 }
-.is-change .ov-pass-frame::before {
+/* ...and tints the radar's bright land toward paddy mint */
+.ov-pass-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--ov-silver);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.is-change .ov-pass-frame::before,
+.is-change .ov-pass-frame::after {
   opacity: 0;
 }
 .ov-scrim,
@@ -2144,7 +2157,8 @@
   top: 22px;
   margin: 0;
   color: var(--ov-silver);
-  font: 500 0.9rem var(--sans);
+  font: 600 1rem var(--ov-display);
+  font-stretch: 112%;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
   transition: opacity 300ms ease;
@@ -2163,7 +2177,7 @@
   width: 2px;
   margin-left: -1px;
   background: var(--ov-silt);
-  box-shadow: 0 0 24px 2px rgb(201 163 95 / 0.55);
+  box-shadow: 0 0 24px 2px rgb(232 71 60 / 0.6);
   pointer-events: none;
   transition: opacity 300ms ease;
 }
@@ -2177,7 +2191,7 @@
   height: 40px;
   border-radius: 50%;
   background: var(--ov-silt);
-  color: var(--ov-slate);
+  color: #fff;
   transform: translate(-50%, -50%);
 }
 .is-change .ov-scan,
@@ -2209,16 +2223,17 @@
 }
 .ov-copy h1 {
   margin: 0;
-  font: 400 clamp(2.6rem, 5.6vw, 5rem)/0.98 var(--serif);
-  letter-spacing: -0.03em;
+  font: 700 clamp(3rem, 6.4vw, 5.8rem)/0.92 var(--ov-display);
+  font-stretch: 78%;
+  letter-spacing: -0.01em;
   color: #fff;
   text-wrap: balance;
 }
 .ov-lede {
   margin: 0;
   max-width: 34em;
-  color: rgb(220 228 234 / 0.86);
-  font-size: 1.08rem;
+  color: rgb(207 232 220 / 0.9);
+  font: 400 1.15rem/1.55 var(--ov-display);
   line-height: 1.6;
 }
 .ov-actions {
@@ -2231,25 +2246,25 @@
   align-items: center;
   min-height: 44px;
   padding: 0 20px;
-  border: 1px solid rgb(220 228 234 / 0.35);
+  border: 1px solid rgb(207 232 220 / 0.4);
   border-radius: 999px;
   color: var(--ov-silver);
-  font: 500 0.95rem var(--sans);
+  font: 600 1rem var(--ov-display);
   text-decoration: none;
   backdrop-filter: blur(6px);
   transition: background 200ms ease, border-color 200ms ease;
 }
 .ov-btn:hover {
   border-color: var(--ov-silver);
-  background: rgb(220 228 234 / 0.08);
+  background: rgb(207 232 220 / 0.1);
 }
 .ov-btn.is-primary {
   border-color: var(--ov-silt);
   background: var(--ov-silt);
-  color: var(--ov-slate);
+  color: #fff;
 }
 .ov-btn.is-primary:hover {
-  background: #d8b675;
+  background: #f05b50;
 }
 .ov-btn:focus-visible,
 .ov-toggle button:focus-visible {
@@ -2264,9 +2279,9 @@
 .ov-toggle {
   display: flex;
   padding: 4px;
-  border: 1px solid rgb(220 228 234 / 0.25);
+  border: 1px solid rgb(207 232 220 / 0.3);
   border-radius: 999px;
-  background: rgb(14 26 36 / 0.7);
+  background: rgb(10 42 34 / 0.7);
   backdrop-filter: blur(8px);
 }
 .ov-toggle button {
@@ -2274,8 +2289,8 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: rgb(220 228 234 / 0.75);
-  font: 500 0.85rem var(--sans);
+  color: rgb(207 232 220 / 0.8);
+  font: 500 0.92rem var(--ov-display);
   cursor: pointer;
 }
 .ov-toggle button[aria-pressed="true"] {
@@ -2306,8 +2321,9 @@
 .ov-check h2,
 .ov-data h2 {
   margin: 0;
-  font: 400 clamp(1.8rem, 3vw, 2.5rem)/1.05 var(--serif);
-  letter-spacing: -0.02em;
+  font: 700 clamp(2rem, 3.4vw, 2.9rem)/1 var(--ov-display);
+  font-stretch: 80%;
+  letter-spacing: -0.005em;
   color: var(--c-text);
 }
 .ov-head p {
@@ -2331,26 +2347,44 @@
 }
 .ov-nums dd {
   margin: 0;
-  font: 400 clamp(3rem, 7vw, 5.4rem)/0.95 var(--serif);
-  letter-spacing: -0.03em;
-  color: var(--c-text);
+  font: 600 clamp(3.2rem, 7.4vw, 6rem)/0.9 var(--ov-display);
+  font-stretch: 115%;
+  letter-spacing: -0.02em;
+  color: var(--ov-slate);
   font-variant-numeric: lining-nums tabular-nums;
 }
 .ov-nums .is-up dd {
-  color: var(--c-change-pos);
+  color: #2f7d54;
 }
 .ov-nums .is-down dd {
   color: var(--c-change-neg);
 }
 .ov-nums dd small {
   margin-left: 8px;
-  font: 400 1rem var(--sans);
+  font: 500 1rem var(--ov-display);
+  font-stretch: 100%;
   letter-spacing: 0;
   color: var(--c-muted);
 }
 .ov-nums dt {
   color: var(--c-muted);
-  font-size: 1rem;
+  font: 500 1.05rem var(--ov-display);
+}
+.ov-nums > div {
+  padding-top: 16px;
+  border-top: 3px solid var(--ov-slate);
+}
+.ov-nums .is-up {
+  border-top-color: #2f7d54;
+}
+.ov-nums .is-down {
+  border-top-color: var(--c-change-neg);
+}
+:root[data-theme="dark"] .ov-nums dd {
+  color: var(--c-text);
+}
+:root[data-theme="dark"] .ov-nums > div:first-child {
+  border-top-color: var(--c-text);
 }
 .ov-note {
   margin: 0;
@@ -2380,14 +2414,18 @@
 .ov-step h3 {
   margin: 0;
   color: var(--c-text);
-  font: 600 1.1rem var(--sans);
+  font: 700 1.35rem var(--ov-display);
+  font-stretch: 85%;
+}
+.ov-step svg {
+  color: var(--ov-silt);
 }
 .ov-step p {
   margin: 0;
   line-height: 1.6;
 }
 .ov-step > span {
-  color: var(--c-focus);
+  color: var(--ov-silt);
   font-weight: 500;
   text-decoration: underline;
   text-decoration-color: transparent;
@@ -2422,7 +2460,7 @@
   color: var(--c-muted);
 }
 .ov-data a {
-  color: var(--c-focus);
+  color: var(--ov-silt);
 }
 @media (max-width: 900px) {
   .ov {
@@ -2435,7 +2473,7 @@
     height: clamp(560px, 86svh, 760px);
   }
   .ov-scrim {
-    background: linear-gradient(0deg, rgb(14 26 36 / 0.95) 0%, rgb(14 26 36 / 0.7) 45%, rgb(14 26 36 / 0) 75%);
+    background: linear-gradient(0deg, rgb(10 42 34 / 0.95) 0%, rgb(10 42 34 / 0.7) 45%, rgb(10 42 34 / 0) 75%);
   }
   .ov-copy {
     left: 20px;
@@ -2470,4 +2508,11 @@
   .ov-btn {
     transition: none;
   }
+}
+/* sections other components render inside the Overview (WardTeaser) take its display face too */
+.ov > section > h2:not([class]),
+.ov > section > div > h2:not([class]) {
+  font-family: var(--ov-display);
+  font-weight: 700;
+  font-stretch: 80%;
 }
