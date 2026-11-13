@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Columns2, FileSearch, Layers, Map as MapIcon, Radar, Ruler, Scan, ScanLine, ShieldCheck, Satellite, Activity, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, Columns2, FileSearch, Layers, Map as MapIcon, Radar, Ruler, Scan, ScanLine, ShieldCheck, Satellite, Activity, TrendingDown, TrendingUp } from "lucide-react";
 import { Kpi, KpiStrip } from "@/components/dashboard/ui";
 import { compatibility, covers } from "@/lib/chattogram/acquisitions";
 import { fmtArea, fmtDate, fmtDayMonth, fmtNum, fmtSigned } from "@/lib/i18n/format";
@@ -41,6 +41,12 @@ export function OverviewView() {
   const year = fmtNum(load.data.region.provenance.year);
   const pilot = pilotLoad.status === "ready" ? pilotLoad.data : null;
   const hh = pilot?.statistics.HHHH;
+  // supporting checks on the measured result: HV agreement and the next-stricter threshold of the sweep
+  const pc = processed.status === "ready" ? processed.data : null;
+  const listed = pc?.findings.features.length ?? 0;
+  const sens = pc?.sensitivity ?? null;
+  const stricter = sens && m ? sens.rows.find((r) => r.threshold_db > m.threshold_db) : undefined;
+  const pct = (v: number) => (m && m.valid_common_km2 ? (v / m.valid_common_km2) * 100 : 0);
 
   return (
     <div className="c-overview">
@@ -76,20 +82,9 @@ export function OverviewView() {
         </div>
       </section>
 
-      <KpiStrip label={o.kpis}>
-        <Kpi label={o.kpiScenes} value={fmtNum(all.length)} sub={o.kpiScenesSub(fmtNum(explorer?.summary.outside_division ?? 0))} icon={Layers} />
-        <Kpi
-          label={o.kpiDays}
-          value={explorer ? fmtNum(explorer.summary.observation_days) : "–"}
-          sub={o.kpiDaysSub(fmtDate(starts[0]), fmtDate(starts.at(-1)!))}
-          icon={CalendarDays}
-        />
-        <Kpi label={o.kpiStacks} value={fmtNum(overCity.length)} sub={o.kpiStacksSub} icon={Satellite} />
-        <Kpi label={o.kpiProvisional} value={o.kpiProvisionalValue(fmtNum(provisional), fmtNum(all.length))} sub={o.kpiProvisionalSub} icon={ShieldCheck} />
-      </KpiStrip>
-
       <section className={`c-processed${m ? " is-ready" : ""}`} aria-labelledby="processed-h">
         <div className="c-processed-head">
+          <div className="c-processed-title">
           <p className="c-eyebrow">{m ? o.caseMeasured : o.casePending}</p>
           <h2 id="processed-h">{detail ? <BackendText text={detail.title} translated={o.caseTitles[detail.id]} /> : o.caseFallbackTitle}</h2>
           {detail && (
@@ -105,6 +100,7 @@ export function OverviewView() {
               </span>
             </p>
           )}
+          </div>
           <Link className="c-btn is-primary" href={caseHref("/chattogram/explore") ?? href("/chattogram/explore")}>
             {o.openCase}
             <ArrowRight size={16} aria-hidden="true" />
@@ -147,6 +143,38 @@ export function OverviewView() {
                 <dd className="c-stat-sub">{o.decreaseSub(fmtNum(m.threshold_db), span)}</dd>
               </div>
             </dl>
+            <div className="c-share">
+              <p className="c-share-label">{o.shareLabel}</p>
+              <div className="c-share-track" role="img" aria-label={o.resultShare(fmtNum(pct(m.increase_km2), 1), fmtNum(pct(m.decrease_km2), 1))}>
+                <span className="is-up" style={{ width: `${pct(m.increase_km2)}%` }} />
+                <span className="is-down" style={{ width: `${pct(m.decrease_km2)}%` }} />
+              </div>
+              <p className="c-share-legend">
+                <span className="is-up">{o.shareUp} {fmtNum(pct(m.increase_km2), 1)}%</span>
+                <span className="is-down">{o.shareDown} {fmtNum(pct(m.decrease_km2), 1)}%</span>
+                <span>{o.shareRest(fmtNum(m.threshold_db))}</span>
+              </p>
+            </div>
+            {(m.cross_pol || stricter) && (
+              <ul className="c-result-checks" aria-label={o.checksLabel}>
+                {m.cross_pol && (
+                  <li>
+                    <Check size={15} aria-hidden="true" />
+                    {o.checkHv(fmtNum(m.cross_pol.findings_same_direction), fmtNum(m.cross_pol.findings_compared), m.cross_pol.polarization)}
+                  </li>
+                )}
+                {stricter && (
+                  <li>
+                    <Check size={15} aria-hidden="true" />
+                    {o.checkRobust(fmtNum(stricter.listed_findings_present), fmtNum(listed), fmtNum(stricter.threshold_db))}
+                  </li>
+                )}
+                <li>
+                  <Check size={15} aria-hidden="true" />
+                  {o.checkCoverage(m.excluded_km2 > 0 && m.excluded_km2 < 0.01 ? `< ${fmtNum(0.01, 2)}` : fmtArea(m.excluded_km2))}
+                </li>
+              </ul>
+            )}
             <p className="c-hint">
               {o.caseHint}
               {provenance && (
@@ -166,15 +194,6 @@ export function OverviewView() {
       </section>
 
       <WardTeaser />
-
-      {pilot && hh && (
-        <KpiStrip label={o.pilotKpis}>
-          <Kpi label={o.kpiPilot} value={o.kpiPilotValue(fmtDayMonth(pilot.sources[0].acquisition), fmtDate(pilot.sources[1].acquisition))} sub={o.kpiPilotSub} icon={Radar} />
-          <Kpi label={o.kpiArea} value={fmtNum(hh.common_area_km2, 2)} unit="km²" sub={o.kpiAreaSub(fmtNum(hh.outside_roi_area_km2, 2))} icon={ScanLine} />
-          <Kpi label={o.kpiMedian} value={fmtSigned(hh.median_change_db)} unit="dB" sub={o.kpiMedianSub(fmtSigned(pilot.statistics.HVHV.median_change_db))} icon={Activity} />
-          <Kpi label={o.kpiSpread} value={o.kpiSpreadValue(fmtSigned(hh.change_percentiles_db[0]), fmtSigned(hh.change_percentiles_db[2]))} unit="dB" sub={o.kpiSpreadSub} icon={Ruler} />
-        </KpiStrip>
-      )}
 
       <section className="c-steps" aria-label={o.stepsLabel}>
         {STEPS.map(({ n, icon: Icon, link }, i) => (
@@ -227,6 +246,32 @@ export function OverviewView() {
             </figure>
           ))}
         </div>
+      </section>
+
+      <section className="c-data" aria-labelledby="data-h">
+        <div className="c-data-head">
+          <h2 id="data-h">{o.dataBehind}</h2>
+          <p>{o.dataBehindBody}</p>
+        </div>
+        <KpiStrip label={o.kpis}>
+          <Kpi label={o.kpiScenes} value={fmtNum(all.length)} sub={o.kpiScenesSub(fmtNum(explorer?.summary.outside_division ?? 0))} icon={Layers} />
+          <Kpi
+            label={o.kpiDays}
+            value={explorer ? fmtNum(explorer.summary.observation_days) : "–"}
+            sub={o.kpiDaysSub(fmtDate(starts[0]), fmtDate(starts.at(-1)!))}
+            icon={CalendarDays}
+          />
+          <Kpi label={o.kpiStacks} value={fmtNum(overCity.length)} sub={o.kpiStacksSub} icon={Satellite} />
+          <Kpi label={o.kpiProvisional} value={o.kpiProvisionalValue(fmtNum(provisional), fmtNum(all.length))} sub={o.kpiProvisionalSub} icon={ShieldCheck} />
+        </KpiStrip>
+        {pilot && hh && (
+          <KpiStrip label={o.pilotKpis}>
+            <Kpi label={o.kpiPilot} value={o.kpiPilotValue(fmtDayMonth(pilot.sources[0].acquisition), fmtDate(pilot.sources[1].acquisition))} sub={o.kpiPilotSub} icon={Radar} />
+            <Kpi label={o.kpiArea} value={fmtNum(hh.common_area_km2, 2)} unit="km²" sub={o.kpiAreaSub(fmtNum(hh.outside_roi_area_km2, 2))} icon={ScanLine} />
+            <Kpi label={o.kpiMedian} value={fmtSigned(hh.median_change_db)} unit="dB" sub={o.kpiMedianSub(fmtSigned(pilot.statistics.HVHV.median_change_db))} icon={Activity} />
+            <Kpi label={o.kpiSpread} value={o.kpiSpreadValue(fmtSigned(hh.change_percentiles_db[0]), fmtSigned(hh.change_percentiles_db[2]))} unit="dB" sub={o.kpiSpreadSub} icon={Ruler} />
+          </KpiStrip>
+        )}
       </section>
 
       <section className="c-honest" aria-label={o.honestLabel}>
