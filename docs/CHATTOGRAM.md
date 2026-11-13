@@ -165,8 +165,9 @@ Evidence, About, Calibrated radar), the sidebar, the frozen-case notice, map lab
   that way still fails. Translate a component, then add it to the list.
 - Text the backend writes in English (a case title, the analysis area's provenance, a finding's label) shows in
   Bangla when `messages.ts` has a translation for that value, and otherwise as sent, inside `lang="en"`: never blank.
-  `BackendText` (`src/components/chattogram/BackendText.tsx`) does this. A case's fixed caveats are translated the
-  same way, keyed by their exact English text, so a rerun that changes a number in one shows it as sent. Free text that
+  `BackendText` (`src/components/chattogram/BackendText.tsx`) does this. A case's fixed caveats, and the calibrated
+  pilot's fixed sentences (its title, claim, limitations, validation status and method notes, `processed.texts`), are translated the same way,
+  keyed by their exact English text, so a rerun that changes a number or a word in one shows it as sent. Free text that
   differs for every finding or check, such as a finding's quality reason or a reference check's notes, always shows as
   sent.
 - A message that holds a command, a path or an identifier takes it as a slot and returns its pieces in reading order

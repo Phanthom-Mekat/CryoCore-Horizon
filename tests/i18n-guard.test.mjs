@@ -3,9 +3,8 @@
 // English kept on purpose (technical details, source citations, proper names) goes inside an element marked
 // lang="en" translate="no". Plain lang="en" only labels the language, so untranslated UI marked that way still fails.
 //
-// Not listed yet: English added with the processed case (13 Nov 2026) in MapKey, Timeline,
-// ExploreView, CompareView and ProcessedView (share, area selection), and the new AreaInspector and ProcessedBrief.
-// Each goes on the list once translated.
+// Not listed yet: English added with the processed case (13 Nov 2026) in MapKey, Timeline, ExploreView and
+// CompareView. Each goes on the list once translated.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -17,15 +16,18 @@ const TRANSLATED = [
   "src/components/chattogram/CaseGate.tsx",
   "src/components/chattogram/CaseMap.tsx",
   "src/components/chattogram/CaseProvider.tsx",
+  "src/components/chattogram/AreaInspector.tsx",
   "src/components/chattogram/CaseSourceToggle.tsx",
   "src/components/chattogram/FindingPanel.tsx",
   "src/components/chattogram/PixelInspector.tsx",
   "src/components/chattogram/PrepStatus.tsx",
+  "src/components/chattogram/ProcessedBrief.tsx",
   "src/components/chattogram/RainCard.tsx",
   "src/components/chattogram/RainChart.tsx",
   "src/components/chattogram/views/AboutView.tsx",
   "src/components/chattogram/views/EvidenceView.tsx",
   "src/components/chattogram/views/OverviewView.tsx",
+  "src/components/chattogram/views/ProcessedView.tsx",
 ];
 
 for (const path of TRANSLATED) {
