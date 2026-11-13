@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Scan src/ only: the default (project root) makes dev read backend/data's GBs of NISAR files */
+@import "tailwindcss" source("..");
 
 :root {
   --night: #050b14; /* ink */
