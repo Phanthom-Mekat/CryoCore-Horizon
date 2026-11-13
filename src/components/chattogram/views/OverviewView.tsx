@@ -252,7 +252,7 @@ export function OverviewView() {
                   <title>{fmtDate(a.start)}</title>
                   <circle cx={xOf(a.start)} cy="66" r={on ? 8 : 5} className={on ? `db-pass is-${a.day === pair[0] ? "blue" : "orange"}` : "db-pass"} />
                   {on && (
-                    <text x={Math.min(560, Math.max(40, xOf(a.start)))} y="40" textAnchor="middle" className="db-pass-label">
+                    <text x={xOf(a.start) < 110 ? xOf(a.start) - 8 : xOf(a.start) > 490 ? xOf(a.start) + 8 : xOf(a.start)} y="40" textAnchor={xOf(a.start) < 110 ? "start" : xOf(a.start) > 490 ? "end" : "middle"} className="db-pass-label">
                       {a.day === pair[0] ? t.before : t.after} · {fmtDayMonth(a.start)}
                     </text>
                   )}

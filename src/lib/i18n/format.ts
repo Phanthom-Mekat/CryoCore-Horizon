@@ -10,9 +10,10 @@ export const fmtDayMonth = (iso: string) => new Date(iso).toLocaleDateString(loc
 export const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(loc(), { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }) + " UTC";
 export const fmtDateTime = (iso: string) => `${fmtDate(iso)}, ${fmtTime(iso)}`;
 /** Whole numbers, or `digits` decimals, with a typographic minus (−). Track, frame and orbit numbers go through this too. */
-export const fmtNum = (n: number, digits?: number) =>
-  n
-    .toLocaleString(loc(), digits === undefined ? { useGrouping: false } : { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false })
+export const fmtNum = (n: number | null | undefined, digits?: number) =>
+  n == null || !Number.isFinite(n)
+    ? "–"
+    : n.toLocaleString(loc(), digits === undefined ? { useGrouping: false } : { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false })
     .replace("-", "−");
 /** Like fmtNum, with a leading + on positive values (signed dB change). */
 export const fmtSigned = (n: number, digits = 2) => `${n > 0 ? "+" : ""}${fmtNum(n, digits)}`;

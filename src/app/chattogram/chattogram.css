@@ -2067,187 +2067,48 @@
 .p-area-inspector > p { line-height: 1.6; }
 .p-area-inspector .c-links { flex-wrap: wrap; margin-top: 12px; }
 
-/* ---------- Overview: one radar pass, full bleed, then a quiet page ----------
-   The hero is always dark (it is a radar image); everything below follows the app theme. */
+/* ---------- Overview: two colours (delta green, flag red) on white; the answer beside the question ---------- */
 .ov {
-  /* the delta in the monsoon: bottle-green ink, paddy mint, and the red of the flag's disc for the one accent */
-  --ov-slate: #0a2a22;
-  --ov-silver: #cfe8dc;
-  --ov-silt: #e8473c;
+  --ov-ink: #0e2a23;
+  --ov-red: #e8473c;
   --ov-display: var(--font-display), var(--sans);
   display: grid;
-  gap: 72px;
-  padding-bottom: 32px;
+  gap: 88px;
+  max-width: 1240px;
+  padding: 40px 0 48px;
 }
-.ov-pass {
+:root[data-theme="dark"] .ov {
+  --ov-ink: #123a30;
+}
+.ov h2,
+.ov h3 {
+  font-family: var(--ov-display);
+}
+/* data first: one line of title, then the measured figures in the one colour block */
+.ov-top {
   display: grid;
-  gap: 12px;
-  margin: -24px -28px 0; /* bleed to the shell's edges (dashboard.css .d-body padding) */
+  gap: 28px;
 }
-.ov-pass-frame {
-  position: relative;
-  height: clamp(520px, 78svh, 820px);
-  overflow: hidden;
-  background: var(--ov-slate);
-  touch-action: pan-y;
-  cursor: ew-resize;
-  user-select: none;
+.ov-top-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 32px;
 }
-.ov-pass.is-change .ov-pass-frame,
-.ov-pass.is-fallback .ov-pass-frame {
-  cursor: default;
-}
-.ov-pass.is-fallback .c-map {
-  position: absolute;
-  inset: 0;
-}
-/* duotone: radar silver on monsoon slate, so water reads as deep slate and land as silver */
-.ov-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 40%;
-  transform: scale(1.06);
-  filter: grayscale(1) contrast(1.4) brightness(0.8);
-  pointer-events: none;
-}
-.ov-img-before {
-  clip-path: inset(0 calc(100% - var(--pos)) 0 0);
-}
-.ov-img-change {
-  filter: none;
-  opacity: 0;
-  transition: opacity 450ms ease;
-}
-.is-change .ov-img-change {
-  opacity: 1;
-}
-.ov-scrim {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgb(10 42 34 / 0.92) 0%, rgb(10 42 34 / 0.55) 38%, rgb(10 42 34 / 0) 62%),
-    linear-gradient(0deg, rgb(10 42 34 / 0.85) 0%, rgb(10 42 34 / 0) 35%),
-    linear-gradient(180deg, rgb(10 42 34 / 0.7) 0%, rgb(10 42 34 / 0) 16%);
-  mix-blend-mode: normal;
-  pointer-events: none;
-}
-.ov-pass-frame::before {
-  /* lifts the radar's black water to slate, so the duotone holds in both app themes */
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: var(--ov-slate);
-  mix-blend-mode: screen;
-  pointer-events: none;
-}
-/* ...and tints the radar's bright land toward paddy mint */
-.ov-pass-frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: var(--ov-silver);
-  mix-blend-mode: multiply;
-  pointer-events: none;
-}
-.is-change .ov-pass-frame::before,
-.is-change .ov-pass-frame::after {
-  opacity: 0;
-}
-.ov-scrim,
-.ov-date,
-.ov-scan,
-.ov-copy,
-.ov-controls {
-  z-index: 2;
-}
-.ov-date {
-  position: absolute;
-  top: 22px;
+.ov-top-head h1 {
   margin: 0;
-  color: var(--ov-silver);
-  font: 600 1rem var(--ov-display);
-  font-stretch: 112%;
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
-  transition: opacity 300ms ease;
+  color: var(--ov-ink);
+  font: 700 clamp(2rem, 3.6vw, 3rem)/1 var(--ov-display);
+  font-stretch: 82%;
 }
-.ov-date.is-l {
-  left: 28px;
+:root[data-theme="dark"] .ov-top-head h1 {
+  color: var(--c-text);
 }
-.ov-date.is-r {
-  right: 28px;
-}
-.ov-scan {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--pos);
-  width: 2px;
-  margin-left: -1px;
-  background: var(--ov-silt);
-  box-shadow: 0 0 24px 2px rgb(232 71 60 / 0.6);
-  pointer-events: none;
-  transition: opacity 300ms ease;
-}
-.ov-scan span {
-  position: absolute;
-  top: 42%;
-  left: 50%;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--ov-silt);
-  color: #fff;
-  transform: translate(-50%, -50%);
-}
-.is-change .ov-scan,
-.is-change .ov-img-before,
-.is-change .ov-date {
-  opacity: 0;
-}
-.ov-range {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  opacity: 0;
-  pointer-events: none;
-}
-.ov-pass-frame:has(.ov-range:focus-visible) .ov-scan span {
-  outline: 3px solid var(--ov-silver);
-  outline-offset: 3px;
-}
-.ov-copy {
-  position: absolute;
-  left: 28px;
-  bottom: 40px;
-  display: grid;
-  gap: 18px;
-  max-width: min(620px, calc(100% - 56px));
-  color: var(--ov-silver);
-  cursor: auto;
-}
-.ov-copy h1 {
-  margin: 0;
-  font: 700 clamp(3rem, 6.4vw, 5.8rem)/0.92 var(--ov-display);
-  font-stretch: 78%;
-  letter-spacing: -0.01em;
-  color: #fff;
-  text-wrap: balance;
-}
-.ov-lede {
-  margin: 0;
-  max-width: 34em;
-  color: rgb(207 232 220 / 0.9);
-  font: 400 1.15rem/1.55 var(--ov-display);
-  line-height: 1.6;
+.ov-top-head p {
+  margin: 8px 0 0;
+  color: var(--c-muted);
+  font: 500 1.05rem var(--ov-display);
 }
 .ov-actions {
   display: flex;
@@ -2257,200 +2118,202 @@
 .ov-btn {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 20px;
-  border: 1px solid rgb(207 232 220 / 0.4);
+  min-height: 46px;
+  padding: 0 22px;
+  border: 1.5px solid var(--ov-ink);
   border-radius: 999px;
-  color: var(--ov-silver);
+  color: var(--ov-ink);
   font: 600 1rem var(--ov-display);
   text-decoration: none;
-  backdrop-filter: blur(6px);
-  transition: background 200ms ease, border-color 200ms ease;
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+:root[data-theme="dark"] .ov-btn {
+  border-color: var(--c-text);
+  color: var(--c-text);
 }
 .ov-btn:hover {
-  border-color: var(--ov-silver);
-  background: rgb(207 232 220 / 0.1);
+  background: var(--ov-ink);
+  color: #fff;
 }
 .ov-btn.is-primary {
-  border-color: var(--ov-silt);
-  background: var(--ov-silt);
+  border-color: var(--ov-red);
+  background: var(--ov-red);
   color: #fff;
 }
 .ov-btn.is-primary:hover {
-  background: #f05b50;
+  border-color: #cf3a30;
+  background: #cf3a30;
 }
-.ov-btn:focus-visible,
-.ov-toggle button:focus-visible {
-  outline: 2px solid var(--ov-silver);
+.ov-btn:focus-visible {
+  outline: 2px solid var(--ov-red);
   outline-offset: 3px;
 }
-.ov-controls {
-  position: absolute;
-  right: 28px;
-  bottom: 40px;
+.ov-panel {
+  display: grid;
+  gap: 28px;
+  padding: 40px 44px 32px;
+  border-radius: 28px;
+  background: var(--ov-ink);
+  color: #fff;
 }
-.ov-toggle {
-  display: flex;
-  padding: 4px;
-  border: 1px solid rgb(207 232 220 / 0.3);
-  border-radius: 999px;
-  background: rgb(10 42 34 / 0.7);
-  backdrop-filter: blur(8px);
+.ov-figs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
 }
-.ov-toggle button {
-  padding: 8px 16px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: rgb(207 232 220 / 0.8);
-  font: 500 0.92rem var(--ov-display);
-  cursor: pointer;
-}
-.ov-toggle button[aria-pressed="true"] {
-  background: var(--ov-silver);
-  color: var(--ov-slate);
-}
-.ov-pass-foot {
-  min-height: 52px;
+.ov-figs > div {
+  display: grid;
+  align-content: start;
+  gap: 10px;
   padding: 0 28px;
-  color: var(--c-muted);
-  font-size: 0.88rem;
+  border-left: 1px solid rgb(255 255 255 / 0.14);
 }
-.ov-pass-foot p {
+.ov-figs > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.ov-figs dd {
   margin: 0;
-  max-width: 60em;
-}
-.ov-pass-foot .c-change-key {
-  width: min(340px, 100%);
-  margin: 0;
-}
-/* below the hero: quiet, theme-coloured, one column of reading width for text */
-.ov-head {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 28px;
-}
-.ov-head h2,
-.ov-check h2,
-.ov-data h2 {
-  margin: 0;
-  font: 700 clamp(2rem, 3.4vw, 2.9rem)/1 var(--ov-display);
-  font-stretch: 80%;
-  letter-spacing: -0.005em;
-  color: var(--c-text);
-}
-.ov-head p {
-  margin: 0;
-  max-width: 44em;
-  color: var(--c-muted);
-}
-.ov-answer {
-  display: grid;
-  gap: 24px;
-}
-.ov-nums {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 32px;
-  margin: 0;
-}
-.ov-nums > div {
-  display: grid;
-  gap: 8px;
-}
-.ov-nums dd {
-  margin: 0;
-  font: 600 clamp(3.2rem, 7.4vw, 6rem)/0.9 var(--ov-display);
-  font-stretch: 115%;
+  font: 600 clamp(2.8rem, 5.2vw, 4.8rem)/0.9 var(--ov-display);
+  font-stretch: 110%;
   letter-spacing: -0.02em;
-  color: var(--ov-slate);
   font-variant-numeric: lining-nums tabular-nums;
 }
-.ov-nums .is-up dd {
-  color: #2f7d54;
+.ov-figs .is-down dd {
+  color: var(--ov-red);
 }
-.ov-nums .is-down dd {
-  color: var(--c-change-neg);
+.ov-figs .is-quiet dd {
+  color: rgb(255 255 255 / 0.72);
 }
-.ov-nums dd small {
+.ov-figs dd small {
   margin-left: 8px;
-  font: 500 1rem var(--ov-display);
+  font-size: 1rem;
+  font-weight: 500;
   font-stretch: 100%;
   letter-spacing: 0;
-  color: var(--c-muted);
+  color: rgb(255 255 255 / 0.55);
 }
-.ov-nums dt {
-  color: var(--c-muted);
+.ov-figs dt {
+  color: rgb(255 255 255 / 0.8);
   font: 500 1.05rem var(--ov-display);
 }
-.ov-nums > div {
-  padding-top: 16px;
-  border-top: 3px solid var(--ov-slate);
+.ov-bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
 }
-.ov-nums .is-up {
-  border-top-color: #2f7d54;
+.ov-bar span {
+  min-width: 4px;
+  background: #fff;
 }
-.ov-nums .is-down {
-  border-top-color: var(--c-change-neg);
+.ov-bar .is-down {
+  background: var(--ov-red);
 }
-:root[data-theme="dark"] .ov-nums dd {
-  color: var(--c-text);
-}
-:root[data-theme="dark"] .ov-nums > div:first-child {
-  border-top-color: var(--c-text);
-}
-.ov-note {
+.ov-panel-foot {
   margin: 0;
-  max-width: 60em;
+  color: rgb(255 255 255 / 0.6);
+  font: 400 0.95rem/1.5 var(--ov-display);
+}
+.ov-panel .c-prep,
+.ov-panel p {
+  color: rgb(255 255 255 / 0.8);
+}
+/* checks: one hairline row under the hero */
+.ov-checks {
+  display: grid;
+  gap: 14px;
+  margin-top: -56px;
+  padding: 22px 0;
+  border-block: 1px solid var(--c-line);
+}
+.ov-checks ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ov-checks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--c-text);
+  font: 500 1rem/1.45 var(--ov-display);
+}
+.ov-checks svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--ov-red);
+}
+.ov-checks p {
+  margin: 0;
   color: var(--c-muted);
   font-size: 0.86rem;
 }
 .ov-check {
   display: grid;
-  gap: 28px;
+  gap: 32px;
+}
+.ov-check h2,
+.ov-data h2,
+.ov > section > h2:not([class]),
+.ov > section > div > h2:not([class]) {
+  margin: 0;
+  color: var(--ov-ink);
+  font: 700 clamp(2rem, 3.4vw, 2.9rem)/1 var(--ov-display);
+  font-stretch: 80%;
+}
+:root[data-theme="dark"] .ov-check h2,
+:root[data-theme="dark"] .ov-data h2 {
+  color: var(--c-text);
 }
 .ov-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 40px;
+  gap: 48px;
 }
 .ov-step {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 2px solid var(--ov-ink);
   color: var(--c-muted);
   text-decoration: none;
 }
+:root[data-theme="dark"] .ov-step {
+  border-top-color: var(--c-line-2);
+}
 .ov-step svg {
-  color: var(--c-focus);
+  color: var(--ov-red);
 }
 .ov-step h3 {
   margin: 0;
   color: var(--c-text);
-  font: 700 1.35rem var(--ov-display);
+  font: 700 1.45rem var(--ov-display);
   font-stretch: 85%;
-}
-.ov-step svg {
-  color: var(--ov-silt);
 }
 .ov-step p {
   margin: 0;
   line-height: 1.6;
 }
 .ov-step > span {
-  color: var(--ov-silt);
-  font-weight: 500;
+  color: var(--ov-red);
+  font: 600 1rem var(--ov-display);
   text-decoration: underline;
   text-decoration-color: transparent;
-  text-underline-offset: 4px;
-  transition: text-decoration-color 200ms ease;
+  text-underline-offset: 5px;
+  transition: text-decoration-color 180ms ease;
 }
 .ov-step:hover > span,
 .ov-step:focus-visible > span {
   text-decoration-color: currentColor;
 }
 .ov-step:focus-visible {
-  outline: 2px solid var(--c-focus);
+  outline: 2px solid var(--ov-red);
   outline-offset: 6px;
   border-radius: 4px;
 }
@@ -2461,7 +2324,7 @@
   border-top: 1px solid var(--c-line);
 }
 .ov-data h2 {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
 }
 .ov-data ul {
   display: flex;
@@ -2473,61 +2336,101 @@
   color: var(--c-muted);
 }
 .ov-data a {
-  color: var(--ov-silt);
+  color: var(--ov-red);
 }
-@media (max-width: 900px) {
+.ov-note {
+  margin: 0;
+  color: var(--c-muted);
+  font-size: 0.86rem;
+}
+@media (max-width: 1000px) {
   .ov {
-    gap: 56px;
+    gap: 64px;
+    padding-top: 16px;
   }
-  .ov-pass {
-    margin: -16px -16px 0;
+  .ov-panel {
+    padding: 28px 24px 24px;
+    border-radius: 22px;
   }
-  .ov-pass-frame {
-    height: clamp(560px, 86svh, 760px);
+  .ov-figs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 0;
   }
-  .ov-scrim {
-    background: linear-gradient(0deg, rgb(10 42 34 / 0.95) 0%, rgb(10 42 34 / 0.7) 45%, rgb(10 42 34 / 0) 75%);
+  .ov-figs > div:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
   }
-  .ov-copy {
-    left: 20px;
-    right: 20px;
-    bottom: 84px;
-    max-width: none;
+  .ov-checks {
+    margin-top: -24px;
   }
-  .ov-controls {
-    left: 20px;
-    right: auto;
-    bottom: 24px;
-  }
-  .ov-date.is-l {
-    left: 20px;
-  }
-  .ov-date.is-r {
-    right: 20px;
-  }
-  .ov-pass-foot {
-    padding: 0 16px;
-  }
-  .ov-nums,
+  .ov-checks ul,
   .ov-steps {
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
+    gap: 18px;
+  }
+  .ov-steps {
+    gap: 32px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ov-img-change,
-  .ov-scan,
-  .ov-date,
-  .ov-btn {
+  .ov-btn,
+  .ov-step > span {
     transition: none;
   }
 }
-/* sections other components render inside the Overview (WardTeaser) take its display face too */
-.ov > section > h2:not([class]),
-.ov > section > div > h2:not([class]) {
-  font-family: var(--ov-display);
-  font-weight: 700;
+/* the people and wards blocks (WardTeaser): quiet rows in the Overview's colours */
+.ov .ov-people-card {
+  background: var(--d-card) !important;
+  box-shadow: none !important;
+}
+.ov .ov-people-ic {
+  background: rgb(14 42 35 / 0.08) !important;
+  color: var(--ov-ink) !important;
+}
+.ov .ov-people-go {
+  color: var(--ov-red) !important;
+}
+.ov .ov-wards {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.ov .ov-wards-list > * {
+  border-radius: 0 !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--c-line) !important;
+}
+.ov .ov-wards-n {
+  background: transparent !important;
+  color: var(--c-muted) !important;
+  font-family: var(--ov-display) !important;
+}
+.ov .ov-wards-bar {
+  height: 4px !important;
+  background: rgb(14 42 35 / 0.08) !important;
+}
+.ov .ov-wards-bar i {
+  background: var(--ov-ink) !important;
+  opacity: 0.75;
+}
+:root[data-theme="dark"] .ov .ov-wards-bar i {
+  background: var(--c-text) !important;
+}
+.ov .ov-wards-pct {
+  color: var(--ov-ink) !important;
+  font-family: var(--ov-display) !important;
+}
+:root[data-theme="dark"] .ov .ov-wards-pct {
+  color: var(--c-text) !important;
+}
+.ov .ov-wards-head h2,
+.ov .ov-people h2 {
+  margin: 0;
+  color: var(--ov-ink);
+  font: 700 clamp(2rem, 3.4vw, 2.9rem)/1 var(--ov-display) !important;
   font-stretch: 80%;
+}
 /* ---------- plain reading: legend, tapped answer, a finding's line (colours come from the backend's layer) ---------- */
 .c-plain-key {
   margin: 0;
@@ -3243,4 +3146,428 @@
 .c-hero-map .c-map-note.c-map-columns {
   top: 10px; /* the hero map keeps its caption along the bottom */
   bottom: auto;
+}
+.ov .ov-wards .c-btn.is-primary {
+  border-color: var(--ov-ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ov-ink);
+}
+
+/* ---------- Overview dashboard: white cards, blue (#3b5bdb) and orange (#e8590c), validated in both themes ---------- */
+.db {
+  --db-blue: #3b5bdb;
+  --db-orange: #e8590c;
+  --db-tint: #edf1ff;
+  --db-card: #fff;
+  --db-ink: #14213d;
+  --db-muted: #6b7895;
+  --db-line: #e8ecf4;
+  --db-shadow: 0 1px 2px rgb(20 33 61 / 0.04), 0 12px 32px -12px rgb(20 33 61 / 0.12);
+  display: grid;
+  gap: 20px;
+  padding: 8px 0 32px;
+  color: var(--db-ink);
+  font-family: var(--sans);
+}
+:root[data-theme="dark"] .db {
+  --db-blue: #6b8afd;
+  --db-tint: rgb(107 138 253 / 0.14);
+  --db-card: var(--d-card);
+  --db-ink: var(--c-text);
+  --db-muted: var(--c-muted);
+  --db-line: var(--c-line);
+  --db-shadow: 0 0 0 1px var(--c-line);
+}
+.db-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 24px;
+}
+.db-head h1 {
+  margin: 0;
+  font: 600 clamp(1.5rem, 2.4vw, 1.9rem)/1.15 var(--sans);
+  letter-spacing: -0.01em;
+  color: var(--db-ink);
+}
+.db-head p {
+  margin: 4px 0 0;
+  color: var(--db-muted);
+}
+.db-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.db-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--db-line);
+  border-radius: 999px;
+  background: var(--db-card);
+  color: var(--db-ink);
+  font: 500 0.92rem var(--sans);
+  text-decoration: none;
+  box-shadow: var(--db-shadow);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.db-btn:hover {
+  border-color: var(--db-blue);
+}
+.db-btn.is-primary {
+  border-color: var(--db-ink);
+  background: var(--db-ink);
+  color: var(--db-card);
+}
+:root[data-theme="dark"] .db-btn.is-primary {
+  border-color: var(--db-blue);
+  background: var(--db-blue);
+  color: #0b1020;
+}
+.db-btn:focus-visible,
+.db-bars g:focus-visible,
+.db-link:focus-visible {
+  outline: 2px solid var(--db-blue);
+  outline-offset: 3px;
+}
+.db-card {
+  min-width: 0;
+  padding: 22px 24px;
+  border-radius: 20px;
+  background: var(--db-card);
+  box-shadow: var(--db-shadow);
+}
+.db-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+.db-kpi {
+  display: grid;
+  gap: 8px;
+}
+.db-kpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.db-kpi-top p {
+  margin: 0;
+  color: var(--db-muted);
+  font-size: 0.92rem;
+}
+.db-spark {
+  flex: none;
+  width: 84px;
+  height: 28px;
+}
+.db-spark polyline {
+  stroke: var(--db-blue);
+}
+.db-spark.is-orange polyline {
+  stroke: var(--db-orange);
+}
+.db-kpi-value {
+  margin: 0;
+  font: 600 2rem/1.1 var(--sans);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.db-kpi-value small {
+  margin-left: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--db-muted);
+}
+.db-kpi-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  color: var(--db-muted);
+  font-size: 0.82rem;
+}
+.db-kpi-foot b {
+  font-weight: 600;
+  color: var(--db-ink);
+}
+.db-kpi-foot b.is-blue {
+  color: var(--db-blue);
+}
+.db-kpi-foot b.is-orange {
+  color: var(--db-orange);
+}
+.db-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+  gap: 20px;
+}
+.db-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.db-card-head h2 {
+  margin: 0;
+  font: 600 1.1rem var(--sans);
+  color: var(--db-ink);
+}
+.db-card-head p {
+  margin: 4px 0 0;
+  color: var(--db-muted);
+  font-size: 0.85rem;
+}
+.db-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--db-muted);
+  font-size: 0.82rem;
+}
+.db-key i,
+.db-legend i,
+.db-list > li > i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--db-blue);
+}
+.db-legend i.is-orange,
+.db-list > li > i.is-orange {
+  background: var(--db-orange);
+}
+.db-legend i.is-muted {
+  background: var(--db-line);
+  box-shadow: inset 0 0 0 1px var(--db-muted);
+}
+.db-muted {
+  margin: 10px 0 0;
+  color: var(--db-muted);
+  font-size: 0.8rem;
+}
+.db-bars,
+.db-timeline {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.db-grid {
+  stroke: var(--db-line);
+  stroke-width: 1;
+}
+.db-bar {
+  fill: var(--db-tint);
+  transition: fill 160ms ease;
+}
+.db-bar.is-on {
+  fill: var(--db-blue);
+}
+.db-axis {
+  fill: var(--db-muted);
+  font: 400 13px var(--sans);
+}
+.db-axis.is-on {
+  fill: var(--db-ink);
+  font-weight: 600;
+}
+.db-tip rect {
+  fill: var(--db-card);
+  stroke: var(--db-line);
+  filter: drop-shadow(0 6px 14px rgb(20 33 61 / 0.14));
+}
+.db-tip-k {
+  fill: var(--db-muted);
+  font: 500 12px var(--sans);
+}
+.db-tip-v {
+  fill: var(--db-ink);
+  font: 600 16px var(--sans);
+}
+.db-donut {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+}
+.db-donut svg {
+  width: min(220px, 100%);
+}
+.db-donut-track {
+  fill: none;
+  stroke: var(--db-tint);
+  stroke-width: 22;
+}
+.db-donut-seg {
+  fill: none;
+  stroke: var(--db-blue);
+  stroke-width: 22;
+  stroke-linecap: round;
+}
+.db-donut-seg.is-orange {
+  stroke: var(--db-orange);
+}
+.db-donut-seg.is-muted {
+  stroke: var(--db-muted);
+  opacity: 0.35;
+}
+.db-donut-k {
+  fill: var(--db-muted);
+  font: 500 13px var(--sans);
+}
+.db-donut-v {
+  fill: var(--db-ink);
+  font: 600 32px var(--sans);
+}
+.db-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--db-muted);
+  font-size: 0.85rem;
+}
+.db-legend b {
+  color: var(--db-ink);
+}
+.db-pass {
+  fill: var(--db-card);
+  stroke: var(--db-muted);
+  stroke-width: 2;
+}
+.db-pass.is-blue {
+  fill: var(--db-blue);
+  stroke: var(--db-card);
+  stroke-width: 3;
+}
+.db-pass.is-orange {
+  fill: var(--db-orange);
+  stroke: var(--db-card);
+  stroke-width: 3;
+}
+.db-pass-label {
+  fill: var(--db-ink);
+  font: 600 13px var(--sans);
+}
+.db-link {
+  color: var(--db-blue);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+.db-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.db-list > li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid var(--db-line);
+}
+.db-list > li:first-child {
+  border-top: 0;
+}
+.db-list div {
+  display: grid;
+  gap: 2px;
+}
+.db-list b {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.db-list span {
+  color: var(--db-muted);
+  font-size: 0.8rem;
+}
+.db-list-v {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.db-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding-top: 8px;
+  color: var(--db-muted);
+  font-size: 0.85rem;
+}
+.db-foot a {
+  color: var(--db-blue);
+}
+@media (max-width: 1100px) {
+  .db-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .db-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .db-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .db-card {
+    padding: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .db-btn,
+  .db-bar {
+    transition: none;
+  }
+}
+.db-donut-seg {
+  stroke-linecap: butt;
+}
+.db-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.db-row > .db-card {
+  display: flex;
+  flex-direction: column;
+}
+.db-timeline {
+  margin-block: auto;
+}
+/* the people and wards blocks (WardTeaser) in the dashboard's type and colours */
+.db .ov-people h2,
+.db .ov-wards-head h2 {
+  margin: 0 !important;
+  color: var(--db-ink) !important;
+  font: 600 1.3rem/1.2 var(--sans) !important;
+  letter-spacing: 0 !important;
+}
+.db .ov-people .c-eyebrow,
+.db .ov-wards .c-eyebrow {
+  display: none;
+}
+.db .ov-people-card {
+  background: var(--db-card) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  box-shadow: var(--db-shadow) !important;
+}
+.db .ov-people-ic {
+  background: var(--db-tint) !important;
+  color: var(--db-blue) !important;
+}
+.db .ov-people-go {
+  color: var(--db-blue) !important;
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Columns2, FileSearch, Home, Info, Layers, Map, Menu, PlayCircle, Radar, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Siren, Cloud, Columns2, FileSearch, Film, Home, Info, Layers, Map, MapPin, Menu, PlayCircle, Radar, X, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -21,12 +21,21 @@ const NAV: Group[] = [
     items: [
       { href: "/chattogram", label: "overview", icon: Home },
       { href: "/chattogram/tour", label: "tour", icon: PlayCircle },
+      { href: "/chattogram/impact", label: "impact", icon: Siren },
       { href: "/chattogram/explore", label: "explore", icon: Map },
       { href: "/chattogram/compare", label: "compare", icon: Columns2 },
       { href: "/chattogram/processed", label: "processed", icon: Radar },
       { href: "/chattogram/evidence", label: "evidence", icon: FileSearch },
       { href: "/chattogram/catalogue", label: "catalogue", icon: Layers },
       { href: "/chattogram/about", label: "about", icon: Info },
+    ],
+  },
+  {
+    group: "peopleGroup",
+    items: [
+      { href: "/chattogram/my-area", label: "myArea", icon: MapPin },
+      { href: "/chattogram/clouds", label: "clouds", icon: Cloud },
+      { href: "/chattogram/timelapse", label: "timelapse", icon: Film },
     ],
   },
 ];
