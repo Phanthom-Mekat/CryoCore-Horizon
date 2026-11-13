@@ -68,8 +68,9 @@ refer to the recipient's own development server.
 Shared views open in 2D; terrain, camera tilt and bearing are not recorded.
 Invalid controls fall back to safe defaults. An invalid or unavailable case ID
 shows an error rather than opening another case. Pixel coordinates retain full
-precision. `pnpm test` (or `node --experimental-strip-types --test tests/processed-state.test.mjs` alone) checks
-parsing, precision and round-trip restoration.
+precision. `pnpm test` checks parsing, precision and round-trip restoration. To run one test file alone, load the
+same resolver `pnpm test` uses (it finds `@/` and extensionless imports):
+`node --experimental-strip-types --import ./tests/support/resolve-ts.mjs --test tests/processed-state.test.mjs`.
 
 ## Inspect a native radar pixel
 
@@ -93,6 +94,10 @@ flooding or replace independent validation.
 - Until the processing worker publishes results, every difference is called observed radar change, not water change.
 - Evidence shows the calibrated pilot's numbers (and the brief JSON's `calibrated_pilot`) as measured only when the
   compared dates are exactly the pilot's; for any other pair it says the pilot covers different dates.
+- A finding picked on Explore (URL `f`) opens first on Evidence and in its printout, and the brief names it: JSON
+  `selected_finding` (its values as published, outline, `pair_dates`, `same_pair_as_compared`, method version, source
+  granules, `share_url` and `replay_url` with `f`), and `selected: true` on its CSV row and GeoJSON feature. Without a
+  selection those keys are still there (`null` / `false`), so the files keep one shape.
 
 ## Frozen case (replay without the backend)
 

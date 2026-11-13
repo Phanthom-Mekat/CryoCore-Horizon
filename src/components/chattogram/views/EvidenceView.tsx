@@ -77,15 +77,15 @@ export function EvidenceView() {
             <Printer size={15} aria-hidden="true" />
             {ev.print}
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null, rain, pc, pilot), null, 2), "application/json")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.json`, JSON.stringify(briefJson(region, before, after, url, source, replayable ? replayUrl : null, rain, pc, pilot, finding), null, 2), "application/json")}>
             <Download size={15} aria-hidden="true" />
             JSON
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.csv`, briefCsv(before, after, pc), "text/csv")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.csv`, briefCsv(before, after, pc, finding), "text/csv")}>
             <Download size={15} aria-hidden="true" />
             CSV
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.geojson`, JSON.stringify(briefGeojson(before, after, pc)), "application/geo+json")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.geojson`, JSON.stringify(briefGeojson(before, after, pc, finding)), "application/geo+json")}>
             <Download size={15} aria-hidden="true" />
             GeoJSON
           </button>

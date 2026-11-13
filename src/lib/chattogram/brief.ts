@@ -2,9 +2,12 @@
 // Pair values come from the stored NASA metadata and the compatibility checks; once the backend has published the
 // processed case, its metrics and findings are added exactly as served, with the method version and source granules.
 // The calibrated pilot (backend /api/v1/cases) is added the same way, as its manifest publishes it.
+// The finding picked on Explore (URL `f`) is named in `selected_finding` and marked `selected` in the CSV and GeoJSON;
+// the keys are always there (null / false without a selection), so tools reading the files see one shape.
 import { compatibility, type Acquisition } from "./acquisitions";
 import type { Region } from "./api";
 import { methodId, type ProcessedCase } from "./case-api";
+import { selectFinding } from "./finding-selection";
 import { pilotCovers, type ProcessedCase as PilotCase } from "./processed";
 import { rainBefore, type RainSeries } from "./rain";
 import type { CaseSource } from "@/components/chattogram/CaseProvider";
@@ -43,6 +46,37 @@ function processedSection(pc: ProcessedCase | null | undefined, before: Acquisit
   };
 }
 
+/** The selected finding, if the published case has it (none while it isn't ready, or for an id it doesn't have). */
+function selected(pc: ProcessedCase | null | undefined, findingId: string | null) {
+  const sel = selectFinding(pc?.detail.status === "ready" ? pc : null, findingId);
+  return sel.kind === "selected" ? sel.finding : null;
+}
+
+/** The finding picked on Explore (URL `f`), as the case published it: its values, outline, dates, method and sources. */
+function selectedSection(pc: ProcessedCase | null | undefined, before: Acquisition, after: Acquisition, findingId: string | null, shareUrl: string, replayUrl: string | null) {
+  const finding = selected(pc, findingId);
+  if (!finding || !pc) return null;
+  const d = pc.detail;
+  const id = finding.properties.id;
+  return {
+    ...finding.properties,
+    geometry: finding.geometry,
+    // measured on the case's own pair, which may differ from the dates this brief compares
+    same_pair_as_compared: d.before.granule === before.granule && d.after.granule === after.granule,
+    pair_dates: { before: d.before.date, after: d.after.date },
+    method_version: methodId(d),
+    source_granules: d.sources.map((s) => s.granule),
+    share_url: shareUrl && withFinding(shareUrl, id),
+    replay_url: replayUrl && withFinding(replayUrl, id),
+  };
+}
+
+const withFinding = (url: string, id: string) => {
+  const u = new URL(url);
+  u.searchParams.set("f", id);
+  return u.toString();
+};
+
 const source = (a: Acquisition) => ({
   granule: a.granule,
   cmr_concept_id: a.conceptId,
@@ -71,6 +105,7 @@ export function briefJson(
   rain: RainSeries | null = null,
   pc?: ProcessedCase | null,
   pilot: PilotCase | null = null,
+  findingId: string | null = null,
 ) {
   const p = processedSection(pc, before, after);
   const pilotMeasured = pilot !== null && pilotCovers(pilot, before.conceptId, after.conceptId);
@@ -93,6 +128,7 @@ export function briefJson(
     },
     compared: { before: source(before), after: source(after), days_apart: Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5) },
     compatibility: compatibility(before, after),
+    selected_finding: selectedSection(pc, before, after, findingId, shareUrl, replayUrl),
     processed_case: p,
     rainfall_context: rain && rainfallContext(rain, before, after),
     calibrated_pilot: pilot && pilotEvidence(pilot, pilotMeasured, origin.mode === "live" ? shareUrl : null),
@@ -151,14 +187,16 @@ const cell = (v: unknown) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-export function briefCsv(before: Acquisition, after: Acquisition, pc?: ProcessedCase | null) {
+export function briefCsv(before: Acquisition, after: Acquisition, pc?: ProcessedCase | null, findingId: string | null = null) {
   const p = processedSection(pc, before, after);
+  const selectedId = selected(pc, findingId)?.properties.id;
   const rows: Record<string, unknown>[] = [
     ...[before, after].map((a, i) => ({ role: i ? "after" : "before", ...source(a) })),
     // one row per finding, with the pair, method and claim it rests on
     ...(p?.findings ?? []).map((f) => ({
       role: "finding",
       ...f,
+      selected: f.id === selectedId,
       before_granule: p!.pair.before.granule,
       after_granule: p!.pair.after.granule,
       before_date: p!.pair.before.date,
@@ -171,8 +209,9 @@ export function briefCsv(before: Acquisition, after: Acquisition, pc?: Processed
   return [head.join(","), ...rows.map((r) => head.map((k) => cell(r[k])).join(","))].join("\n");
 }
 
-export function briefGeojson(before: Acquisition, after: Acquisition, pc?: ProcessedCase | null) {
+export function briefGeojson(before: Acquisition, after: Acquisition, pc?: ProcessedCase | null, findingId: string | null = null) {
   const p = processedSection(pc, before, after);
+  const selectedId = selected(pc, findingId)?.properties.id;
   const provenance = p && { before_granule: p.pair.before.granule, after_granule: p.pair.after.granule, method: methodId(p), claim: p.claim, synthetic_fixture: p.synthetic_fixture };
   return {
     type: "FeatureCollection",
@@ -185,7 +224,7 @@ export function briefGeojson(before: Acquisition, after: Acquisition, pc?: Proce
       ...(p && pc
         ? [
             { type: "Feature", properties: { role: "analysis_area", name: p.title, provenance: p.analysis_area.provenance }, geometry: p.analysis_area.geometry },
-            ...pc.findings.features.map((f) => ({ type: "Feature", properties: { role: "finding", ...f.properties, ...provenance }, geometry: f.geometry })),
+            ...pc.findings.features.map((f) => ({ type: "Feature", properties: { role: "finding", ...f.properties, selected: f.properties.id === selectedId, ...provenance }, geometry: f.geometry })),
           ]
         : []),
     ],

@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test \"tests/**/*.test.mjs\"",
+    "test": "node --experimental-strip-types --import ./tests/support/resolve-ts.mjs --test \"tests/**/*.test.mjs\"",
     "api:types": "openapi-typescript http://127.0.0.1:8000/openapi.json -o src/lib/chattogram/api-schema.d.ts",
     "freeze-case": "node --experimental-strip-types scripts/freeze-case.mts",
     "fetch-rain": "node --experimental-strip-types scripts/fetch-rain.mts"

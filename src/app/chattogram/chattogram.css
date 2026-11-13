@@ -920,6 +920,11 @@
     border-color: #ccc;
     break-inside: avoid;
   }
+  /* box-shadow doesn't print: mark the selected finding's row with a real border */
+  .d-table tr.is-selected td:first-child {
+    box-shadow: none;
+    border-left: 3px solid #111;
+  }
 }
 
 /* ---------- legends for processed results ---------- */
