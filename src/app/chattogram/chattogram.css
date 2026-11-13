@@ -3571,3 +3571,36 @@
 .db .ov-people-go {
   color: var(--db-blue) !important;
 }
+.db .ov-wards {
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: var(--db-card) !important;
+  box-shadow: var(--db-shadow) !important;
+}
+.db .ov-wards-list > * {
+  border-radius: 0 !important;
+  background: transparent !important;
+  border-top: 1px solid var(--db-line) !important;
+}
+.db .ov-wards-list > *:first-child {
+  border-top: 0 !important;
+}
+.db .ov-wards-n {
+  background: var(--db-tint) !important;
+  color: var(--db-blue) !important;
+}
+.db .ov-wards-bar {
+  background: var(--db-tint) !important;
+}
+.db .ov-wards-bar i {
+  background: var(--db-blue) !important;
+}
+.db .ov-wards-pct {
+  color: var(--db-ink) !important;
+}
+.db .ov-wards .c-btn.is-primary {
+  border-color: var(--db-ink) !important;
+  border-radius: 999px !important;
+  background: var(--db-ink) !important;
+  color: var(--db-card) !important;
+}
