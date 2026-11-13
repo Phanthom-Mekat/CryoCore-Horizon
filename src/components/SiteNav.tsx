@@ -8,8 +8,8 @@ import { ThemeToggle } from "./ThemeToggle";
 const SECTIONS = [
   { id: "clouds", label: "Why radar" },
   { id: "radar", label: "How it works" },
-  { id: "delta", label: "The delta" },
-  { id: "team", label: "Team" },
+  { id: "dashboard", label: "The dashboard" },
+  { id: "delta", label: "The data" },
 ] as const;
 
 const subscribeScroll = (cb: () => void) => {

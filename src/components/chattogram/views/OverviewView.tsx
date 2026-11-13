@@ -1,11 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, CloudOff, Columns2, FileSearch, Layers, Map as MapIcon, PlayCircle, Radar, Ruler, Scan, ScanLine, ShieldCheck, Satellite, Activity, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { Kpi, KpiStrip } from "@/components/dashboard/ui";
 import { compatibility, covers } from "@/lib/chattogram/acquisitions";
 import { CASE_ID, layerImage } from "@/lib/chattogram/case-api";
-import { plainLayer } from "@/lib/chattogram/plain";
+import { columnsOf, plainLayer } from "@/lib/chattogram/plain";
 import { fmtArea, fmtDate, fmtDayMonth, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { BackendText } from "../BackendText";
@@ -26,6 +27,7 @@ export function OverviewView() {
   const t = useT();
   const o = t.overview;
   const pilotLoad = usePilot();
+  const columns = useMemo(() => columnsOf(processed.status === "ready" && processed.data.detail.status === "ready" ? processed.data : null), [processed]);
   if (load.status !== "ready" || !stack || !before || !after) return null;
   const detail = processed.status === "ready" ? processed.data.detail : null;
   const m = detail?.status === "ready" ? detail.metrics : null;
@@ -75,6 +77,9 @@ export function OverviewView() {
             selected={after.conceptId}
             boundary={load.data.region.boundary}
             controls={false}
+            threeD={!!overlay}
+            orbit={!!overlay}
+            columns={overlay ? columns : null}
           />
           <p className="c-hero-map-cap">{overlay ? o.changeMapCaption(span) : o.mapCaption(fmtDate(after.start), year)}</p>
         </div>

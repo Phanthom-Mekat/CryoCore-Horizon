@@ -12,6 +12,7 @@ import { FINDING } from "./MapKey";
 import { loadMapbox, MAPBOX_CONFIGURED, MAPBOX_TOKEN, mapStyle, followMapTheme, mapError, cameraDuration } from "@/lib/mapbox";
 import { MapUnavailable } from "@/components/maps/MapUnavailable";
 import type { ProcessedImage } from "@/lib/chattogram/processed";
+import type { Columns } from "@/lib/chattogram/plain";
 
 /**
  * Orientation landmarks (approximate centres), labelled in our own style above the basemap. The names are HTML labels,
@@ -77,6 +78,12 @@ type Props = {
   /** The analysis rectangle, outlined and named. */
   area?: GeoJSON.Feature | null;
   areaName?: string;
+  /** Change areas as 3D columns (lib/chattogram/plain.ts columnsOf), drawn while the map is in 3D. */
+  columns?: Columns | null;
+  /** Open in 3D (terrain, tilted camera) and keep it, e.g. for the tour and the Overview. */
+  threeD?: boolean;
+  /** Slowly circle the view; stops for good once the viewer drags, scrolls or touches the map. */
+  orbit?: boolean;
 };
 
 export function CaseMap({
@@ -101,12 +108,17 @@ export function CaseMap({
   onFinding,
   area = null,
   areaName = "Analysis area",
+  columns = null,
+  threeD = false,
+  orbit = false,
 }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const initialView = useRef(view);
   const map = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
   const [terrain, setTerrain] = useState(false);
+  const [spin, setSpin] = useState(false); // the "Fly around" button
+  const in3d = terrain || threeD;
   const [rasterError, setRasterError] = useState(false);
   const [rasterShown, setRasterShown] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -213,6 +225,23 @@ export function CaseMap({
             "line-color": ["case", ["boolean", ["get", "selected"], false], "#f3eee5", ["match", ["get", "kind"], "increase", FINDING.increase.color, "decrease", FINDING.decrease.color, "#f3eee5"]],
             "line-width": ["case", ["boolean", ["get", "selected"], false], 3, 1.4],
           },
+        });
+        m.addSource("columns", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        m.addLayer({
+          id: "columns",
+          type: "fill-extrusion",
+          source: "columns",
+          paint: {
+            "fill-extrusion-color": ["get", "color"],
+            "fill-extrusion-height": 0,
+            "fill-extrusion-opacity": 0.9,
+            "fill-extrusion-vertical-gradient": true,
+            "fill-extrusion-emissive-strength": 0.7,
+          },
+        });
+        m.on("click", "columns", (e) => {
+          const id = e.features?.[0]?.properties?.id;
+          if (id) latest.current.onFinding?.(String(id));
         });
         m.on("click", "findings-pattern", (e) => {
           const id = e.features?.[0]?.properties?.id;
@@ -424,10 +453,72 @@ export function CaseMap({
     if (map.current?.getLayer("processed")) map.current.setPaintProperty("processed", "raster-opacity", imageOpacity);
   }, [imageOpacity, ready]);
 
+  // 3D columns: shown only in 3D, rising from the ground each time they appear
+  const showColumns = !!columns && in3d;
+  useEffect(() => {
+    const m = map.current;
+    const src = m?.getSource("columns") as GeoJSONSource | undefined;
+    if (!m || !src) return;
+    src.setData(showColumns ? columns! : { type: "FeatureCollection", features: [] });
+    if (!showColumns) return;
+    // full height over the whole area (zoom 10), a quarter at field zoom (14+), so close-ups don't wall off the view
+    const height = (k: number) =>
+      m.setPaintProperty("columns", "fill-extrusion-height", ["interpolate", ["linear"], ["zoom"], 10, ["*", ["get", "h"], k], 14, ["*", ["get", "h"], k / 4]]);
+    if (matchMedia(REDUCED).matches) {
+      height(1);
+      return;
+    }
+    let frame = 0;
+    const start = performance.now();
+    const rise = (now: number) => {
+      const k = Math.min(1, (now - start) / 1400);
+      height(1 - (1 - k) ** 3); // ease out
+      if (k < 1) frame = requestAnimationFrame(rise);
+    };
+    frame = requestAnimationFrame(rise);
+    return () => cancelAnimationFrame(frame);
+  }, [columns, showColumns, ready]);
+
+  // threeD: terrain on and a tilted camera from the start
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !threeD) return;
+    m.setTerrain({ source: "terrain-dem", exaggeration: 1 });
+    if (m.getPitch() < 30) m.easeTo({ pitch: 55, bearing: -20, duration: cameraDuration() * 2 });
+  }, [threeD, ready]);
+
+  // orbit: a slow turn (about 4° a second) that waits out camera animations and ends when the viewer takes over
+  const orbiting = (orbit || spin) && in3d;
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !orbiting || matchMedia(REDUCED).matches) return;
+    let frame = 0;
+    let last = performance.now();
+    const turn = (now: number) => {
+      if (!m.isEasing()) m.setBearing(m.getBearing() + ((now - last) / 1000) * 4);
+      last = now;
+      frame = requestAnimationFrame(turn);
+    };
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      setSpin(false);
+    };
+    frame = requestAnimationFrame(turn);
+    const container = m.getCanvasContainer();
+    container.addEventListener("pointerdown", stop);
+    container.addEventListener("wheel", stop, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      container.removeEventListener("pointerdown", stop);
+      container.removeEventListener("wheel", stop);
+    };
+  }, [orbiting, ready]);
+
   const setPerspective = (enabled: boolean) => {
     const m = map.current;
     if (!m || !ready) return;
     setTerrain(enabled);
+    if (!enabled) setSpin(false);
     m.setTerrain(enabled ? { source: "terrain-dem", exaggeration: 1 } : null);
     m.easeTo({ pitch: enabled ? 58 : 0, bearing: enabled ? -24 : 0, duration: cameraDuration() });
   };
@@ -440,6 +531,7 @@ export function CaseMap({
       {controls && <div className="map-view-tools">
         <button type="button" aria-pressed={!terrain} onClick={() => setPerspective(false)}>{t.map.analysis2d}</button>
         {allowTerrain && <button type="button" aria-pressed={terrain} onClick={() => setPerspective(true)}>{t.map.terrain3d}</button>}
+        {terrain && <button type="button" aria-pressed={spin} onClick={() => setSpin((v) => !v)}>{spin ? t.map.stopFlying : t.map.flyAround}</button>}
         <button type="button" onClick={() => map.current?.easeTo({ center: [initialView.current.lon, initialView.current.lat], zoom: initialView.current.zoom, duration: cameraDuration() })}>{t.map.recenter}</button>
       </div>}
       {hover && (
@@ -457,6 +549,7 @@ export function CaseMap({
       {imgState === "failed" && <p className="c-map-note is-bad">{t.map.failed}</p>}
       {imgState === "absent" && <p className="c-map-note is-bad">{t.map.absent}</p>}
       {error && <p className="c-map-note is-bad">{error}</p>}
+      {showColumns && <p className="c-map-note c-map-columns">{t.map.columnsNote}</p>}
       {rasterError && <p className="c-map-note is-bad">{t.map.calibratedFailed}</p>}
       {processed && rasterShown !== processed.url && !rasterError && <p className="c-map-note" role="status">{t.map.calibratedLoading}</p>}
     </div>

@@ -18,7 +18,6 @@ type Group = { group: NavKey; tag?: { label: NavKey; tone: "live" }; items: Item
 const NAV: Group[] = [
   {
     group: "caseGroup",
-    tag: { label: "realData", tone: "live" },
     items: [
       { href: "/chattogram", label: "overview", icon: Home },
       { href: "/chattogram/tour", label: "tour", icon: PlayCircle },
@@ -98,10 +97,6 @@ export function Shell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="d-side-foot">
-          <p className="d-status is-live">
-            <i aria-hidden="true" />
-            {nav.caseStatus}
-          </p>
           <Link href="/" className="d-back">
             <ArrowLeft size={16} aria-hidden="true" />
             {nav.back}

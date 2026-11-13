@@ -5,10 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight, FileSearch, Map as MapIcon, Maximize, Minimize, Pause, Play, RotateCcw } from "lucide-react";
 import type { Map as MlMap } from "mapbox-gl";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { CompareSlider } from "@/components/CompareSlider";
 import { CASE as PASSES } from "@/lib/chattogram/catalog";
 import { CASE_ID, layerImage, type Finding, type LayerId } from "@/lib/chattogram/case-api";
-import { plainLayer, plainOf } from "@/lib/chattogram/plain";
+import { columnsOf, plainLayer, plainOf } from "@/lib/chattogram/plain";
 import { cameraDuration } from "@/lib/mapbox";
 import { fmtArea, fmtDate, fmtNum } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
@@ -24,6 +25,16 @@ type StepId = "clouds" | "place" | "compare" | "plain" | "field" | "honest" | "e
 const STEPS: StepId[] = ["clouds", "place", "compare", "plain", "field", "honest", "end"];
 const LAYER: Partial<Record<StepId, LayerId>> = { plain: "plain", field: "plain", honest: "plain", end: "plain" };
 const AUTOPLAY_MS = 14000;
+// Camera per map step: tilted and turned a little each time, so every step reads as a new shot in a recording.
+const CAMERA: Partial<Record<StepId, { pitch: number; bearing: number }>> = {
+  place: { pitch: 45, bearing: -15 },
+  plain: { pitch: 58, bearing: -30 },
+  field: { pitch: 62, bearing: 25 },
+  honest: { pitch: 50, bearing: -45 },
+  end: { pitch: 45, bearing: -10 },
+};
+const COLUMNS: StepId[] = ["plain", "field", "honest", "end"];
+const ORBIT: StepId[] = ["plain", "field", "end"];
 
 const bboxOf = (f: Finding) => {
   // polygons → rings → [lon, lat] points
@@ -46,6 +57,7 @@ export function TourView() {
 
   const pc = processed.status === "ready" && processed.data.detail.status === "ready" ? processed.data : null;
   const plainL = plainLayer(pc);
+  const columns = useMemo(() => columnsOf(pc), [pc]);
   // Use the largest plant-like candidate and keep its interpretation tentative.
   const field = useMemo(
     () => pc?.findings.features.filter((f) => plainOf(pc, f.properties.id) === "plants_grew").sort((a, b) => b.properties.area_km2 - a.properties.area_km2)[0] ?? null,
@@ -70,7 +82,8 @@ export function TourView() {
     if (!m || !mapReady || !areaBox || showSwipe) return;
     m.resize(); // the map was hidden under the cloud comparison on step 1
     const box = step === "field" && field ? bboxOf(field) : areaBox;
-    m.fitBounds(box, { padding: step === "field" ? 120 : 30, maxZoom: 14.5, duration: cameraDuration() * 2 });
+    const cam = CAMERA[step] ?? { pitch: 0, bearing: 0 };
+    m.fitBounds(box, { padding: step === "field" ? 120 : 30, maxZoom: 14.5, ...cam, duration: cameraDuration() * 3 });
   }, [step, showSwipe, mapReady, areaBox, field, cleanView]);
 
   const autoplay = playing && i < last; // playback ends on the last step by itself
@@ -155,6 +168,9 @@ export function TourView() {
             selectedFinding={showField ? field.properties.id : null}
             controls={false}
             allowTerrain={false}
+            threeD
+            columns={COLUMNS.includes(step) ? columns : null}
+            orbit={ORBIT.includes(step)}
             onReady={(m) => {
               map.current = m;
               setMapReady(true);
@@ -195,8 +211,21 @@ export function TourView() {
             {cleanView ? tt.exitClean : tt.clean}
           </button>
         </div>
-        <h1>{copy[step].title}</h1>
-        <p className="c-tour-body">{copy[step].body}</p>
+        <MotionConfig reducedMotion="user">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={step}
+              className="c-tour-copy"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+            >
+              <h1>{copy[step].title}</h1>
+              <p className="c-tour-body">{copy[step].body}</p>
+            </motion.div>
+          </AnimatePresence>
+        </MotionConfig>
         {!["clouds", "place"].includes(step) && <p className="c-hint">{dateSpan}</p>}
         {cleanView && source.mode === "frozen" && <p className="c-hint">{tt.recorded}</p>}
         {step === "plain" && <PlainKey layer={plainL} before={b} after={a} tapHint={false} />}
