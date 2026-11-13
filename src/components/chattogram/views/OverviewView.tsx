@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Columns2, FileSearch, Layers, Map as MapIcon, Radar, Ruler, Scan, ScanLine, ShieldCheck, Satellite, Activity, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowRight, CalendarDays, Columns2, FileSearch, Layers, Map as MapIcon, PlayCircle, Radar, Ruler, Scan, ScanLine, ShieldCheck, Satellite, Activity, TrendingDown, TrendingUp } from "lucide-react";
 import { Kpi, KpiStrip } from "@/components/dashboard/ui";
 import { compatibility, covers } from "@/lib/chattogram/acquisitions";
 import { fmtArea, fmtDate, fmtDayMonth, fmtNum, fmtSigned } from "@/lib/i18n/format";
@@ -49,7 +49,11 @@ export function OverviewView() {
           <h1>{o.title}</h1>
           <p className="c-hero-lede">{o.lede}</p>
           <div className="c-hero-actions">
-            <Link className="c-btn is-primary" href={href("/chattogram/compare")}>
+            <Link className="c-btn is-primary" href="/chattogram/tour">
+              <PlayCircle size={16} aria-hidden="true" />
+              {t.tour.start}
+            </Link>
+            <Link className="c-btn" href={href("/chattogram/compare")}>
               <Columns2 size={16} aria-hidden="true" />
               {o.startCompare}
               <ArrowRight size={16} aria-hidden="true" />

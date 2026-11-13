@@ -1831,3 +1831,204 @@
 .p-histogram strong { text-align: right; }
 .p-area-inspector > p { line-height: 1.6; }
 .p-area-inspector .c-links { flex-wrap: wrap; margin-top: 12px; }
+
+/* ---------- plain reading: legend, tapped answer, a finding's line (colours come from the backend's layer) ---------- */
+.c-plain-key {
+  margin: 0;
+}
+.c-plain-key .c-key-list li {
+  display: grid;
+  grid-template-columns: 22px 16px minmax(0, 1fr) auto;
+}
+.c-plain-key .c-key {
+  margin: 0;
+  box-shadow: inset 0 0 0 1px var(--c-line-2);
+}
+.c-plain-key small {
+  color: var(--c-dim);
+}
+.c-plain-icon {
+  color: var(--c-muted);
+}
+.c-plain-area {
+  color: var(--c-muted);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+.c-plain-key figcaption {
+  margin-top: 10px;
+}
+.c-plain-answer header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+.c-plain-answer h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 2px;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+.c-plain-answer dl {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 0;
+}
+.c-plain-answer dt {
+  margin-top: 6px;
+  color: var(--c-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+:lang(bn) .c-plain-answer dt {
+  letter-spacing: 0;
+  text-transform: none;
+}
+.c-plain-answer dd {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.c-plain-sure {
+  margin-top: 12px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--d-warn);
+  color: var(--c-muted);
+  font-size: 0.82rem;
+}
+.c-plain-badge {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--c-panel);
+  color: #070b12; /* on the category colour; every one is light enough */
+}
+.c-plain-line {
+  display: flex;
+  gap: 10px;
+  align-items: start;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--c-panel);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.c-plain-line .c-plain-badge {
+  width: 28px;
+  height: 28px;
+}
+.c-plain-line small {
+  display: block;
+  margin-top: 4px;
+  color: var(--c-dim);
+}
+
+/* ---------- guided tour: a large stage and one caption card, legible in a recorded video ---------- */
+.c-tour {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 20px;
+  align-items: stretch;
+  /* fits one screen under the header and the frozen-case notice, so a recording never scrolls */
+  height: max(520px, calc(100dvh - 230px));
+}
+.c-tour-stage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--c-line);
+  border-radius: 14px;
+  background: var(--c-navy);
+}
+.c-tour-map,
+.c-tour-map .c-map {
+  height: 100%;
+}
+.c-tour-card {
+  overflow-y: auto;
+}
+.c-tour-map[hidden] {
+  display: none;
+}
+.c-tour-stage .clouds {
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+.c-tour-stage .clouds .compare {
+  max-height: calc(100dvh - 420px);
+  margin: 0 auto;
+}
+.c-tour-stage .clouds-dates {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.c-tour-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px;
+  border: 1px solid var(--c-line);
+  border-radius: 14px;
+  background: var(--c-navy);
+}
+.c-tour-card h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+  line-height: 1.15;
+}
+.c-tour-body {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.55;
+}
+.c-tour-cta {
+  display: grid;
+  gap: 10px;
+}
+.c-tour-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+}
+.c-tour-dots span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--c-line-2);
+}
+.c-tour-dots .is-done {
+  background: var(--c-muted);
+}
+.c-tour-dots .is-on {
+  background: var(--c-focus);
+}
+.c-tour-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.c-tour-controls .is-primary {
+  margin-left: auto;
+}
+.c-tour-empty {
+  max-width: 640px;
+}
+@media (max-width: 1100px) {
+  .c-tour {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .c-tour-map,
+  .c-tour-map .c-map {
+    min-height: 56vh;
+  }
+  .c-tour-stage .clouds-dates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

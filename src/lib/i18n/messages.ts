@@ -15,6 +15,7 @@ const en = {
     caseGroup: "Chattogram · NISAR",
     realData: "Real data",
     overview: "Overview",
+    tour: "Guided tour",
     explore: "Explore map",
     compare: "Compare dates",
     processed: "Calibrated radar",
@@ -699,6 +700,125 @@ const en = {
     title: "SYNTHETIC QA DATA — NOT NISAR",
     body: "This case was processed from generated test fixtures to check the pipeline. Every layer, number and finding on these pages is made up.",
   },
+  /** The plain reading: each change area in everyday words (backend app/processing/plain.py). Always "likely". */
+  plain: {
+    layer: "What likely happened",
+    keyTitle: (b: S, a: S) => `What likely happened, ${b} → ${a}`,
+    orientation: "shown for orientation",
+    tapHint: "Tap anywhere inside the dashed rectangle for a plain answer.",
+    answerTitle: "What happened here?",
+    between: (b: S, a: S) => `Between ${b} and ${a}`,
+    saw: "What the radar saw",
+    means: "What it likely means",
+    also: "It could also be",
+    sure: "A likely reading from the radar alone, not checked on the ground.",
+    outside: "This spot is outside the area we processed. Tap inside the dashed rectangle.",
+    loading: "Reading the map…",
+    inWords: "In plain words",
+    close: "Close the answer",
+    cats: {
+      water: {
+        title: "Water on both dates",
+        saw: "Very dark to the radar on both dates, the way calm water looks.",
+        means: "The river, a pond or a channel that was there all along.",
+        also: "Very smooth bare ground can look the same.",
+      },
+      object: {
+        title: "Ship, building or metal",
+        saw: "A very strong echo, like radar bouncing off metal or walls, appeared or went away.",
+        means: "Likely a ship that moved, or a building, container stack or crane that is new or gone.",
+        also: "A riverbank or field edge facing the radar at a sharp angle.",
+      },
+      water_came: {
+        title: "Water came",
+        saw: "Land on the first date, dark like water on the second.",
+        means: "Likely flooding, a pond or field filling with water, or a higher tide.",
+        also: "Very smooth wet mud, or a different tide at the two pass times.",
+      },
+      water_went: {
+        title: "Water went away",
+        saw: "Dark like water on the first date, not on the second.",
+        means: "Likely the water drained, or a mudbank showed at a lower tide.",
+        also: "A boat or floating plants on the water on the second date.",
+      },
+      plants_grew: {
+        title: "Crops or plants grew",
+        saw: "The echo got much stronger in both radar channels, the way it does when stems and leaves fill a field.",
+        means: "Likely crops grew, such as Aman rice planted in the monsoon and tall by October.",
+        also: "Wetter or rougher soil after rain.",
+      },
+      plants_lost: {
+        title: "Plants cut or gone",
+        saw: "The echo got weaker in both radar channels.",
+        means: "Likely a harvest, cleared land or plants that died back.",
+        also: "Drier, smoother ground.",
+      },
+      surface: {
+        title: "Ground changed, cause unclear",
+        saw: "The echo changed, but not in a pattern we can read plainly.",
+        means: "Possibly wetter or rougher soil, building work or a tide difference.",
+        also: "Radar speckle, which filtering reduces but cannot remove.",
+      },
+      none: {
+        title: "No clear change",
+        saw: "About the same echo on both dates.",
+        means: "Nothing large changed here between the two passes.",
+        also: "Changes smaller than about 0.02 km² are not shown.",
+      },
+    },
+  },
+  /** The guided tour (/chattogram/tour): the case in eight steps, made to be followed or recorded. */
+  tour: {
+    title: "Guided tour",
+    start: "Take the 2-minute tour",
+    next: "Next",
+    back: "Back",
+    play: "Play",
+    pause: "Pause",
+    restart: "Start again",
+    step: (i: S, n: S) => `Step ${i} of ${n}`,
+    keys: "Use ← and → to move between steps.",
+    needsCase: "The tour needs the processed Karnaphuli case, which isn't ready yet.",
+    openMap: "Open the map and tap anywhere",
+    openEvidence: "See the evidence and download a brief",
+    steps: {
+      clouds: {
+        title: "Monsoon clouds hide the ground",
+        body: (date: S) =>
+          `On the morning of ${date}, a normal satellite camera saw only cloud over Chattogram. NISAR’s radar sends its own microwaves, which pass through cloud, so it saw the ground. Drag the line to compare.`,
+      },
+      place: {
+        title: "The Karnaphuli river and Chattogram port",
+        body: (km2: S) => `We follow one area of ${km2} km²: the city, the port, the river and the farmland on its east bank.`,
+      },
+      before: {
+        title: (date: S) => `${date}: early monsoon`,
+        body: "This is how the radar saw it. Dark means smooth, like calm water. Bright means rough: buildings, ships or tall plants.",
+      },
+      after: {
+        title: (date: S) => `${date}: end of the monsoon`,
+        body: (days: S) => `The same place ${days} days later, from the same orbit, at the same time of day.`,
+      },
+      plain: {
+        title: "What likely happened",
+        body: (grew: S) =>
+          `We turned the radar change into plain answers. Green: crops or plants grew, on ${grew} km². Blue: water came. Amber: water went away. Purple: a ship, building or metal.`,
+      },
+      field: {
+        title: "One field, up close",
+        body: (b: S, a: S) =>
+          `These fields brightened from ${b} to ${a} in the radar’s HH channel, and in HV too. That is how rice looks as it grows: planted into wet fields, tall by October.`,
+      },
+      honest: {
+        title: "How sure are we?",
+        body: "These are likely readings from radar alone, not checked on the ground. A tide, wet soil or a moored boat can look the same. Every answer says so, and every number traces back to the NASA files.",
+      },
+      end: {
+        title: "Now try your own place",
+        body: "Open the map and tap anywhere inside the rectangle, or see the evidence and download a brief for your area.",
+      },
+    },
+  },
 };
 
 export type Messages = typeof en;
@@ -709,6 +829,7 @@ const bn: Messages = {
     caseGroup: "চট্টগ্রাম · NISAR",
     realData: "প্রকৃত ডেটা",
     overview: "সারসংক্ষেপ",
+    tour: "গাইডেড ট্যুর",
     explore: "রাডার মানচিত্র",
     compare: "তারিখ তুলনা",
     processed: "ক্যালিব্রেটেড রাডার",
@@ -1186,6 +1307,7 @@ const bn: Messages = {
     },
     texts: {
       "Karnaphuli radar-change pilot": "কর্ণফুলীর রাডার-পরিবর্তন পাইলট",
+      "What likely happened (plain reading)": "সম্ভবত কী ঘটেছে (সহজ ব্যাখ্যা)",
       "Observed radar backscatter change, not a flood or damage classification.":
         "পর্যবেক্ষিত রাডার ব্যাকস্ক্যাটারের পরিবর্তন; এটি বন্যা বা ক্ষয়ক্ষতির শ্রেণিবিন্যাস নয়।",
       "After minus before calibrated backscatter in dB; common-valid pixels only.":
@@ -1417,6 +1539,123 @@ const bn: Messages = {
   synthetic: {
     title: "কৃত্রিম QA ডেটা — NISAR নয়",
     body: "পাইপলাইন যাচাইয়ের জন্য বানানো পরীক্ষামূলক ডেটা থেকে এই কেস প্রক্রিয়া করা হয়েছে। এই পাতাগুলোর প্রতিটি স্তর, সংখ্যা ও পরিবর্তন-এলাকা বানানো।",
+  },
+  plain: {
+    layer: "সম্ভবত কী ঘটেছে",
+    keyTitle: (b: S, a: S) => `সম্ভবত কী ঘটেছে, ${b} → ${a}`,
+    orientation: "চেনার সুবিধার জন্য দেখানো",
+    tapHint: "সহজ উত্তরের জন্য ড্যাশ-দেওয়া আয়তক্ষেত্রের ভেতরে যেকোনো জায়গায় চাপুন।",
+    answerTitle: "এখানে কী ঘটেছে?",
+    between: (b: S, a: S) => `${b} থেকে ${a}-এর মধ্যে`,
+    saw: "রাডার যা দেখেছে",
+    means: "এর সম্ভাব্য মানে",
+    also: "এমনও হতে পারে",
+    sure: "শুধু রাডার থেকে পাওয়া সম্ভাব্য ব্যাখ্যা, মাঠে গিয়ে যাচাই করা নয়।",
+    outside: "এই জায়গাটি আমাদের প্রক্রিয়া করা এলাকার বাইরে। ড্যাশ-দেওয়া আয়তক্ষেত্রের ভেতরে চাপুন।",
+    loading: "মানচিত্র পড়া হচ্ছে…",
+    inWords: "সহজ কথায়",
+    close: "উত্তর বন্ধ করুন",
+    cats: {
+      water: {
+        title: "দুই তারিখেই পানি",
+        saw: "দুই তারিখেই রাডারে খুব কালো দেখা গেছে, শান্ত পানি যেমন দেখায়।",
+        means: "নদী, পুকুর বা খাল, যা আগাগোড়াই ছিল।",
+        also: "খুব মসৃণ খালি মাটিও এমন দেখাতে পারে।",
+      },
+      object: {
+        title: "জাহাজ, ভবন বা ধাতু",
+        saw: "খুব জোরালো প্রতিধ্বনি, যেমন ধাতু বা দেয়ালে রাডার ঠিকরে ফেরে, দেখা দিয়েছে বা মিলিয়ে গেছে।",
+        means: "সম্ভবত কোনো জাহাজ সরে গেছে, অথবা কোনো ভবন, কনটেইনারের স্তূপ বা ক্রেন নতুন এসেছে বা সরানো হয়েছে।",
+        also: "নদীর পাড় বা জমির আল, যা তির্যক কোণে রাডারের দিকে মুখ করে আছে।",
+      },
+      water_came: {
+        title: "পানি এসেছে",
+        saw: "প্রথম তারিখে ডাঙা, দ্বিতীয় তারিখে পানির মতো কালো।",
+        means: "সম্ভবত বন্যা, পুকুর বা জমিতে পানি জমা, অথবা জোয়ার বেশি ছিল।",
+        also: "খুব মসৃণ ভেজা কাদা, অথবা দুই পাসের সময়ে জোয়ারের পার্থক্য।",
+      },
+      water_went: {
+        title: "পানি সরে গেছে",
+        saw: "প্রথম তারিখে পানির মতো কালো, দ্বিতীয় তারিখে নয়।",
+        means: "সম্ভবত পানি নেমে গেছে, অথবা ভাটায় চর বা কাদা জেগে উঠেছে।",
+        also: "দ্বিতীয় তারিখে পানির ওপর নৌকা বা ভাসমান উদ্ভিদ।",
+      },
+      plants_grew: {
+        title: "ফসল বা গাছপালা বেড়েছে",
+        saw: "রাডারের দুই চ্যানেলেই প্রতিধ্বনি অনেক জোরালো হয়েছে, জমিতে কাণ্ড আর পাতা ভরে উঠলে যেমন হয়।",
+        means: "সম্ভবত ফসল বেড়েছে, যেমন বর্ষায় রোপণ করা আমন ধান, যা অক্টোবরে লম্বা হয়ে ওঠে।",
+        also: "বৃষ্টির পর ভেজা বা এবড়োখেবড়ো মাটি।",
+      },
+      plants_lost: {
+        title: "গাছপালা কাটা পড়েছে বা কমেছে",
+        saw: "রাডারের দুই চ্যানেলেই প্রতিধ্বনি দুর্বল হয়েছে।",
+        means: "সম্ভবত ফসল কাটা হয়েছে, জমি পরিষ্কার করা হয়েছে বা গাছপালা মরে গেছে।",
+        also: "শুকনো, মসৃণ মাটি।",
+      },
+      surface: {
+        title: "মাটি বদলেছে, কারণ অস্পষ্ট",
+        saw: "প্রতিধ্বনি বদলেছে, তবে এমনভাবে নয় যা সহজে পড়া যায়।",
+        means: "হয়তো ভেজা বা এবড়োখেবড়ো মাটি, নির্মাণকাজ বা জোয়ারের পার্থক্য।",
+        also: "রাডারের দানাদার দাগ (স্পেকল), যা ফিল্টারে কমে কিন্তু পুরো দূর হয় না।",
+      },
+      none: {
+        title: "স্পষ্ট পরিবর্তন নেই",
+        saw: "দুই তারিখে প্রায় একই প্রতিধ্বনি।",
+        means: "দুই পাসের মধ্যে এখানে বড় কিছু বদলায়নি।",
+        also: "প্রায় ০.০২ km²-এর চেয়ে ছোট পরিবর্তন দেখানো হয় না।",
+      },
+    },
+  },
+  tour: {
+    title: "গাইডেড ট্যুর",
+    start: "২ মিনিটের ট্যুর দেখুন",
+    next: "পরের ধাপ",
+    back: "আগের ধাপ",
+    play: "চালান",
+    pause: "থামান",
+    restart: "আবার শুরু করুন",
+    step: (i: S, n: S) => `${n} ধাপের ${i} নম্বর`,
+    keys: "ধাপ বদলাতে ← আর → চাপুন।",
+    needsCase: "ট্যুরের জন্য প্রক্রিয়া করা কর্ণফুলী কেস লাগবে, যা এখনো তৈরি হয়নি।",
+    openMap: "মানচিত্র খুলে যেকোনো জায়গায় চাপুন",
+    openEvidence: "প্রমাণ দেখুন ও প্রতিবেদন ডাউনলোড করুন",
+    steps: {
+      clouds: {
+        title: "বর্ষার মেঘে মাটি ঢাকা পড়ে",
+        body: (date: S) =>
+          `${date} সকালে সাধারণ উপগ্রহ ক্যামেরা চট্টগ্রামের ওপর শুধু মেঘই দেখেছে। NISAR-এর রাডার নিজেই মাইক্রোওয়েভ পাঠায়, যা মেঘ ভেদ করে যায়, তাই সে মাটি দেখতে পেয়েছে। তুলনা করতে রেখাটি টানুন।`,
+      },
+      place: {
+        title: "কর্ণফুলী নদী ও চট্টগ্রাম বন্দর",
+        body: (km2: S) => `আমরা ${km2} km²-এর একটি এলাকা দেখছি: শহর, বন্দর, নদী আর নদীর পূর্ব পাড়ের ফসলি জমি।`,
+      },
+      before: {
+        title: (date: S) => `${date}: বর্ষার শুরু`,
+        body: "রাডার এভাবে দেখেছে। কালো মানে মসৃণ, যেমন শান্ত পানি। উজ্জ্বল মানে এবড়োখেবড়ো: ভবন, জাহাজ বা লম্বা গাছপালা।",
+      },
+      after: {
+        title: (date: S) => `${date}: বর্ষার শেষ`,
+        body: (days: S) => `একই জায়গা, ${days} দিন পরে, একই কক্ষপথ থেকে, দিনের একই সময়ে।`,
+      },
+      plain: {
+        title: "সম্ভবত কী ঘটেছে",
+        body: (grew: S) =>
+          `রাডারের পরিবর্তনকে আমরা সহজ উত্তরে বদলেছি। সবুজ: ফসল বা গাছপালা বেড়েছে, ${grew} km²-এ। নীল: পানি এসেছে। হলুদাভ: পানি সরে গেছে। বেগুনি: জাহাজ, ভবন বা ধাতু।`,
+      },
+      field: {
+        title: "কাছ থেকে একটি জমি",
+        body: (b: S, a: S) =>
+          `রাডারের HH চ্যানেলে এই জমিগুলো ${b} থেকে ${a} পর্যন্ত উজ্জ্বল হয়েছে, HV-তেও। ধান বাড়ার সময় এমনই দেখায়: ভেজা জমিতে রোপণ, অক্টোবরে লম্বা।`,
+      },
+      honest: {
+        title: "আমরা কতটা নিশ্চিত?",
+        body: "এগুলো শুধু রাডার থেকে পাওয়া সম্ভাব্য ব্যাখ্যা, মাঠে গিয়ে যাচাই করা নয়। জোয়ার, ভেজা মাটি বা নোঙর করা নৌকাও একই রকম দেখাতে পারে। প্রতিটি উত্তরে সেটা বলা আছে, আর প্রতিটি সংখ্যা NASA-র ফাইল পর্যন্ত খুঁজে দেখা যায়।",
+      },
+      end: {
+        title: "এবার নিজের এলাকা দেখুন",
+        body: "মানচিত্র খুলে আয়তক্ষেত্রের ভেতরে যেকোনো জায়গায় চাপুন, অথবা প্রমাণ দেখুন ও আপনার এলাকার প্রতিবেদন ডাউনলোড করুন।",
+      },
+    },
   },
 };
 

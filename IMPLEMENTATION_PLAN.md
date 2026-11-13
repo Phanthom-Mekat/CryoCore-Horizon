@@ -235,6 +235,14 @@ The demo should have one central case (submission checklist). Both are now real.
 and port the plan's story is about (HH only); the pilot is smaller, quad-pol, but clips the river out. Decide which leads the video,
 and whether the pilot stays as a secondary view.
 
+### Plain answers and guided tour — 13 November 2026
+
+- [x] Plain reading of the curated case (`backend/app/processing/plain.py`, version 0.1.0): every HH change region gets one everyday category from its median HH and HV (water came / went, crops or plants grew / lost, ship, building or metal, ground changed for an unclear reason), plus water on both dates for orientation. L-band rules of thumb, always worded "likely, not checked on the ground"; a separate layer (`plain.png`, `by_finding`), never written into `findings.geojson`, which stays "Observed radar change".
+- [x] Checked on the real pair: HV ≤ −19 dB marks a 16.7 km² main water body, the surveyed Karnaphuli channel. 38 of the 40 findings (4.54 km²) read as crops or plants grew: HH −9.6 → −4.9 dB with HV rising, mostly fields that were water-like in June, the Aman rice signature.
+- [x] Explore opens on the plain layer: a legend with areas and icons; a tap anywhere gives "what the radar saw / what it likely means / it could also be" (read from the PNG, so it works in the replay); the finding panel on Explore and Evidence leads with the plain line.
+- [x] `/chattogram/tour`: eight steps (clouds vs radar, the place, June, October, plain map, one field up close, how sure, try it) with Back/Next, ←/→ and 9 s autoplay for recording; linked from the sidebar and Overview. English and Bangla.
+- [x] Fixed `pnpm freeze-case`, which could no longer start (`@/` imports, and the resolver broke `sharp`'s CommonJS requires); refrozen: findings, metrics and existing layers unchanged byte for byte.
+
 ### Next up — core priorities before submission
 
 Time is short. Do these in order. Anything not listed here is deferred.
@@ -248,7 +256,7 @@ Time is short. Do these in order. Anything not listed here is deferred.
 4. **Video and submission:** check the event's rules (duration, format, deadline); record the captioned 240-second video using only verified numbers; write the submission (problem, NASA data, method, finding, limitations).
 5. **Repository:** choose a licence, check attribution for every dataset and asset, make the repo public, put the team names on the landing page.
 
-**Deferred** (only if time is left over after the list above): more Bangla translation (Scene catalogue, landing page, a native speaker's review); a landing-page redesign; GPM IMERG instead of the modelled rainfall; a job cancel action; HV processing and terrain layover/shadow masks for the curated case; mixed-mode review; area selections in share links and the report; the pilot window in GeoJSON; the unfinished inspector mobile/download and pilot-report PDF checks; three or more processed dates for timeline playback; F14, F16, F17. Water classification and formal accuracy metrics stay out of scope: claim only observed radar change.
+**Deferred** (only if time is left over after the list above): more Bangla translation (Scene catalogue, landing page, a native speaker's review); a landing-page redesign; GPM IMERG instead of the modelled rainfall; a job cancel action; HV change layers (HV is used only by the plain reading) and terrain layover/shadow masks for the curated case; mixed-mode review; area selections in share links and the report; the pilot window in GeoJSON; the unfinished inspector mobile/download and pilot-report PDF checks; three or more processed dates for timeline playback; F14, F16, F17. Water classification and formal accuracy metrics stay out of scope: claim only observed radar change.
 
 - **Housekeeping:** once nobody needs to re-extract, delete the 12.4 GB in `backend/data/raw/`. Dev no longer reads it (Tailwind now scans `src/` only), but it still fills the disk.
 - **Setup after pulling `main`:** `pip install -e .` in `backend/` (new `scipy` and `pillow` dependencies), then restart the backend. The local database is already at schema v4 (backup: `backend/data/cryocore.sqlite3.bak-before-v4`), so code older than PR #2 refuses to start on it.

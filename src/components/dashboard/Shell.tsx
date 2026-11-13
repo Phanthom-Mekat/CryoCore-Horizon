@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Columns2, FileSearch, Home, Info, Layers, Map, Menu, Radar, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Columns2, FileSearch, Home, Info, Layers, Map, Menu, PlayCircle, Radar, X, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -21,6 +21,7 @@ const NAV: Group[] = [
     tag: { label: "realData", tone: "live" },
     items: [
       { href: "/chattogram", label: "overview", icon: Home },
+      { href: "/chattogram/tour", label: "tour", icon: PlayCircle },
       { href: "/chattogram/explore", label: "explore", icon: Map },
       { href: "/chattogram/compare", label: "compare", icon: Columns2 },
       { href: "/chattogram/processed", label: "processed", icon: Radar },
