@@ -35,8 +35,9 @@ def grade(area_km2: float, mean_delta_db: float, valid_fraction: float, threshol
 
 
 def build(regions: dict, delta, before_db, after_db, valid_common, inside, grid: Grid, pixel_km2: float,
-          p: dict, id_seed: str):
-    """regions: {"increase": (labels, counts), "decrease": (labels, counts)}.
+          p: dict, id_seed: str, cross_delta=None):
+    """regions: {"increase": (labels, counts), "decrease": (labels, counts)}. cross_delta: the cross-polarization
+    change on the same grid (NaN where not valid), summarised per finding but never used to detect or grade it.
 
     Returns (FeatureCollection, total regions, [(finding id, kind, region label)] for each listed finding)."""
     ranked = sorted(
@@ -71,6 +72,12 @@ def build(regions: dict, delta, before_db, after_db, valid_common, inside, grid:
         area = npx * pixel_km2
         mean_delta = float(np.mean(d, dtype=np.float64))
         quality, reason = grade(area, mean_delta, valid_fraction, p["threshold_db"], p)
+        cross = {}
+        if cross_delta is not None:
+            xd = cross_delta[sl][region]
+            xd = xd[np.isfinite(xd)]
+            cross = {"cross_pol_mean_delta_db": round(float(np.mean(xd, dtype=np.float64)), 2) if xd.size else None,
+                     "cross_pol_valid_fraction": round(xd.size / d.size, 3)}
         fid = "chg-" + hashlib.sha1(f"{id_seed}|{kind}|{rank}".encode()).hexdigest()[:12]
         listed.append((fid, kind, lab))
         features.append({
@@ -88,6 +95,7 @@ def build(regions: dict, delta, before_db, after_db, valid_common, inside, grid:
                 "valid_fraction": round(valid_fraction, 3),
                 "quality": quality,
                 "quality_reason": reason,
+                **cross,
             },
         })
     return {"type": "FeatureCollection", "features": features}, total, listed

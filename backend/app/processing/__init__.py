@@ -30,7 +30,8 @@ from .grid import after_on_grid, pixel_area_km2
 __all__ = ["process_pair", "GcovError", "NoValidCoverage", "METHOD_NAME", "METHOD_VERSION", "DEFAULT_PARAMS"]
 
 METHOD_NAME = "Single-pair signed gamma0 backscatter change"
-METHOD_VERSION = "0.1.0"
+METHOD_VERSION = "0.2.0"  # 0.2.0: adds the cross-polarization comparison; detection unchanged
+FINDING_ID_VERSION = "0.1.0"  # seeds finding ids; bump only when detection changes, so shared links keep working
 DEFAULT_PARAMS = {
     "polarization": None,  # None: first of HHHH, VVVV, HVHV, VHVH present in both files
     "frequency": None,  # None: A when it has the polarization in both files, else B
@@ -53,6 +54,7 @@ DEFAULT_PARAMS = {
 SYNTHETIC_CAVEAT = ("SYNTHETIC QA DATA - NOT NISAR: these inputs are generated test fixtures, so every layer, number "
                     "and region here is made up and describes no real place or date.")
 TERM_NAMES = {"HHHH": "HH", "VVVV": "VV", "HVHV": "HV", "VHVH": "VH", "RHRH": "RH", "RVRV": "RV"}
+CROSS_TERMS = {"HHHH": "HVHV", "VVVV": "VHVH"}  # the co-pol term detects; its cross-pol term is shown alongside
 
 
 class NoValidCoverage(GcovError):
@@ -89,7 +91,13 @@ def _date(path: Path, source: dict) -> str | None:
     return start[:10] if start and re.match(r"\d{4}-\d{2}-\d{2}", start) else source.get("date")
 
 
-def _caveats(p: dict, sources: list[dict], how: str, excluded_share: float, total: int, term: str) -> list[str]:
+def _caveats(p: dict, sources: list[dict], how: str, excluded_share: float, total: int, term: str,
+             cross: str | None) -> list[str]:
+    pol = TERM_NAMES.get(term, term)
+    polarization = (f"Regions are detected in {pol} only. {TERM_NAMES[cross]} is processed the same way and shown "
+                    "alongside each finding for comparison; it is not used to detect or grade regions, and the two "
+                    "polarizations can respond differently to the same surface." if cross else
+                    f"Single polarization ({pol}); other polarizations can respond differently.")
     out = [
         "Single before/after pair: this is a difference between two dates, not a trend, and it cannot say when "
         "between them a change happened.",
@@ -102,7 +110,7 @@ def _caveats(p: dict, sources: list[dict], how: str, excluded_share: float, tota
         "backscatter; this method measures the change, not its cause.",
         "Layover and shadow on steep slopes are not separately masked; terrain correction (RTC) reduces but does "
         "not remove these geometry effects.",
-        f"Single polarization ({TERM_NAMES.get(term, term)}); other polarizations can respond differently.",
+        polarization,
         "No independent reference validation yet: each region is an observed radar change, not a confirmed water, "
         "flood or damage finding.",
     ]
@@ -173,8 +181,22 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
                for kind, sign in change.SIGNS}
 
     granules = [s.get("granule") or path.stem for s, path in zip(sources, (before_h5, after_h5))]
+    # Cross-polarization (HV for HH): same window, filter and grid, over pixels valid in both polarizations.
+    cross = CROSS_TERMS.get(term)
+    if not (cross and cross in power_terms(before_h5).get(frequency, [])
+            and cross in power_terms(after_h5).get(frequency, [])):
+        cross = None
+    xdelta = None
+    if cross:
+        xb, _ = read(before_h5, frequency, cross, (r0, r1), (c0, c1))
+        xa, _, _ = after_on_grid(after_h5, frequency, cross, grid)
+        xbp, xap = change.boxcar(xb, p["speckle_size"]), change.boxcar(xa, p["speckle_size"])
+        xvalid_b, xvalid_a = np.isfinite(xbp) & inside, np.isfinite(xap) & inside
+        xbdb, xadb = change.to_db(xbp), change.to_db(xap)
+        xdelta = np.where(common & xvalid_b & xvalid_a, xadb - xbdb, np.nan).astype(np.float32)
+
     fc, total, listed = findings.build(regions, delta, bdb, adb, common, inside, grid, pixel_km2,
-                               p, f"{granules[0]}|{granules[1]}|{METHOD_VERSION}")
+                               p, f"{granules[0]}|{granules[1]}|{FINDING_ID_VERSION}", cross_delta=xdelta)
 
     analysis_km2 = abs(Geod(ellps="WGS84").geometry_area_perimeter(analysis_area)[0]) / 1e6
     valid_km2 = int(common.sum()) * pixel_km2
@@ -200,12 +222,36 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
         render.save_png(render.gray_rgba(render.warp(values, grid, dst, w, h), lo, hi), out_dir / f"{lid}.png")
         layers.append({"id": lid, "label": f"{label} (dB)", "date": date, "file": f"{lid}.png", "corners": corners,
                        "crs_note": crs_note, "units": "dB", "scale": {"min": lo, "max": hi}, "palette": "gray",
-                       "nodata": "transparent"})
+                       "nodata": "transparent", "polarization": pol})
     limit = p["change_limit_db"]
     render.save_png(render.diverging_rgba(render.warp(delta, grid, dst, w, h), limit), out_dir / "change_db.png")
     layers.append({"id": "change_db", "label": "Observed radar change, after − before (dB)", "file": "change_db.png",
                    "corners": corners, "crs_note": crs_note, "units": "dB", "scale": {"min": -limit, "max": limit},
-                   "palette": "diverging", "nodata": "transparent"})
+                   "palette": "diverging", "nodata": "transparent", "polarization": pol})
+    if cross:
+        xpol = TERM_NAMES[cross]
+        for lid, values, label, date in (("before_hv_db", np.where(xvalid_b, xbdb, np.nan), "Before", dates[0]),
+                                         ("after_hv_db", np.where(xvalid_a, xadb, np.nan), "After", dates[1])):
+            render.save_png(render.gray_rgba(render.warp(values, grid, dst, w, h), lo, hi), out_dir / f"{lid}.png")
+            layers.append({"id": lid, "label": f"{label} · γ⁰ {xpol} (dB)", "date": date, "file": f"{lid}.png",
+                           "corners": corners, "crs_note": crs_note, "units": "dB", "scale": {"min": lo, "max": hi},
+                           "palette": "gray", "nodata": "transparent", "polarization": xpol})
+        render.save_png(render.diverging_rgba(render.warp(xdelta, grid, dst, w, h), limit), out_dir / "change_hv_db.png")
+        layers.append({"id": "change_hv_db", "label": f"Radar change in {xpol}, after − before (dB); not used for detection",
+                       "file": "change_hv_db.png", "corners": corners, "crs_note": crs_note, "units": "dB",
+                       "scale": {"min": -limit, "max": limit}, "palette": "diverging", "nodata": "transparent",
+                       "polarization": xpol})
+        xd = xdelta[np.isfinite(xdelta)].astype(np.float64)
+        p10, p50, p90 = np.percentile(xd, [10, 50, 90])
+        compared = [f["properties"] for f in fc["features"] if f["properties"]["cross_pol_mean_delta_db"] is not None]
+        same = sum(1 for f in compared if (f["cross_pol_mean_delta_db"] > 0) == (f["kind"] == "increase"))
+        metrics["cross_pol"] = {
+            "polarization": xpol, "valid_km2": round(int(xd.size) * pixel_km2, 4),
+            "median_change_db": round(float(p50), 2), "p10_change_db": round(float(p10), 2),
+            "p90_change_db": round(float(p90), 2), "findings_same_direction": same, "findings_compared": len(compared),
+            "note": f"{xpol} is processed like {pol} but does not detect or grade regions. A finding changes in the same "
+                    f"direction in {xpol} when its {xpol} mean change has the same sign as its {pol} change.",
+        }
 
     # Both dates over the same common-valid pixels, so the two points are comparable.
     points = []
@@ -224,6 +270,7 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
     method_params = {
         **p,
         "polarization": term,
+        "cross_polarization": cross,
         "frequency": frequency,
         "backscatter": f"{conv or 'gamma0 (per product specification)'}, RTC-corrected linear power, "
                        "converted with 10*log10",
@@ -242,7 +289,7 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
     return {
         "method": {"name": METHOD_NAME, "version": METHOD_VERSION, "params": method_params},
         "metrics": metrics,
-        "caveats": ([SYNTHETIC_CAVEAT] if synthetic else []) + _caveats(p, sources, how, excluded_share, total, term),
+        "caveats": ([SYNTHETIC_CAVEAT] if synthetic else []) + _caveats(p, sources, how, excluded_share, total, term, cross),
         "synthetic_fixture": synthetic,
         "layers": layers,
         "findings_count": len(fc["features"]),
