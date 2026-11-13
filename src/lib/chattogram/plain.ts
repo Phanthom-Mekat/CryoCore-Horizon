@@ -85,3 +85,19 @@ export function usePlainReader(url: string | null, layer: CaseLayer | null, area
     },
   };
 }
+
+export type Columns = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, { id: string; color: string; h: number }>;
+/** Metres of column per dB of mean change: a visual scale only (3 dB → 270 m), stated on the map wherever it is drawn. */
+export const COLUMN_M_PER_DB = 90;
+
+/** Each finding as a 3D column: coloured by its plain category, as tall as its mean radar change. */
+export function columnsOf(pc: ProcessedCase | null): Columns | null {
+  const layer = plainLayer(pc);
+  if (!pc || !layer) return null;
+  const color = Object.fromEntries((layer.categories ?? []).map((c) => [c.id, c.color]));
+  const features = pc.findings.features.flatMap((f) => {
+    const id = plainOf(pc, f.properties.id);
+    return id ? [{ ...f, properties: { id: f.properties.id, color: color[id], h: Math.round(Math.abs(f.properties.mean_delta_db) * COLUMN_M_PER_DB) } }] : [];
+  });
+  return { type: "FeatureCollection", features };
+}

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { Box, CloudOff, FileText, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
 import { HeroGlobe } from "@/components/HeroGlobe";
 import { RadarSteps } from "@/components/RadarSteps";
@@ -12,16 +15,67 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-// TODO(team): fill these in before sharing.
 const LINKS = {
   repo: "https://github.com/Phanthom-Mekat/CryoCore-Horizon",
   challenge: "https://www.spaceappschallenge.org/2026/challenges/dancing-with-the-sars/",
 };
-const TEAM = [
-  { name: "Add name", role: "Radar data and processing" },
-  { name: "Add name", role: "Web app and visualisation" },
-  { name: "Add name", role: "Delta science and story" },
-  { name: "Add name", role: "Design and video" },
+
+// The processed Karnaphuli case, from the committed snapshot (pnpm freeze-case): every figure on this page is its result.
+type Snapshot = {
+  curated: {
+    detail: { metrics: { analysis_km2: number }; before: { date: string }; after: { date: string } };
+    findings: { features: unknown[] };
+    layers: { id: string; categories?: { id: string; area_km2: number }[] }[];
+  };
+};
+const SNAPSHOT = JSON.parse(readFileSync(join(process.cwd(), "public/data/chattogram/case/case.json"), "utf8")) as Snapshot;
+const RESULT = SNAPSHOT.curated;
+const AREAS = Object.fromEntries((RESULT.layers.find((l) => l.id === "plain")?.categories ?? []).map((c) => [c.id, c.area_km2]));
+const km2 = (v: number | undefined) => (v === undefined ? "–" : v < 10 ? v.toFixed(2) : v.toFixed(1));
+const DATES = `${dayYear(RESULT.detail.before.date)} and ${dayYear(RESULT.detail.after.date)}`;
+const FEATURES = [
+  {
+    icon: CloudOff,
+    title: "Sees through the monsoon",
+    body: "NISAR’s radar images Chattogram every 12 days, day or night. Slide between a cloud-covered camera photo and radar from the same morning.",
+    href: "/chattogram/tour?source=frozen",
+    cta: "Take the tour",
+  },
+  {
+    icon: MapPin,
+    title: "A plain answer for every field",
+    body: `Tap anywhere: what the radar saw, what it likely means and what to do next. Between ${DATES}, crops likely grew on ${km2(AREAS.plants_grew)} km² of farmland by the Karnaphuli.`,
+    href: "/chattogram/explore?source=frozen",
+    cta: "Open the map",
+  },
+  {
+    icon: Box,
+    title: "Change you can see in 3D",
+    body: "Every change area rises from the map, coloured by what likely happened and as tall as the radar change. Fly around the river, port and fields.",
+    href: "/chattogram/explore?source=frozen",
+    cta: "Explore in 3D",
+  },
+  {
+    icon: Sparkles,
+    title: "Ask the map, in English or Bangla",
+    body: "An assistant reads the case data, answers in plain words, moves the map to what you ask about and downloads the brief for you.",
+    href: "/chattogram",
+    cta: "Ask a question",
+  },
+  {
+    icon: FileText,
+    title: "Evidence you can hand over",
+    body: "Each answer keeps its dates, measurements and NASA sources. Download a brief for an agriculture officer or a relief team.",
+    href: "/chattogram/evidence?source=frozen",
+    cta: "See the evidence",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Honest about what radar can’t tell",
+    body: "Every reading says “likely”, never “confirmed”. A tide, wet soil or a moored boat can look the same to radar, so a field visit still decides.",
+    href: "/chattogram/about",
+    cta: "How we check",
+  },
 ];
 
 // Everything below is computed from the frozen NISAR catalog snapshot (src/data/chattogram/catalog.json).
@@ -62,7 +116,6 @@ export default function Home() {
               </Link>
               <Link className="link" href="/chattogram">Open the case study</Link>
             </div>
-            <p className="hero-note">The pass is simulated from NISAR&rsquo;s orbit, not its actual schedule. Spacecraft and Earth are to scale.</p>
           </div>
           <a className="hero-scroll" href="#clouds">
             <span>Scroll to story ↓</span>
@@ -96,6 +149,51 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="section section-deep" id="dashboard" aria-labelledby="dashboard-h">
+          <div className="wrap">
+            <div className="intro">
+              <h2 id="dashboard-h">From radar echoes to a place to check</h2>
+              <p className="prose">
+                The dashboard turns two NISAR passes over the lower Karnaphuli into answers a farmer or an agriculture officer can act on.
+              </p>
+            </div>
+            <dl className="result-strip" aria-label={`Karnaphuli case, ${DATES}`}>
+              <div>
+                <dt>Area compared</dt>
+                <dd>{km2(RESULT.detail.metrics.analysis_km2)} km²</dd>
+              </div>
+              <div>
+                <dt>Change areas found</dt>
+                <dd>{RESULT.findings.features.length}</dd>
+              </div>
+              <div>
+                <dt>Likely crop growth</dt>
+                <dd>{km2(AREAS.plants_grew)} km²</dd>
+              </div>
+              <div>
+                <dt>Likely new water</dt>
+                <dd>{km2(AREAS.water_came)} km²</dd>
+              </div>
+            </dl>
+            <ul className="features">
+              {FEATURES.map(({ icon: Icon, title, body, href, cta }) => (
+                <li key={title}>
+                  <Icon size={22} aria-hidden="true" />
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                  <Link href={href}>{cta} →</Link>
+                </li>
+              ))}
+            </ul>
+            <div className="actions delta-cta">
+              <Link className="btn" href="/chattogram/tour?source=frozen">
+                See what changed
+              </Link>
+              <Link className="link" href="/chattogram">Open the dashboard</Link>
+            </div>
+          </div>
+        </section>
+
         <section className="section section-deep" id="delta" aria-labelledby="delta-h">
           <div className="wrap">
             <div className="intro">
@@ -124,8 +222,7 @@ export default function Home() {
               ))}
             </ol>
 
-            <div className="delta-grid">
-              <div>
+            <div className="delta-specs">
                 <dl className="specs">
                   <div>
                     <dt>NISAR scenes over the study area</dt>
@@ -150,51 +247,7 @@ export default function Home() {
                   Source: NASA Earthdata CMR, NISAR L2 GCOV, snapshot taken {dayYear(CATALOG.retrievedAt)}. Our stack&rsquo;s products are{" "}
                   {MATURITY.toLowerCase()}, so they can still be reprocessed.
                 </p>
-              </div>
-
-              <div className="build">
-                <h3>Where the project stands</h3>
-                <ul>
-                  <li data-state="done">
-                    <span className="build-tag">Done</span>
-                    <strong>Real NISAR catalog and pictures</strong>
-                    <span>
-                      {PASSES.length} scenes from NASA&rsquo;s catalog, and quick-look radar images for all {CASE.length} passes in our stack.
-                    </span>
-                  </li>
-                  <li data-state="next">
-                    <span className="build-tag">Next</span>
-                    <strong>Calibrated change between passes</strong>
-                    <span>Download the full GCOV files with a NASA Earthdata login, and measure how much the radar echo changed between dates.</span>
-                  </li>
-                  <li data-state="later">
-                    <span className="build-tag">After that</span>
-                    <strong>Candidate water-change map</strong>
-                    <span>Mark where water likely spread or pulled back, and check it against independent data before calling anything a flood.</span>
-                  </li>
-                </ul>
-              </div>
             </div>
-
-            <div className="actions delta-cta">
-              <Link className="btn" href="/chattogram">
-                Explore the radar map
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <section className="section" id="team" aria-labelledby="team-h">
-          <div className="wrap intro">
-            <h2 id="team-h">The team</h2>
-            <ul className="team">
-              {TEAM.map((m, i) => (
-                <li key={i}>
-                  <strong>{m.name}</strong>
-                  <span className="team-role">{m.role}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         </section>
 

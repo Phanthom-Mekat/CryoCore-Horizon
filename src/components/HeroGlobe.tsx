@@ -98,7 +98,7 @@ export function HeroGlobe() {
       </div>
       <dl className="hud">
         <div>
-          <dt>Simulated pass{t?.speed ? (paused ? ", paused" : `, ${t.speed}× speed`) : ""}</dt>
+          <dt>NISAR orbit{t?.speed ? (paused ? ", paused" : `, ${t.speed}× speed`) : ""}</dt>
           <dd className="hud-pass">
             <span>{t ? fmtTime(t.simTime) : "Acquiring"}</span>
             {!reduced && (
