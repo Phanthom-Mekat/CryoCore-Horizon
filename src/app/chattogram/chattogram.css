@@ -2543,3 +2543,21 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- 3D change columns ---------- */
+.c-map-note.c-map-columns {
+  top: auto;
+  right: 12px;
+  bottom: 34px;
+  left: auto;
+  max-width: min(340px, calc(100% - 24px));
+  font-size: 0.78rem;
+}
+.c-tour-copy {
+  display: grid;
+  gap: 14px;
+}
+.c-hero-map .c-map-note.c-map-columns {
+  top: 10px; /* the hero map keeps its caption along the bottom */
+  bottom: auto;
+}

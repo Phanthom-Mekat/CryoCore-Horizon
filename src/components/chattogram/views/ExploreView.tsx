@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Columns2, ExternalLink, FileText } from "lucide-react";
 import { covers, type Acquisition } from "@/lib/chattogram/acquisitions";
@@ -18,7 +18,7 @@ import { FindingPanel, UnknownFinding } from "../FindingPanel";
 import { PrepStatus } from "../PrepStatus";
 import { BackendText } from "../BackendText";
 import { PlainAnswer, PlainKey } from "../PlainAnswer";
-import { plainLayer, plainOf, usePlainReader } from "@/lib/chattogram/plain";
+import { columnsOf, plainLayer, plainOf, usePlainReader } from "@/lib/chattogram/plain";
 import { onMapCommand, setMapContext, takeMapCommand } from "@/lib/chattogram/map-bus";
 
 export function ExploreView() {
@@ -32,6 +32,8 @@ export function ExploreView() {
   const [tap, setTap] = useState<[number, number] | null>(null);
   const readyCase = processed.status === "ready" && processed.data.detail.status === "ready" ? processed.data : null;
   const plainL = plainLayer(readyCase);
+  // memoised on the stable `processed` state, so the columns don't re-rise on every render
+  const columns = useMemo(() => columnsOf(processed.status === "ready" && processed.data.detail.status === "ready" ? processed.data : null), [processed]);
   const plainUrl = readyCase && plainL ? layerImage(CASE_ID, plainL, readyCase.detail.updated_at).url : null;
   const reader = usePlainReader(plainUrl, plainL, readyCase?.detail.analysis_area?.geometry ?? null);
   // picking a date shows its quicklook: the processed layers belong to the case pair only
@@ -135,6 +137,7 @@ export function ExploreView() {
           area={detail?.analysis_area ?? null}
           areaName={areaName}
           findings={pc && showFindings ? pc.findings : null}
+          columns={plainShown ? columns : null}
           selectedFinding={selFinding?.properties.id ?? null}
           onFinding={onFinding}
         />
