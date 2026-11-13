@@ -1,80 +1,135 @@
 # CryoCore Horizon
 
-Team CryoCore Horizon's entry for the NASA Space Apps Challenge 2026, **Dancing with the SARs**. We use radar from
-NISAR (NASA–ISRO) to follow surface change around Chattogram, Bangladesh, through the monsoon cloud.
+**NASA Space Apps Challenge 2026 · Challenge: [Dancing with the SARs](https://www.spaceappschallenge.org/2026/challenges/dancing-with-the-sars/) · Bangladesh local event**
 
-- `/`: project page with a live 3D view beside the NISAR spacecraft
-- `/chattogram`: the case study (see below)
+The monsoon hides Chattogram from cameras for months. NISAR radar sees through the cloud. CryoCore Horizon turns two
+NISAR passes over the lower Karnaphuli river into plain answers that a farmer, an agriculture officer or a relief team
+can act on: what changed, where, how sure we are, and what to check next. It works in English and Bangla.
 
-Plan and progress: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+| | |
+| --- | --- |
+| Live demo | _add the deployed URL_ |
+| Demo video (240 s) | _add the YouTube link_ |
+| Global video (30 s) | _add the YouTube link_ |
+| NASA project page | _add the Space Apps project link_ |
 
-## Backend
+## What it does
 
-The [FastAPI + SQLite backend](backend/README.md) serves the NISAR catalogue for Chattogram Division (NASA Earthdata
-CMR metadata), the calibrated pilot, and the curated `karnaphuli-estuary` case with its processing worker. See its
-README for setup, endpoints, processing jobs and current limitations.
+- **Sees through the monsoon.** A slider puts a cloud-covered MODIS/VIIRS photo beside NISAR radar from the same morning.
+- **A plain answer for every field.** Tap anywhere on the map: what the radar saw, what it likely means, what to do next.
+- **Change in 3D.** Every change area rises from the map, coloured by what likely happened and as tall as the radar change.
+- **Ask the map, in English or Bangla.** A case assistant reads the case data, answers in plain words, moves the map and
+  downloads the brief.
+- **Evidence you can hand over.** Every answer keeps its dates, measurements and NASA sources. Download a brief (JSON,
+  CSV, GeoJSON) for an officer or a relief team.
+- **Works offline.** A frozen snapshot of the case replays without the backend, so the demo never depends on a live API.
 
-## Chattogram case
+### The case: lower Karnaphuli river and Chattogram port
 
-The case study is at **[/chattogram](http://localhost:3000/chattogram)**: Overview, Explore map, Compare dates,
-Calibrated radar, Evidence & brief, Scene catalogue (formerly `/explore`, which redirects) and About;
-see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md). It shows NASA GCOV catalog footprints, an attributed division boundary,
-real NISAR browse quicklooks, calibrated radar change, scene evidence and interactive Mapbox GL maps. All geographic
-maps use Mapbox Standard for context; NASA imagery and scientific layers keep their attribution. Every processed
-result is labelled observed radar change, not flooding or water change.
+| | |
+| --- | --- |
+| Area compared | 175.7 km² (team-drawn rectangle, lon 91.79–91.90 E, lat 22.24–22.38 N) |
+| Dates | 19 Jun 2026 vs 17 Oct 2026, NISAR track 69, frame 13, ascending |
+| Change found | 4.91 km² brighter and 0.20 km² darker by ≥ 3 dB; 92 change regions, the 40 largest listed |
+| Reading | 4.54 km² likely crop growth, 0.10 km² likely new water (HV backscatter rules) |
 
-Start the backend using [its instructions](backend/README.md), then run `pnpm dev`. The frontend proxies its requests
-to `http://127.0.0.1:8000` by default; set server-side `BACKEND_URL` for another backend location. The browser never
-needs an Earthdata login. A fresh database starts empty: use **Discover observations**, then **Load next page** if
-offered.
+Results are labelled *observed radar change*, not confirmed flooding. Method, rejected alternatives and open checks:
+[docs/curated-case.md](docs/curated-case.md).
 
-**Frozen case (no backend needed).** `public/data/chattogram/case/` holds a versioned snapshot of the case: the
-division view, every intersecting scene, the processed quicklooks for the stacks over Chattogram city and the
-calibrated pilot. The pages use it automatically when the backend is unreachable, open it on purpose with
-`?source=frozen`, and say so on every page. For a deployment without the backend, set
-`NEXT_PUBLIC_CASE_SOURCE=frozen`. Refresh the snapshot with the backend running: `pnpm freeze-case`.
+## How it works
 
-**Rainfall context.** Daily rainfall at Chattogram city from the NASA POWER API (modelled, MERRA-2) is saved in
-`public/data/chattogram/rain.json`; refresh it with `pnpm fetch-rain`.
+1. **Discover.** The backend searches NASA Earthdata CMR for every NISAR scene over Chattogram Division and keeps the
+   ones that cross the division boundary.
+2. **Pick a fair pair.** Same track, frame, direction, polarizations, collection and product version, widest date gap.
+3. **Process.** Read HH and HV backscatter from the two GCOV HDF5 files, convert to dB, subtract, threshold at 3 dB and
+   group the changed pixels into regions.
+4. **Explain.** Each region gets a likely meaning from its HV backscatter (e.g. HV up ≥ set dB: likely crop growth; HV
+   dropping to water level: likely new water), shown beside NASA POWER rainfall for context.
+5. **Show.** A Next.js site with Mapbox GL maps, a three.js globe and 3D change columns, a guided tour and the assistant.
 
-See [the explorer implementation notes](docs/EXPLORER.md) for architecture, data provenance, library choices,
-validation and remaining work.
+```
+NASA CMR / ASF DAAC ──► FastAPI + SQLite backend ──► processed case bundle ──► Next.js site
+   (NISAR GCOV)          (search, process, API)         (frozen snapshot)        (maps, 3D, tour, assistant)
+```
 
-## Run the site
+## NASA data used
 
-Interactive geographic maps require a public Mapbox token in `.env.local`:
-`NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token`. See [Mapbox setup](docs/MAPBOX.md) for URL restrictions,
-deployment configuration and map behaviour.
+| Dataset | Used for |
+| --- | --- |
+| **NISAR L2 GCOV** (NASA–ISRO, `NISAR_L2_GCOV_PROVISIONAL_V1`, via ASF DAAC) | Core data: HH and HV backscatter for the before/after change map |
+| NISAR GUNW, RSLC (catalog only) | Listed in the scene catalogue for future work |
+| NASA Earthdata CMR | Scene search, footprints, granule metadata and checksums |
+| NASA GIBS: MODIS Terra and VIIRS (SNPP, NOAA-20) Corrected Reflectance | The cloudy camera photo beside the radar |
+| NASA GIBS: Blue Marble Next Generation, VIIRS Black Marble | Day and night Earth textures for the 3D globe |
+| NASA POWER (MERRA-2) | Daily rainfall at Chattogram to explain the monsoon context |
 
-The site defaults to light mode. Use the sun/moon button in the landing navigation or the case header to switch
-themes. Your choice is saved in browser local storage and shared across pages and tabs. UI themes do not recolour
-satellite imagery or change scientific colour scales.
+Other sources: division boundary from Bangladesh Bureau of Statistics / HDX via geoBoundaries (CC BY 3.0 IGO); basemap
+from Mapbox Standard.
+
+## Use of AI
+
+- **Case assistant (in the product):** Google Gemini (`gemini-3.5-flash`, fallback `gemini-3.8-flash`) with function
+  calling over read-only tools on the published case data ([backend/app/assistant.py](backend/app/assistant.py)). It
+  can only read case facts and move the map; it cannot change data.
+- **Development:** AI coding assistants (Claude Code) helped write and review code and documentation. The team chose the
+  study area, the case, the method and every claim, and checked the results against the NASA source files.
+
+## Run it locally
+
+Requirements: Node.js 20+, pnpm, Python 3.11+ (backend only), a public Mapbox token.
 
 ```bash
 pnpm install
-pnpm dev        # http://localhost:3000
-pnpm build      # production check
+echo "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token" > .env.local
+pnpm dev            # http://localhost:3000, uses the frozen case if no backend is running
 ```
 
-### Checks
+Backend (optional, for live search and processing): see [backend/README.md](backend/README.md).
 
-```bash
-pnpm lint
-pnpm test                                                      # frontend tests: share links, brief, translation guard
-node --experimental-strip-types scripts/check-sun.mts          # sun position behind the 3D view
-```
+| Command | What it does |
+| --- | --- |
+| `pnpm build` | Production build |
+| `pnpm lint` / `pnpm test` | Lint and frontend tests |
+| `pnpm freeze-case` | Refresh the frozen case snapshot (needs the backend) |
+| `pnpm fetch-rain` | Refresh NASA POWER rainfall |
 
-Backend tests: see [backend/README.md](backend/README.md).
+Set `NEXT_PUBLIC_CASE_SOURCE=frozen` to deploy without a backend.
 
-### Regenerate assets
+## Repository layout
 
-- `node scripts/make-textures.mjs <folder>`: Earth textures for the 3D view (sources listed in the script)
-- `node scripts/fetch-chattogram.mjs`: the catalogue snapshot behind the landing page
-- `pnpm freeze-case`: the frozen Chattogram case (needs the backend running and network access to ASF)
-- `pnpm fetch-rain`: NASA POWER daily rainfall for the case (no login needed)
+| Path | Contents |
+| --- | --- |
+| `src/app` | Landing page (`/`) and the Chattogram case (`/chattogram`, tour, map, compare, evidence) |
+| `src/components` | Maps, globe, 3D views, tour and assistant UI |
+| `backend/` | FastAPI API, NISAR processing worker, case assistant |
+| `public/data/chattogram/` | Frozen case snapshot and rainfall |
+| `docs/` | [Case study](docs/CHATTOGRAM.md), [curated case](docs/curated-case.md), [explorer notes](docs/EXPLORER.md), [Mapbox setup](docs/MAPBOX.md) |
 
-## Credits
+## Team
 
-NISAR data: NASA and ISRO, distributed by the Alaska Satellite Facility DAAC. Earth imagery: NASA Blue Marble, VIIRS
-Black Marble and HLS via NASA GIBS. Division boundary: Bangladesh Bureau of Statistics (BBS) / HDX via geoBoundaries,
-CC BY 3.0 IGO. Rainfall: NASA POWER. This is not an official NASA or ISRO website.
+Team CryoCore Horizon, Bangladesh.
+
+| Name | Role |
+| --- | --- |
+| _add each member_ | _role_ |
+
+## Limitations
+
+- One processed pair; terrain-quality checks and field validation are still pending.
+- NISAR GCOV data is a provisional collection.
+- Radar change is evidence to check on the ground, not a confirmed flood or crop map.
+
+## References and credits
+
+- NISAR data: NASA and ISRO, distributed by the [Alaska Satellite Facility DAAC](https://asf.alaska.edu/).
+- [NASA Earthdata CMR](https://cmr.earthdata.nasa.gov/), [NASA GIBS](https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api),
+  [NASA POWER](https://power.larc.nasa.gov/).
+- Boundary: [geoBoundaries](https://www.geoboundaries.org/) (BBS / HDX), CC BY 3.0 IGO.
+- Libraries: Next.js, React, Mapbox GL JS, react-map-gl, three.js, Motion, lucide-react, Tailwind CSS, FastAPI, h5py,
+  NumPy, SciPy, rasterio, pyproj, Shapely, Pillow.
+
+This is not an official NASA or ISRO website.
+
+## License
+
+[MIT](LICENSE). Data keeps the licence of its source.
