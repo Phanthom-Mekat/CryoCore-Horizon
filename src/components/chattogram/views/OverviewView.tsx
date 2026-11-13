@@ -10,6 +10,7 @@ import { BackendText } from "../BackendText";
 import { CaseMap, quicklookSrc } from "../CaseMap";
 import { FOCUS, useCase, usePilot } from "../CaseProvider";
 import { PrepStatus } from "../PrepStatus";
+import { WardTeaser } from "../WardTeaser";
 
 const OVERVIEW_VIEW = { lon: 91.95, lat: 22.75, zoom: 6.7 };
 const STEPS = [
@@ -163,6 +164,8 @@ export function OverviewView() {
           </div>
         )}
       </section>
+
+      <WardTeaser />
 
       {pilot && hh && (
         <KpiStrip label={o.pilotKpis}>
