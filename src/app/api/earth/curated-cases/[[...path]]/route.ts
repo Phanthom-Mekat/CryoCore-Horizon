@@ -2,7 +2,7 @@
 // pattern first, so no other backend path (and no job creation) can be reached from the browser:
 //   /api/earth/curated-cases                          -> /api/v1/curated-cases
 //   /api/earth/curated-cases/{id}                     -> /api/v1/curated-cases/{id}
-//   /api/earth/curated-cases/{id}/layers|findings|timeseries
+//   /api/earth/curated-cases/{id}/layers|findings|timeseries|sensitivity
 //   /api/earth/curated-cases/{id}/export?format=json|csv|geojson
 //   /api/earth/curated-cases/{id}/assets/{name}.png   -> PNG, cached (the URL carries ?v=<updated_at>)
 //   /api/earth/curated-cases/{id}/findings/{fid}      -> /api/v1/findings/{fid}
@@ -21,7 +21,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/earth/curate
   if (id === undefined) return proxyBackend(request, "curated-cases", "");
   if (part === undefined) return proxyBackend(request, `curated-cases/${id}`, "");
   if (name === undefined) {
-    if (part === "layers" || part === "findings" || part === "timeseries") return proxyBackend(request, `curated-cases/${id}/${part}`, "");
+    if (part === "layers" || part === "findings" || part === "timeseries" || part === "sensitivity") return proxyBackend(request, `curated-cases/${id}/${part}`, "");
     if (part === "export") {
       const format = new URL(request.url).searchParams.get("format") ?? "json";
       return FORMAT.test(format) ? proxyBackend(request, `curated-cases/${id}/export`, `?format=${format}`) : notFound();

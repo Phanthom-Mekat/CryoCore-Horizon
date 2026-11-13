@@ -480,6 +480,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Job */
+        post: operations["cancel_job_api_v1_jobs__job_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -556,6 +573,28 @@ export interface components {
              * @default false
              */
             synthetic_fixture: boolean;
+        };
+        /**
+         * CrossPol
+         * @description The cross-polarization comparison: processed like the detecting polarization, never used to detect.
+         */
+        CrossPol: {
+            /** Polarization */
+            polarization: string;
+            /** Valid Km2 */
+            valid_km2: number;
+            /** Median Change Db */
+            median_change_db: number;
+            /** P10 Change Db */
+            p10_change_db: number;
+            /** P90 Change Db */
+            p90_change_db: number;
+            /** Findings Same Direction */
+            findings_same_direction: number;
+            /** Findings Compared */
+            findings_compared: number;
+            /** Note */
+            note: string;
         };
         /** Evidence */
         Evidence: {
@@ -646,6 +685,10 @@ export interface components {
             quality: "strong" | "moderate" | "weak";
             /** Quality Reason */
             quality_reason: string;
+            /** Cross Pol Mean Delta Db */
+            cross_pol_mean_delta_db?: number | null;
+            /** Cross Pol Valid Fraction */
+            cross_pol_valid_fraction?: number | null;
         } & {
             [key: string]: unknown;
         };
@@ -721,9 +764,11 @@ export interface components {
              * Id
              * @enum {string}
              */
-            id: "before_db" | "after_db" | "change_db";
+            id: "before_db" | "after_db" | "change_db" | "before_hv_db" | "after_hv_db" | "change_hv_db";
             /** Label */
             label: string;
+            /** Polarization */
+            polarization?: string | null;
             /** Date */
             date?: string | null;
             /** Url */
@@ -777,6 +822,7 @@ export interface components {
             decrease_km2: number;
             /** Threshold Db */
             threshold_db: number;
+            cross_pol?: components["schemas"]["CrossPol"] | null;
         };
         /** Region */
         Region: {
@@ -1830,6 +1876,39 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_api_v1_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-admin-token"?: string | null;
+            };
             path: {
                 job_id: number;
             };

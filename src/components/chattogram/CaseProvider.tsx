@@ -135,7 +135,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const empty = { layers: [], findings: { type: "FeatureCollection" as const, features: [] }, timeseries: { units: "dB" as const, points: [] } };
+    const empty = { layers: [], findings: { type: "FeatureCollection" as const, features: [] }, timeseries: { units: "dB" as const, points: [] }, sensitivity: null };
     if (wanted === "frozen") return; // a replay asks nothing live (see `shownProcessed`)
     const poll = () =>
       api
@@ -147,12 +147,13 @@ export function CaseProvider({ children }: { children: ReactNode }) {
             if (isBusy(detail)) timer = setTimeout(poll, POLL_MS);
             return;
           }
-          const [layers, findings, timeseries] = await Promise.all([
+          const [layers, findings, timeseries, sensitivity] = await Promise.all([
             api.layers(CASE_ID),
             api.findings(CASE_ID),
             api.timeseries(CASE_ID).catch(() => empty.timeseries), // the chart is optional; the case is not
+            api.sensitivity(CASE_ID).then((s) => (s.rows.length ? s : null), () => null), // optional, like the chart
           ]);
-          if (live) setProcessed({ status: "ready", data: { detail, layers, findings, timeseries } });
+          if (live) setProcessed({ status: "ready", data: { detail, layers, findings, timeseries, sensitivity } });
         })
         .catch((e) => live && setProcessed(toLoadError(e)));
     poll();
@@ -164,7 +165,7 @@ export function CaseProvider({ children }: { children: ReactNode }) {
 
   // a replay (chosen, or the fallback when the backend is down) shows the snapshot's curated case, never a live one
   const shownProcessed: Load<ProcessedCase> =
-    source.mode === "frozen" ? (frozenCurated ? { status: "ready", data: { detail: frozenCurated.detail, layers: frozenCurated.layers, findings: frozenCurated.findings, timeseries: frozenCurated.timeseries } } : FROZEN_PROCESSED) : processed;
+    source.mode === "frozen" ? (frozenCurated ? { status: "ready", data: { detail: frozenCurated.detail, layers: frozenCurated.layers, findings: frozenCurated.findings, timeseries: frozenCurated.timeseries, sensitivity: frozenCurated.sensitivity ?? null } } : FROZEN_PROCESSED) : processed;
   const data = load.status === "ready" ? load.data : null;
   const q = (k: string) => params.get(k);
 

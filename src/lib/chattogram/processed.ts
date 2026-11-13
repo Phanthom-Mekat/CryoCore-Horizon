@@ -6,6 +6,8 @@ export type ProcessedCase = {
   id: string; title: string; status: string; method: string; created_at: string; claim: string; limitations: string[];
   sources: { concept_id: string; revision_id: number; etag: string; acquisition: string; granule_id: string; collection: string; full_file_checksum_verified: boolean }[];
   crs: string; bounds: [number, number, number, number]; transform: number[]; validity_rule: string; alignment: string;
+  /** The processed window in WGS84 (backend read_case); absent from snapshots taken before it was published. */
+  footprint_wgs84?: GeoJSON.Polygon;
   statistics: Record<"HHHH" | "HVHV", PolStats>;
   assets: { name: string; sha256: string; units: string; bytes: number }[];
 };

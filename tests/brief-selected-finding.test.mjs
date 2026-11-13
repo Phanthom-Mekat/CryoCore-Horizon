@@ -9,8 +9,8 @@ const snap = JSON.parse(readFileSync(new URL("../public/data/chattogram/case/cas
 const region = snap.explorer.region;
 const day = (d) => snap.acquisitions.find((a) => a.stack === "069_A_013" && a.day === d);
 const [before, after] = [day("2026-06-18"), day("2026-10-16")];
-const { detail, layers, findings, timeseries } = snap.curated;
-const pc = { detail, layers, findings, timeseries };
+const { detail, layers, findings, timeseries, sensitivity } = snap.curated;
+const pc = { detail, layers, findings, timeseries, sensitivity };
 const frozen = { mode: "frozen", frozenAt: snap.frozenAt, fallback: false };
 const SHARE = "https://cryocore.example/chattogram/evidence?stack=069_A_013&a=2026-06-18&b=2026-10-16&f=chg-e40b17e9cbab";
 const REPLAY = "https://cryocore.example/chattogram/evidence?stack=069_A_013&a=2026-06-18&b=2026-10-16&source=frozen";
@@ -28,7 +28,7 @@ test("the JSON brief names the selected finding with its values, outline, source
   assert.match(s.quality_reason, /^Moderate: passes every check/);
   assert.equal(s.geometry.type, "Polygon");
   assert.equal(s.geometry.coordinates[0].length, 175);
-  assert.equal(s.method_version, "Single-pair signed gamma0 backscatter change/0.1.0");
+  assert.equal(s.method_version, "Single-pair signed gamma0 backscatter change/0.2.0");
   assert.deepEqual(s.pair_dates, { before: "2026-06-18T23:21:02.000000Z", after: "2026-10-16T23:20:58.000000Z" });
   assert.equal(s.same_pair_as_compared, true);
   assert.deepEqual(
@@ -107,4 +107,22 @@ test("without a selection, or with a finding the case doesn't have, no CSV row o
     const features = briefGeojson(before, after, pc, id).features.filter((x) => x.properties.role === "finding");
     assert.deepEqual([...new Set(features.map((x) => x.properties.selected))], [false]);
   }
+});
+
+test("the brief carries the threshold sweep, how far the finding holds, and its HV change", () => {
+  const b = json("chg-e40b17e9cbab");
+  assert.equal(b.processed_case.threshold_sensitivity.published_threshold_db, 3);
+  assert.equal(b.selected_finding.still_found_up_to_threshold_db, sensitivity.highest_threshold_by_finding["chg-e40b17e9cbab"]);
+  assert.equal(typeof b.selected_finding.cross_pol_mean_delta_db, "number");
+  assert.equal(b.processed_case.metrics.cross_pol.polarization, "HV");
+});
+
+test("the GeoJSON brief includes the calibrated pilot's window when the pilot is given", () => {
+  const pilot = snap.pilot.case;
+  const fc = briefGeojson(before, after, pc, null, pilot);
+  const win = fc.features.find((f) => f.properties.role === "calibrated_pilot_window");
+  assert.equal(win.geometry.type, "Polygon");
+  assert.equal(win.properties.case_id, pilot.id);
+  assert.equal(win.properties.covers_compared_pair, false); // the pilot is a different pair
+  assert.equal(briefGeojson(before, after, pc, null).features.some((f) => f.properties.role === "calibrated_pilot_window"), false);
 });

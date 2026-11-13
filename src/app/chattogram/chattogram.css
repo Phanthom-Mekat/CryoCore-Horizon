@@ -41,6 +41,8 @@
 .p-segment { display:flex; gap:3px; padding:4px; border-radius:9px; background:var(--c-panel); }
 .p-segment button { padding:9px 12px; border:0; border-radius:6px; font:500 .8rem var(--sans); background:transparent; color:var(--c-muted); cursor:pointer; }
 .p-segment button[aria-pressed=true] { background:var(--c-navy); color:var(--c-text); box-shadow:0 1px 5px #0002; }
+.c-compare-pol { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; margin-bottom:10px; }
+.c-compare-pol .p-segment { background:var(--c-ink); }
 .p-map-stage { position:relative; height:560px; }
 .p-map-stage > .c-map,.p-swipe-overlay > .c-map { height:100%; min-height:0; }
 .p-swipe-overlay { position:absolute; inset:0; pointer-events:none; }

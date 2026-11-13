@@ -5,7 +5,7 @@
 import type { Acquisition } from "./acquisitions";
 import type { ExplorerData } from "../explorer-data";
 import type { ProcessedCase, ProcessedImage } from "./processed";
-import type { CaseDetail, CaseLayer, FindingDetail, Findings, Timeseries } from "./case-api";
+import type { CaseDetail, CaseLayer, FindingDetail, Findings, Sensitivity, Timeseries } from "./case-api";
 
 /** The curated starting point: the city, which the most NISAR dates cover. Stacks over it are the ones frozen. */
 export const FOCUS = { name: "Chattogram city", lonLat: [91.8317, 22.3569] as [number, number] };
@@ -38,6 +38,8 @@ export type FrozenCurated = {
   layers: CaseLayer[];
   findings: Findings;
   timeseries: Timeseries;
+  /** Absent in snapshots taken before the threshold sweep was frozen. */
+  sensitivity?: Sensitivity | null;
   findingDetails: Record<string, FindingDetail>;
   exports: Record<"json" | "csv" | "geojson", string>;
   files: Record<string, { src: string; sha256: string; bytes: number }>;

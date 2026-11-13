@@ -272,6 +272,8 @@ const en = {
     pilotNote: "The processed pilot has a shared dB scale, coverage masks and downloadable measurements.",
     calibratedOf: (date: S) => `Calibrated γ⁰ of ${date}`,
     calibratedTitle: "Calibrated layers.",
+    polLabel: "Polarization",
+    polHint: "HH finds the changes; HV is processed the same way and shown for comparison.",
     calibratedSame: (units: S, min: S, max: S) =>
       `This is the processed case’s pair, so both sides show calibrated backscatter (γ⁰, ${units}) computed from the full GCOV files, clipped to the analysis rectangle, on the same map extent and one shared contrast scale (${min} to ${max}). Darker is a weaker return, such as smooth water.`,
     calibratedDiffer: (units: S) =>
@@ -364,6 +366,27 @@ const en = {
     methodParams: "Method parameters",
     methodParamsNote: "As the backend records them, in English.",
     caveats: "Caveats",
+    sens: {
+      title: "Threshold sensitivity",
+      intro: (pub: S) => `The same change values measured again at other thresholds; nothing else changes. The published result uses ±${pub} dB.`,
+      threshold: "Threshold",
+      brighter: "Brighter (km²)",
+      darker: "Darker (km²)",
+      regions: "Regions",
+      present: "Listed findings still present",
+      published: "published",
+      none: "The threshold sweep was not published for this case.",
+    },
+    cross: {
+      title: (pol: S) => `Second polarization (${pol})`,
+      median: "Median change",
+      range: "Middle 80% of pixels (10th–90th percentile)",
+      valid: "Valid in both polarizations",
+      agree: "Findings changing the same way",
+      agreeOf: (n: S, of: S) => `${n} of ${of}`,
+      note: (pol: S) =>
+        `${pol} is processed exactly like HH but never used to find or grade an area. Agreement between the two supports a finding; disagreement is a reason to look closer, not a contradiction.`,
+    },
     /** Translations of the backend's caveats, keyed by their English text. English shows them as sent. */
     caveatTexts: {} as Record<string, S>,
     caseFindings: (n: S) => `Areas of observed radar change (${n})`,
@@ -374,6 +397,8 @@ const en = {
     colMedian: "Median γ⁰ before → after, dB",
     colValid: "Valid",
     colQuality: "Quality",
+    colCross: "HV mean",
+    colHolds: "Still found at",
     noCaseFindings: "No area passed the method’s change threshold.",
     selectedLabel: "Selected finding",
     /** Under the selected finding when Evidence compares other dates than the case. */
@@ -616,6 +641,20 @@ const en = {
     sources: "Sources",
     qaReport: "QA report",
     evidenceLink: "Evidence for this finding",
+    cross: {
+      title: "Second polarization (HV)",
+      mean: "Mean change in HV",
+      same: (v: S) => `HV, processed the same way, changed by a mean of ${v}: the same direction. HV is shown for comparison only; it was not used to find this area.`,
+      opposite: (v: S) =>
+        `HV, processed the same way, changed by a mean of ${v}: the opposite direction. The two polarizations can respond differently to the same surface; HV was not used to find this area.`,
+      none: "HV has no valid pixels in this area.",
+    },
+    robust: {
+      title: "How robust",
+      top: (t: S, range: S) => `Still found at ±${t} dB, the strictest threshold tested (${range} dB).`,
+      until: (t: S, next: S, range: S) => `Still found up to ±${t} dB; gone at ±${next} dB (thresholds tested: ${range} dB).`,
+      none: "The threshold sweep was not published for this case.",
+    },
     /** A link's `f` that the case doesn't have (UnknownFinding); `id` is the finding id from the link. */
     unknown: {
       title: (id: N): N[] => ["This finding isn’t in the case: ", id],
@@ -961,6 +1000,8 @@ const bn: Messages = {
     pilotNote: "প্রক্রিয়াজাত পাইলটে আছে একই dB স্কেল, আওতার মাস্ক আর ডাউনলোডযোগ্য পরিমাপ।",
     calibratedOf: (date) => `${date}-এর ক্যালিব্রেটেড γ⁰`,
     calibratedTitle: "ক্যালিব্রেটেড লেয়ার।",
+    polLabel: "পোলারাইজেশন",
+    polHint: "পরিবর্তন খোঁজা হয় HH দিয়ে; HV একইভাবে প্রক্রিয়া করে তুলনার জন্য দেখানো হয়।",
     calibratedSame: (units, min, max) =>
       `এটি প্রক্রিয়াজাত কেসের জোড়া, তাই দুই পাশেই দেখানো হয়েছে পূর্ণ GCOV ফাইল থেকে হিসাব করা ক্যালিব্রেটেড ব্যাকস্ক্যাটার (γ⁰, ${units}), বিশ্লেষণের আয়তক্ষেত্রে কাটা, একই মানচিত্র-পরিসরে আর একই কনট্রাস্ট স্কেলে (${min} থেকে ${max})। গাঢ় মানে দুর্বল প্রতিফলন, যেমন মসৃণ পানি।`,
     calibratedDiffer: (units) =>
@@ -1050,6 +1091,27 @@ const bn: Messages = {
     methodParams: "পদ্ধতির প্যারামিটার",
     methodParamsNote: "ব্যাকএন্ড যেভাবে নথিভুক্ত করে, ইংরেজিতে।",
     caveats: "সতর্কতা",
+    sens: {
+      title: "সীমা বদলালে ফল কতটা বদলায়",
+      intro: (pub) => `একই পরিবর্তন-মান অন্য সীমায় আবার মাপা হয়েছে; আর কিছুই বদলানো হয়নি। প্রকাশিত ফল ±${pub} dB সীমা ব্যবহার করে।`,
+      threshold: "সীমা",
+      brighter: "উজ্জ্বলতর (km²)",
+      darker: "গাঢ়তর (km²)",
+      regions: "এলাকার সংখ্যা",
+      present: "তালিকার যতগুলো পরিবর্তন-এলাকা তখনও আছে",
+      published: "প্রকাশিত",
+      none: "এই কেসের জন্য সীমা-যাচাই প্রকাশ করা হয়নি।",
+    },
+    cross: {
+      title: (pol) => `দ্বিতীয় পোলারাইজেশন (${pol})`,
+      median: "মধ্যমা পরিবর্তন",
+      range: "পিক্সেলের মাঝের ৮০% (১০তম–৯০তম পার্সেন্টাইল)",
+      valid: "দুই পোলারাইজেশনেই বৈধ",
+      agree: "একই দিকে বদলানো পরিবর্তন-এলাকা",
+      agreeOf: (n, of) => `${of}টির মধ্যে ${n}টি`,
+      note: (pol) =>
+        `${pol} হুবহু HH-এর মতো প্রক্রিয়া করা হয়, কিন্তু কোনো এলাকা খোঁজা বা মান নির্ধারণে কখনো ব্যবহৃত হয় না। দুটির মিল একটি ফলাফলকে সমর্থন করে; অমিল মানে আরও খুঁটিয়ে দেখা দরকার, ফলাফলটি ভুল নয়।`,
+    },
     caveatTexts: {
       "Single before/after pair: this is a difference between two dates, not a trend, and it cannot say when between them a change happened.":
         "একটিমাত্র আগে/পরে তারিখ-জোড়া: এটি দুই তারিখের পার্থক্য, কোনো প্রবণতা নয়; আর দুই তারিখের মাঝে ঠিক কখন পরিবর্তনটি ঘটেছে, তা এ থেকে বলা যায় না।",
@@ -1062,6 +1124,8 @@ const bn: Messages = {
       "Layover and shadow on steep slopes are not separately masked; terrain correction (RTC) reduces but does not remove these geometry effects.":
         "খাড়া ঢালে লেওভার ও ছায়া (রাডারের জ্যামিতিক বিকৃতি) আলাদাভাবে বাদ দেওয়া হয়নি; ভূখণ্ড সংশোধন (RTC) এই প্রভাব কমায়, কিন্তু পুরোপুরি দূর করে না।",
       "Single polarization (HH); other polarizations can respond differently.": "শুধু একটি পোলারাইজেশন (HH); অন্য পোলারাইজেশনে সাড়া ভিন্ন হতে পারে।",
+      "Regions are detected in HH only. HV is processed the same way and shown alongside each finding for comparison; it is not used to detect or grade regions, and the two polarizations can respond differently to the same surface.":
+        "এলাকাগুলো শুধু HH দিয়ে শনাক্ত করা হয়েছে। HV একইভাবে প্রক্রিয়া করে তুলনার জন্য প্রতিটি পরিবর্তন-এলাকার পাশে দেখানো হয়; এটি এলাকা শনাক্ত বা মান নির্ধারণে ব্যবহৃত হয় না, আর একই ভূপৃষ্ঠে দুই পোলারাইজেশনের সাড়া ভিন্ন হতে পারে।",
       "No independent reference validation yet: each region is an observed radar change, not a confirmed water, flood or damage finding.":
         "এখনও কোনো স্বাধীন রেফারেন্স যাচাই হয়নি: প্রতিটি এলাকা পর্যবেক্ষিত রাডার পরিবর্তন; নিশ্চিত পানি, বন্যা বা ক্ষয়ক্ষতির ফলাফল নয়।",
       "Source data maturity is provisional (NISAR_L2_GCOV_PROVISIONAL_V1): calibration and processing may change in later releases.":
@@ -1077,6 +1141,8 @@ const bn: Messages = {
     colMedian: "মধ্যমা γ⁰ আগে → পরে, dB",
     colValid: "বৈধ",
     colQuality: "প্রমাণের মান",
+    colCross: "HV গড়",
+    colHolds: "যে সীমা পর্যন্ত টেকে",
     noCaseFindings: "কোনো এলাকা পদ্ধতির পরিবর্তন-সীমা পার হয়নি।",
     selectedLabel: "বেছে নেওয়া পরিবর্তন-এলাকা",
     selectedOtherPair: (span) => `কেসের তারিখ-জোড়ায় (${span}) মাপা, ওপরের তারিখগুলোয় নয়।`,
@@ -1215,6 +1281,7 @@ const bn: Messages = {
       "After · γ⁰ HH (dB)": "পরে · γ⁰ HH (dB)",
       "After · γ⁰ HV (dB)": "পরে · γ⁰ HV (dB)",
       "Observed radar change, after − before (dB)": "পর্যবেক্ষিত রাডার পরিবর্তন, পরে − আগে (dB)",
+      "Radar change in HV, after − before (dB); not used for detection": "HV-তে রাডার পরিবর্তন, পরে − আগে (dB); শনাক্তকরণে ব্যবহৃত নয়",
       "Reprojected from EPSG:32646 to EPSG:4326 north-up for display; corners are the image outer edges. Values for analysis come from the native grid.":
         "দেখানোর জন্য EPSG:32646 থেকে EPSG:4326-এ উত্তরমুখী করে পুনঃপ্রক্ষেপ করা; কোণগুলো ছবির বাইরের প্রান্ত। বিশ্লেষণের মান আসে মূল গ্রিড থেকে।",
     },
@@ -1341,6 +1408,20 @@ const bn: Messages = {
     sources: "উৎস",
     qaReport: "মান-যাচাই প্রতিবেদন",
     evidenceLink: "এই পরিবর্তন-এলাকার প্রমাণ",
+    cross: {
+      title: "দ্বিতীয় পোলারাইজেশন (HV)",
+      mean: "HV-তে গড় পরিবর্তন",
+      same: (v) => `একইভাবে প্রক্রিয়া করা HV গড়ে ${v} বদলেছে: একই দিকে। HV শুধু তুলনার জন্য দেখানো হয়েছে; এই এলাকা খুঁজতে এটি ব্যবহার করা হয়নি।`,
+      opposite: (v) =>
+        `একইভাবে প্রক্রিয়া করা HV গড়ে ${v} বদলেছে: উল্টো দিকে। একই ভূপৃষ্ঠে দুই পোলারাইজেশনের সাড়া ভিন্ন হতে পারে; এই এলাকা খুঁজতে HV ব্যবহার করা হয়নি।`,
+      none: "এই এলাকায় HV-এর কোনো বৈধ পিক্সেল নেই।",
+    },
+    robust: {
+      title: "ফলটি কতটা টেকসই",
+      top: (t, range) => `সবচেয়ে কড়া যাচাই-সীমা ±${t} dB-তেও এটি পাওয়া যায় (যাচাই করা সীমা: ${range} dB)।`,
+      until: (t, next, range) => `±${t} dB সীমা পর্যন্ত এটি পাওয়া যায়; ±${next} dB-তে আর থাকে না (যাচাই করা সীমা: ${range} dB)।`,
+      none: "এই কেসের জন্য সীমা-যাচাই প্রকাশ করা হয়নি।",
+    },
     unknown: {
       title: (id) => ["পরিবর্তন-এলাকা ", id, " কেসে নেই।"],
       why: "লিংকটি হয়তো এই কেসের আগের কোনো প্রক্রিয়াকরণের, অথবা লিংকটি বদলানো হয়েছে।",

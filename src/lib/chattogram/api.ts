@@ -4,7 +4,7 @@
 import type { components } from "./api-schema";
 import type { ExplorerData } from "@/lib/explorer-data";
 import type { ProcessedCase } from "./processed";
-import type { CaseDetail, CaseLayer, FindingDetail, Findings, Timeseries } from "./case-api";
+import type { CaseDetail, CaseLayer, FindingDetail, Findings, Sensitivity, Timeseries } from "./case-api";
 
 export type Scene = components["schemas"]["Scene"];
 export type ScenePage = components["schemas"]["ScenePage"];
@@ -62,6 +62,7 @@ export const api = {
   findings: (id: string) => call<Findings>(`/api/earth/curated-cases/${id}/findings`),
   finding: (id: string, fid: string) => call<FindingDetail>(`/api/earth/curated-cases/${id}/findings/${encodeURIComponent(fid)}`),
   timeseries: (id: string) => call<Timeseries>(`/api/earth/curated-cases/${id}/timeseries`),
+  sensitivity: (id: string) => call<Sensitivity>(`/api/earth/curated-cases/${id}/sensitivity`),
   exportUrl: (id: string, format: "json" | "csv" | "geojson") => `/api/earth/curated-cases/${id}/export?format=${format}`,
 };
 

@@ -104,7 +104,7 @@ export function ExploreView() {
 
       <aside id="explore-panel" className="c-panel" aria-label={e.panel} tabIndex={-1}>
         {sel.kind === "unknown" && <UnknownFinding id={sel.id} onClear={clearFinding} onMap />}
-        {selFinding && pc && <FindingPanel key={selFinding.properties.id} finding={selFinding} detail={pc.detail} timeseries={pc.timeseries} onClose={clearFinding} evidenceHref={href("/chattogram/evidence")} />}
+        {selFinding && pc && <FindingPanel key={selFinding.properties.id} finding={selFinding} detail={pc.detail} timeseries={pc.timeseries} sensitivity={pc.sensitivity} onClose={clearFinding} evidenceHref={href("/chattogram/evidence")} />}
 
         <div className="c-panel-block">
           {pc ? (

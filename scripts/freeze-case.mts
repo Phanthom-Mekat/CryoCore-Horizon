@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { covers, stacks, toAcquisition, type Acquisition } from "../src/lib/chattogram/acquisitions.ts";
 import { PROCESSING, bboxOf, browseFile, corners, decode, toWebp } from "../src/lib/chattogram/browse.ts";
 import { FOCUS, FROZEN_DIR, FROZEN_VERSION, type FrozenCase, type FrozenCurated, type FrozenPilot } from "../src/lib/chattogram/frozen.ts";
-import { CASE_ID, type CaseDetail, type CaseLayer, type FindingDetail, type Findings, type Timeseries } from "../src/lib/chattogram/case-api.ts";
+import { CASE_ID, type CaseDetail, type CaseLayer, type FindingDetail, type Findings, type Sensitivity, type Timeseries } from "../src/lib/chattogram/case-api.ts";
 import { pilotOf, type ProcessedCase } from "../src/lib/chattogram/processed.ts";
 import type { ExplorerData } from "../src/lib/explorer-data.ts";
 import type { Scene, ScenePage } from "../src/lib/chattogram/api.ts";
@@ -113,7 +113,8 @@ if (detail?.status === "ready" && !detail.synthetic_fixture) {
   const exports = {} as FrozenCurated["exports"];
   for (const fmt of ["json", "csv", "geojson"] as const)
     exports[fmt] = keep(`${CASE_ID}.${fmt}`, new Uint8Array(await (await fetchOk(`${curatedBase}/export?format=${fmt}`)).arrayBuffer()));
-  curated = { detail, layers, findings, timeseries: await get<Timeseries>(`${curatedBase}/timeseries`), findingDetails, exports, files };
+  const sensitivity = await get<Sensitivity>(`${curatedBase}/sensitivity`);
+  curated = { detail, layers, findings, timeseries: await get<Timeseries>(`${curatedBase}/timeseries`), sensitivity: sensitivity.rows.length ? sensitivity : null, findingDetails, exports, files };
   console.log(`curated case ${CASE_ID}: ${layers.length} layers, ${findings.features.length} findings, ${Object.keys(files).length} files`);
 } else console.log(`curated case ${CASE_ID} is ${detail ? detail.status + (detail.synthetic_fixture ? " (synthetic QA)" : "") : "not served"}; the snapshot will have none`);
 
