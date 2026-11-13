@@ -78,6 +78,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   <li key={href}>
                     <Link
                       href={href}
+                      title={nav[label]} // the only label when the nav is an icon rail (case assistant open)
                       aria-current={path === href ? "page" : undefined}
                       onClick={(e) => {
                         // moving within the case keeps the chosen stack, dates and map view (they live in the query)
@@ -115,6 +116,8 @@ export function Shell({ children }: { children: ReactNode }) {
             <Menu size={20} />
           </button>
           <p className="d-title">{TITLES[path] ? nav[TITLES[path]] : nav.dashboard}</p>
+          {/* page-level tools render here (the case assistant's toggle) */}
+          <div className="d-top-slot" />
           <CaseSourceToggle />
           <LanguageToggle />
           <ThemeToggle />

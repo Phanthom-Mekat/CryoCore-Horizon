@@ -93,6 +93,10 @@ export function PlainAnswer({
         <dt>{p.also}</dt>
         <dd>{c.also}</dd>
       </dl>
+      <p className="c-plain-next">
+        <strong>{p.next}</strong>
+        {c.next}
+      </p>
       <p className="c-plain-sure">{p.sure}</p>
     </section>
   );
@@ -111,7 +115,11 @@ export function PlainLine({ id, layer }: { id: PlainId; layer: CaseLayer }) {
         <strong>
           {p.inWords}: {p.cats[id].title}.
         </strong>{" "}
-        {p.cats[id].means} <small>{p.sure}</small>
+        {p.cats[id].means}{" "}
+        <span className="c-plain-line-next">
+          <strong>{p.next}:</strong> {p.cats[id].next}
+        </span>
+        <small>{p.sure}</small>
       </span>
     </p>
   );

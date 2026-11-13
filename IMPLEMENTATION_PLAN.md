@@ -243,6 +243,15 @@ and whether the pilot stays as a secondary view.
 - [x] `/chattogram/tour`: eight steps (clouds vs radar, the place, June, October, plain map, one field up close, how sure, try it) with Back/Next, ←/→ and 9 s autoplay for recording; linked from the sidebar and Overview. English and Bangla.
 - [x] Fixed `pnpm freeze-case`, which could no longer start (`@/` imports, and the resolver broke `sharp`'s CommonJS requires); refrozen: findings, metrics and existing layers unchanged byte for byte.
 
+### Case assistant ("Ask the map") — 13 November 2026
+
+- [x] Backend `app/assistant.py`: a Gemini function-calling loop (`gemini-3.8-flash` by default, key `GEMINI_API_KEY` server-side only) over read-only tools on the published case (overview, findings by category or distance, one finding, a tapped point, threshold sensitivity) and UI tools whose actions the browser carries out (move the map to a finding or a point, switch layer, open a page, download the brief). Every number must come from a tool; the plain reading stays "likely". The case facts and the tapped point are preloaded, saving a round.
+- [x] Streams NDJSON events, so steps show and the map moves while the answer is being written. Retries busy errors, skips to `CRYO_GEMINI_FALLBACK_MODEL` on a quota or repeated busy replies and stays on it for the rest of the question; 100 s budget; global per-minute limit; synthetic QA bundles are never answered from unless QA mode is on.
+- [x] Sidebar on every case page (`Assistant.tsx`): suggested questions, step chips, light markdown, English and Bangla; Explore reports the tapped point and layer through `map-bus.ts`.
+- [x] Checked live: a real run (3.5 Flash as fallback) found the largest crop field (`chg-743213d3b7e8`), moved the map there and answered with the case's numbers; map, pin and layer actions checked in the browser.
+- [x] `gemini-3.8-flash` was overloaded on 13 Nov (503 "high demand" or hanging past 90 s; 3.7 Flash and flash-latest too), so `gemini-3.5-flash` is the default fallback: a failing main model gets 20 s per try, then rests for 2 minutes. Checked live: first question 15 s with the map moved, the next 2 s.
+- [ ] Free-tier keys allow 20 requests a day per model (about 7–10 questions). Enable billing on the AI Studio project before demoing or recording. The assistant needs the live backend; it doesn't work in a static frozen deployment.
+
 ### Next up — core priorities before submission
 
 Time is short. Do these in order. Anything not listed here is deferred.
@@ -548,6 +557,12 @@ rainfall integration, automated narration, then multi-date playback. Preserve
 the real NISAR pair, truthful change result, evidence drawer, and complete demo.
 
 ## 9. The 240-second video
+
+For the current Karnaphuli tour and the flood-footage opening, use the
+[recording guide](docs/video-recording.md). It follows the saved case through
+the camera/radar swipe, June–October comparison, one change patch and its brief.
+
+- [x] Lead with the public question on the landing page and Overview. Provide a seven-step tour with a clean presentation view and a link to the selected patch's evidence.
 
 Use one named place and one real case throughout. Write the final finding only
 after validation. Target approximately 460–520 spoken words, allowing pauses

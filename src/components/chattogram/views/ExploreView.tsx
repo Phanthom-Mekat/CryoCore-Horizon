@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Columns2, ExternalLink, FileText } from "lucide-react";
 import { covers, type Acquisition } from "@/lib/chattogram/acquisitions";
@@ -19,6 +19,7 @@ import { PrepStatus } from "../PrepStatus";
 import { BackendText } from "../BackendText";
 import { PlainAnswer, PlainKey } from "../PlainAnswer";
 import { plainLayer, plainOf, usePlainReader } from "@/lib/chattogram/plain";
+import { onMapCommand, setMapContext, takeMapCommand } from "@/lib/chattogram/map-bus";
 
 export function ExploreView() {
   const { load, stack, before, after, view, pick, set, href, processed, finding, caseHref } = useCase();
@@ -43,6 +44,28 @@ export function ExploreView() {
   );
   const onFinding = useCallback((f: string) => set({ f }), [set]);
   const [showFindings, setShowFindings] = useState(true);
+  // the assistant's map commands: applied when sent, or on arriving here from another page
+  useEffect(() => {
+    const apply = () => {
+      const c = takeMapCommand();
+      if (c?.layer) setLayer(c.layer);
+      if (c?.point) {
+        setLayer("plain");
+        setTap(c.point);
+      }
+    };
+    const first = setTimeout(apply); // a command sent just before navigating here
+    const stop = onMapCommand(apply);
+    return () => {
+      clearTimeout(first);
+      stop();
+    };
+  }, []);
+  // what the assistant reads as "here"
+  useEffect(() => {
+    setMapContext({ point: layer === "plain" ? tap : null, layer });
+    return () => setMapContext(null);
+  }, [tap, layer]);
   if (load.status !== "ready" || !stack) return null;
 
   const detail = processed.status === "ready" ? processed.data.detail : null;
