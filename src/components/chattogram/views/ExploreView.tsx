@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Columns2, ExternalLink, FileText } from "lucide-react";
 import { covers, type Acquisition } from "@/lib/chattogram/acquisitions";
@@ -17,14 +17,23 @@ import { ChangeKey, DbKey, FindingKey } from "../MapKey";
 import { FindingPanel, UnknownFinding } from "../FindingPanel";
 import { PrepStatus } from "../PrepStatus";
 import { BackendText } from "../BackendText";
+import { PlainAnswer, PlainKey } from "../PlainAnswer";
+import { plainLayer, plainOf, usePlainReader } from "@/lib/chattogram/plain";
+import { onMapCommand, setMapContext, takeMapCommand } from "@/lib/chattogram/map-bus";
 
 export function ExploreView() {
   const { load, stack, before, after, view, pick, set, href, processed, finding, caseHref } = useCase();
   const t = useT();
   const e = t.explore;
   const onMove = useCallback((v: typeof view) => set({ view: v }), [set]);
-  // which raster is on the map: a processed layer of the case (signed change first), or the selected date's quicklook
-  const [layer, setLayer] = useState<LayerId | "quicklook">("change_db");
+  // which raster is on the map: a processed layer of the case (the plain reading first, else signed change), or the
+  // selected date's quicklook
+  const [layer, setLayer] = useState<LayerId | "quicklook">("plain");
+  const [tap, setTap] = useState<[number, number] | null>(null);
+  const readyCase = processed.status === "ready" && processed.data.detail.status === "ready" ? processed.data : null;
+  const plainL = plainLayer(readyCase);
+  const plainUrl = readyCase && plainL ? layerImage(CASE_ID, plainL, readyCase.detail.updated_at).url : null;
+  const reader = usePlainReader(plainUrl, plainL, readyCase?.detail.analysis_area?.geometry ?? null);
   // picking a date shows its quicklook: the processed layers belong to the case pair only
   const onPick = useCallback(
     (a: Acquisition) => {
@@ -35,11 +44,35 @@ export function ExploreView() {
   );
   const onFinding = useCallback((f: string) => set({ f }), [set]);
   const [showFindings, setShowFindings] = useState(true);
+  // the assistant's map commands: applied when sent, or on arriving here from another page
+  useEffect(() => {
+    const apply = () => {
+      const c = takeMapCommand();
+      if (c?.layer) setLayer(c.layer);
+      if (c?.point) {
+        setLayer("plain");
+        setTap(c.point);
+      }
+    };
+    const first = setTimeout(apply); // a command sent just before navigating here
+    const stop = onMapCommand(apply);
+    return () => {
+      clearTimeout(first);
+      stop();
+    };
+  }, []);
+  // what the assistant reads as "here"
+  useEffect(() => {
+    setMapContext({ point: layer === "plain" ? tap : null, layer });
+    return () => setMapContext(null);
+  }, [tap, layer]);
   if (load.status !== "ready" || !stack) return null;
 
   const detail = processed.status === "ready" ? processed.data.detail : null;
   const pc = detail?.status === "ready" && processed.status === "ready" ? processed.data : null;
-  const shownLayer = pc?.layers.find((l) => l.id === layer) ?? null;
+  const shownLayer = pc?.layers.find((l) => l.id === (layer === "plain" && !plainL ? "change_db" : layer)) ?? null;
+  // on the plain layer a tap asks "what happened here?", so it no longer picks a date's footprint
+  const plainShown = shownLayer?.id === "plain" && !!plainL;
   // the backend names layers in English; this reads them in the interface language where we have a translation
   const texts = t.processed.texts;
   const layerName = (l: { label: string }) => texts[l.label] ?? l.label;
@@ -88,10 +121,16 @@ export function ExploreView() {
           processed={overlay}
           footprints={stack.items}
           selected={shown.conceptId}
-          onPick={(id) => {
-            const a = id && stack.items.find((x) => x.conceptId === id);
-            if (a) onPick(a);
-          }}
+          onPick={
+            plainShown
+              ? undefined
+              : (id) => {
+                  const a = id && stack.items.find((x) => x.conceptId === id);
+                  if (a) onPick(a);
+                }
+          }
+          onInspect={plainShown ? setTap : undefined}
+          inspectionPoint={plainShown ? tap : null}
           boundary={load.data.region.boundary}
           area={detail?.analysis_area ?? null}
           areaName={areaName}
@@ -103,8 +142,23 @@ export function ExploreView() {
       </section>
 
       <aside id="explore-panel" className="c-panel" aria-label={e.panel} tabIndex={-1}>
+        {plainShown && plainL && pc && tap && (
+          <div className="c-panel-block">
+            <PlainAnswer reading={reader.read(tap)} layer={plainL} between={t.plain.between(fmtDate(pc.detail.before.date), fmtDate(pc.detail.after.date))} onClose={() => setTap(null)} />
+          </div>
+        )}
         {sel.kind === "unknown" && <UnknownFinding id={sel.id} onClear={clearFinding} onMap />}
-        {selFinding && pc && <FindingPanel key={selFinding.properties.id} finding={selFinding} detail={pc.detail} timeseries={pc.timeseries} onClose={clearFinding} evidenceHref={href("/chattogram/evidence")} />}
+        {selFinding && pc && (
+          <FindingPanel
+            key={selFinding.properties.id}
+            finding={selFinding}
+            detail={pc.detail}
+            timeseries={pc.timeseries}
+            onClose={clearFinding}
+            evidenceHref={href("/chattogram/evidence")}
+            plain={plainL && plainOf(pc, selFinding.properties.id) ? { id: plainOf(pc, selFinding.properties.id)!, layer: plainL } : null}
+          />
+        )}
 
         <div className="c-panel-block">
           {pc ? (
@@ -132,7 +186,8 @@ export function ExploreView() {
                   {e.findingsToggle(fmtNum(pc.findings.features.length))}
                 </label>
               </fieldset>
-              {shownLayer?.palette === "diverging" && <ChangeKey limit={Math.max(Math.abs(shownLayer.scale.min), Math.abs(shownLayer.scale.max))} />}
+              {plainShown && plainL && <PlainKey layer={plainL} before={fmtDate(pc.detail.before.date)} after={fmtDate(pc.detail.after.date)} />}
+              {shownLayer?.palette === "diverging" &&<ChangeKey limit={Math.max(Math.abs(shownLayer.scale.min), Math.abs(shownLayer.scale.max))} />}
               {shownLayer?.palette === "gray" && <DbKey min={shownLayer.scale.min} max={shownLayer.scale.max} layer={shownLayer.label} />}
               {shownLayer && <p className="c-hint"><BackendText text={shownLayer.crs_note} translated={texts[shownLayer.crs_note]} /></p>}
               {showFindings && pc.findings.features.length > 0 && (

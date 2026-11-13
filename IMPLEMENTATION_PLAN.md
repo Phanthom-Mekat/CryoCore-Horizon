@@ -2,6 +2,8 @@
 
 Status (13 Nov 2026, after merging PR #2 into `main` at `f8c6197`): discovery catalogue and the frontend case journey use real NISAR metadata and browse quicklooks; the case replays from a frozen snapshot without the backend (F09), in English and Bangla (F15), with NASA rainfall context (F13). There are now **two processed tracks** (see [below](#two-processed-tracks--team-decision-needed)): a small calibrated pilot already processed from real NISAR pixels, and the curated `karnaphuli-estuary` case, processed on 13 Nov 2026 from the real 18 Jun and 16 Oct 2026 NISAR files (175.71 km² valid on both dates; 4.91 km² brighter and 0.20 km² darker by at least 3 dB; 40 listed findings). Both replay from the frozen snapshot. Terrain-quality checks and independent validation remain pending. See the progress tracker below.
 
+**Time is short: work only on the [core priorities](#next-up--core-priorities-before-submission).** More Bangla translation, polish and P2 features are deferred.
+
 Implementation update: the case lives at `/chattogram` (Overview, Explore map, Compare, Evidence, Scene catalogue, About; see [docs/CHATTOGRAM.md](docs/CHATTOGRAM.md)). The first discovery increment is its Scene catalogue.
 It includes an attributed 2018 BBS/HDX reference boundary, real NASA catalog
 footprints, polygon-intersection filtering, date selection, and source inspection.
@@ -76,14 +78,14 @@ Updated 13 November 2026 after the PR #2 merge (`f8c6197`). "Partial" includes i
 | F05 | Defensible change map | Partial | Pilot: signed dB change with coverage statistics. Curated case (real): 4.91 km² brighter and 0.20 km² darker by ≥ 3 dB over 175.71 km², 92 regions (40 largest listed), each labelled "Observed radar change" with categorical quality; threshold sensitivity measured at 2–6 dB (`/curated-cases/{id}/sensitivity`): brighter 11.26 → 4.91 → 1.95 → 0.64 → 0.26 km², darker 0.47 → 0.20 → 0.16 → 0.10 → 0.07 km², 40 → 7 listed findings still present at 2 → 6 dB | Show the sensitivity on Evidence, in the brief and the finding panel; confounder assessment (tide, river stage, ships, crops, wind); independent validation; no water classification |
 | F06 | Before/after comparison | Complete for pilot | Calibrated HH/HV comparison, keyboard slider, synchronized maps, date badges and common −25..0 dB scale at `/chattogram/processed`; Compare switches to the curated case's calibrated layers when that case is ready | Extend to additional validated acquisitions |
 | F07 | Click-to-explain evidence | Partial | Pilot: native HH/HV pixel inspection and JSON, plus two-corner area selection (date medians, median change, valid/excluded area, histograms, JSON/GeoJSON footprint). Curated case: 40 real finding polygons on Explore, `FindingPanel` (what changed, why, what is uncertain, sources, method) in English and Bangla, selection in the URL (`f`); works in the frozen replay; **Evidence for this finding** opens Evidence on the selected finding (the same panel as a card, its row marked in the findings table, a note when the compared dates aren't the case pair); a chart in the panel puts the finding's median on each date against the analysis area's mean and 10th–90th percentile (from the case timeseries), with a "Show the numbers" table; share and replay links keep `f`, and an `f` the case doesn't have shows a note that clears it | Reference checks (`validation_records` is empty); area selections in share links and the pilot report; area analysis needs live data (not in a replay) |
-| F08 | Chattogram overview | Partial | Real catalogue numbers; curated section with real numbers (175.7 km² valid, 4.91 km² observed increase, 0.20 km² observed decrease, 18 Jun → 16 Oct 2026), in English and Bangla; calibrated pilot strip | Style the curated section (its figures and date pair have no CSS yet); pick which case leads |
+| F08 | Chattogram overview | Partial | Real catalogue numbers; curated section with real numbers (175.7 km² valid, 4.91 km² observed increase, 0.20 km² observed decrease, 18 Jun → 16 Oct 2026), in English and Bangla; calibrated pilot strip | Pick which case leads (the curated section is styled) |
 | F09 | Reproducible case replay | Done | Versioned frozen case: catalogue and 29 quicklooks, the calibrated pilot (6 PNGs, 8 GeoTIFFs) and the curated case (detail, 3 layers, 40 findings with evidence, timeseries, JSON/CSV/GeoJSON exports), every file with SHA-256; zero `/api/` requests while replaying, checked on Overview, Explore with a selected finding, Evidence and Calibrated radar | Pixel inspection in a replay; refresh with `pnpm freeze-case` before recording |
 | F10 | Validation and methods | Partial | Methods, limitations and claim level in About and Evidence; `validation_records` table and `reference_checks` field in finding evidence; categorical finding quality (strong/moderate/weak with a reason) | Reference data, evaluation samples, results |
 | F11 | Timeline playback | Partial | Replay over actual dates, gaps visible; curated per-date statistics (mean, p10, p90 dB over valid pixels) under the Explore timeline | Three or more processed dates for real playback |
 | F12 | Local observation brief | Partial | JSON, CSV, GeoJSON, print; brief JSON carries `processed_case` and `calibrated_pilot`; the finding picked on Explore leads the printout and is named in the brief (JSON `selected_finding` with its outline, dates, method, sources and a replay link; `selected` on its CSV row and GeoJSON feature); curated exports from the backend, or from the snapshot while replaying; measured-pilot report at `/chattogram/processed/{id}/brief` (distribution chart, coverage, provenance, full-precision JSON/CSV, print styling) | The pilot window in GeoJSON; verify the pilot report's PDF pagination and 390 px layout; the pilot report needs live data |
-| F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
+| F13 | NASA rainfall context | Done with a modelled series | NASA POWER daily rainfall (MERRA-2/GEOS-IT, modelled) saved as a static file; charts on Explore and Compare with NISAR passes marked; 7-day totals in Compare, Evidence and the brief; context-not-cause caveat | Deferred: swap in GPM IMERG (observed, 0.1°) once an Earthdata login is available to the frontend scripts; refresh with `pnpm fetch-rain` before recording |
 | F14 | Community context | Not started | – | Licensed overlays |
-| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages; a translation guard in `pnpm test` that fails when a translated component shows hard-coded English (`tests/i18n-guard.test.mjs`) | A native speaker's review; the Scene catalogue and landing page (the PR #2 additions are all translated: the Overview section, `FindingPanel`, Evidence's "Processed" section, `PrepStatus`, About's "Data preparation", the synthetic-data banner, the calibrated page's share, area selection and measured report, and the processed-layer text in Explore, Compare, the map key and timeline) |
+| F15 | Local accessibility | Done for the core journey | English/Bangla case journey with a header switch, including the Calibrated radar page and pixel inspector; Bengali dates and fonts, `<html lang>`, keyboard use, colour plus pattern, 390 px in both languages; a translation guard in `pnpm test` that fails when a translated component shows hard-coded English (`tests/i18n-guard.test.mjs`) | Deferred: a native speaker's review; the Scene catalogue and landing page (the PR #2 additions are all translated: the Overview section, `FindingPanel`, Evidence's "Processed" section, `PrepStatus`, About's "Data preparation", the synthetic-data banner, the calibrated page's share, area selection and measured report, and the processed-layer text in Explore, Compare, the map key and timeline) |
 | F16 | Terrain storytelling | Not started | – | P2 |
 | F17 | Evidence-based narration | Not started | – | P2 |
 
@@ -227,17 +229,45 @@ Merged from `feat/chattogram-home` and documented in [docs/curated-case.md](docs
 | Pair | stack `163_D_077`, 7 Jul vs 11 Oct 2026, quad-pol | stack `069_A_013`, 18 Jun vs 16 Oct 2026, HH+HV |
 | Area | 256 × 256 px window, 21.82 km² valid; river corridor clipped out | ≈175.7 km² rectangle including the river channel |
 | Real data | Yes, processed from real NISAR pixels | Yes, processed from the two real files on 13 Nov 2026 |
-| UI | Calibrated radar page, Overview strip, Evidence card, frozen replay, pixel inspector, Bangla | Explore findings, Compare layers, Overview/Evidence sections, export (English only) |
+| UI | Calibrated radar page, Overview strip, Evidence card, frozen replay, pixel inspector, Bangla | Explore findings, Compare layers, Overview/Evidence sections, export, frozen replay, Bangla |
 
 The demo should have one central case (submission checklist). Both are now real. The curated case covers the river
 and port the plan's story is about (HH only); the pilot is smaller, quad-pol, but clips the river out. Decide which leads the video,
 and whether the pilot stays as a secondary view.
 
-### Next up
+### Plain answers and guided tour — 13 November 2026
 
-- **Backend:** review the curated findings against tide, ships and port activity; static terrain quality and mixed-mode review; dated reference evidence (tide heights at both pass times); a job cancel action.
-- **Frontend:** finish inspector mobile/export and pilot-report PDF/mobile checks; connect area selections to share links and the report; swap the modelled rainfall for GPM IMERG; rework the landing page around the Chattogram case (needs a team decision).
-- **Team:** choose the central processed case (above); make the GitHub repository public before submission; fill in the team names on the landing page; choose a repository licence.
+- [x] Plain reading of the curated case (`backend/app/processing/plain.py`, version 0.1.0): every HH change region gets one everyday category from its median HH and HV (water came / went, crops or plants grew / lost, ship, building or metal, ground changed for an unclear reason), plus water on both dates for orientation. L-band rules of thumb, always worded "likely, not checked on the ground"; a separate layer (`plain.png`, `by_finding`), never written into `findings.geojson`, which stays "Observed radar change".
+- [x] Checked on the real pair: HV ≤ −19 dB marks a 16.7 km² main water body, the surveyed Karnaphuli channel. 38 of the 40 findings (4.54 km²) read as crops or plants grew: HH −9.6 → −4.9 dB with HV rising, mostly fields that were water-like in June, the Aman rice signature.
+- [x] Explore opens on the plain layer: a legend with areas and icons; a tap anywhere gives "what the radar saw / what it likely means / it could also be" (read from the PNG, so it works in the replay); the finding panel on Explore and Evidence leads with the plain line.
+- [x] `/chattogram/tour`: eight steps (clouds vs radar, the place, June, October, plain map, one field up close, how sure, try it) with Back/Next, ←/→ and 9 s autoplay for recording; linked from the sidebar and Overview. English and Bangla.
+- [x] Fixed `pnpm freeze-case`, which could no longer start (`@/` imports, and the resolver broke `sharp`'s CommonJS requires); refrozen: findings, metrics and existing layers unchanged byte for byte.
+
+### Case assistant ("Ask the map") — 13 November 2026
+
+- [x] Backend `app/assistant.py`: a Gemini function-calling loop (`gemini-3.8-flash` by default, key `GEMINI_API_KEY` server-side only) over read-only tools on the published case (overview, findings by category or distance, one finding, a tapped point, threshold sensitivity) and UI tools whose actions the browser carries out (move the map to a finding or a point, switch layer, open a page, download the brief). Every number must come from a tool; the plain reading stays "likely". The case facts and the tapped point are preloaded, saving a round.
+- [x] Streams NDJSON events, so steps show and the map moves while the answer is being written. Retries busy errors, skips to `CRYO_GEMINI_FALLBACK_MODEL` on a quota or repeated busy replies and stays on it for the rest of the question; 100 s budget; global per-minute limit; synthetic QA bundles are never answered from unless QA mode is on.
+- [x] Sidebar on every case page (`Assistant.tsx`): suggested questions, step chips, light markdown, English and Bangla; Explore reports the tapped point and layer through `map-bus.ts`.
+- [x] Checked live: a real run (3.5 Flash as fallback) found the largest crop field (`chg-743213d3b7e8`), moved the map there and answered with the case's numbers; map, pin and layer actions checked in the browser.
+- [x] `gemini-3.8-flash` was overloaded on 13 Nov (503 "high demand" or hanging past 90 s; 3.7 Flash and flash-latest too), so `gemini-3.5-flash` is the default fallback: a failing main model gets 20 s per try, then rests for 2 minutes. Checked live: first question 15 s with the map moved, the next 2 s.
+- [ ] Free-tier keys allow 20 requests a day per model (about 7–10 questions). Enable billing on the AI Studio project before demoing or recording. The assistant needs the live backend; it doesn't work in a static frozen deployment.
+
+### Next up — core priorities before submission
+
+Time is short. Do these in order. Anything not listed here is deferred.
+
+1. **Choose the central case** (team, blocks the video): the pilot or `karnaphuli-estuary` (above). Make it lead the Overview and the demo; the other becomes secondary or is hidden.
+2. **Make the claim defensible:**
+   - Show the measured threshold sensitivity (2–6 dB, already at `/curated-cases/{id}/sensitivity`) on Evidence and in the brief, so a reviewer sees how much the result depends on the 3 dB choice.
+   - Check the strongest findings against tide heights at both pass times and against ships and port activity, and record the result in `validation_records`. Label everything that isn't checked as "observed radar change".
+   - Keep the limitations consistent across the UI, the brief and the narration.
+3. **Ship the demo:** deploy a public, reachable demo (the frozen replay needs no backend); protect the job endpoints; refresh `pnpm freeze-case` and `pnpm fetch-rain` before recording; run one end-to-end pass, including one person who isn't on the team.
+4. **Video and submission:** check the event's rules (duration, format, deadline); record the captioned 240-second video using only verified numbers; write the submission (problem, NASA data, method, finding, limitations).
+5. **Repository:** choose a licence, check attribution for every dataset and asset, make the repo public, put the team names on the landing page.
+
+**Deferred** (only if time is left over after the list above): more Bangla translation (Scene catalogue, landing page, a native speaker's review); a landing-page redesign; GPM IMERG instead of the modelled rainfall; a job cancel action; HV change layers (HV is used only by the plain reading) and terrain layover/shadow masks for the curated case; mixed-mode review; area selections in share links and the report; the pilot window in GeoJSON; the unfinished inspector mobile/download and pilot-report PDF checks; three or more processed dates for timeline playback; F14, F16, F17. Water classification and formal accuracy metrics stay out of scope: claim only observed radar change.
+
+- **Housekeeping:** once nobody needs to re-extract, delete the 12.4 GB in `backend/data/raw/`. Dev no longer reads it (Tailwind now scans `src/` only), but it still fills the disk.
 - **Setup after pulling `main`:** `pip install -e .` in `backend/` (new `scipy` and `pillow` dependencies), then restart the backend. The local database is already at schema v4 (backup: `backend/data/cryocore.sqlite3.bak-before-v4`), so code older than PR #2 refuses to start on it.
 
 Demo target: 240 seconds, as specified by the team. Verify the actual submission
@@ -527,6 +557,12 @@ rainfall integration, automated narration, then multi-date playback. Preserve
 the real NISAR pair, truthful change result, evidence drawer, and complete demo.
 
 ## 9. The 240-second video
+
+For the current Karnaphuli tour and the flood-footage opening, use the
+[recording guide](docs/video-recording.md). It follows the saved case through
+the camera/radar swipe, June–October comparison, one change patch and its brief.
+
+- [x] Lead with the public question on the landing page and Overview. Provide a seven-step tour with a clean presentation view and a link to the selected patch's evidence.
 
 Use one named place and one real case throughout. Write the final finding only
 after validation. Target approximately 460–520 spoken words, allowing pauses

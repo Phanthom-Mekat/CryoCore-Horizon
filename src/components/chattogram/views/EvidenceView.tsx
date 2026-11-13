@@ -14,6 +14,7 @@ import { fmtArea, fmtDate, fmtDateTime, fmtNum, fmtSigned, fmtSize } from "@/lib
 import { useT } from "@/lib/i18n/useT";
 import { BackendText } from "../BackendText";
 import { useCase, usePilot } from "../CaseProvider";
+import { plainLayer, plainOf } from "@/lib/chattogram/plain";
 import { FindingPanel, UnknownFinding } from "../FindingPanel";
 import { MethodName } from "../MethodName";
 import { FINDING } from "../MapKey";
@@ -130,6 +131,11 @@ export function EvidenceView() {
             detail={pc.detail}
             timeseries={pc.timeseries}
             onClose={clearFinding}
+            plain={(() => {
+              const layer = plainLayer(pc);
+              const id = plainOf(pc, sel.finding.properties.id);
+              return layer && id ? { id, layer } : null;
+            })()}
           />
         </div>
       )}

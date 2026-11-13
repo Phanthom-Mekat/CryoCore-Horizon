@@ -25,12 +25,13 @@ def display_grid(grid: Grid, max_px: int):
     return from_bounds(west, south, east, north, w, h), w, h, [[round(x, 7), round(y, 7)] for x, y in corners]
 
 
-def warp(values: np.ndarray, grid: Grid, dst_transform, w: int, h: int) -> np.ndarray:
+def warp(values: np.ndarray, grid: Grid, dst_transform, w: int, h: int, categorical: bool = False) -> np.ndarray:
     out = np.full((h, w), np.nan, np.float32)
     shrink = max(grid.width / w, grid.height / h)
+    # categories are codes, not magnitudes: never average them
     reproject(values.astype(np.float32), out, src_transform=grid.transform, src_crs=grid.crs, src_nodata=np.nan,
               dst_transform=dst_transform, dst_crs="EPSG:4326", dst_nodata=np.nan,
-              resampling=Resampling.average if shrink > 1.01 else Resampling.nearest)
+              resampling=Resampling.average if shrink > 1.01 and not categorical else Resampling.nearest)
     return out
 
 

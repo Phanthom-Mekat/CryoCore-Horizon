@@ -36,6 +36,11 @@ def regions(delta: np.ndarray, sign: int, threshold_db: float, opening_px: int, 
     """
     with np.errstate(invalid="ignore"):
         cand = np.nan_to_num(sign * delta, nan=-np.inf) >= threshold_db
+    return clean(cand, opening_px, min_px)
+
+
+def clean(cand: np.ndarray, opening_px: int, min_px: int):
+    """Square opening of a boolean mask, then 4-connected regions of >= min_px pixels: (labels 1..n, counts)."""
     if opening_px > 1:
         cand = ndimage.binary_opening(cand, structure=np.ones((opening_px, opening_px), bool))
     labels, n = ndimage.label(cand)

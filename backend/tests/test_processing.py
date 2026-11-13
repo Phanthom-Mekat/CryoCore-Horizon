@@ -158,7 +158,7 @@ def test_repeatable(pair, tmp_path):
 def test_pngs_corners_alpha_and_palette(pair, tmp_path):
     result = run(*pair, tmp_path / "out")
     layers = {l["id"]: l for l in result["layers"]}
-    assert set(layers) == {"before_db", "after_db", "change_db"}
+    assert set(layers) == {"before_db", "after_db", "change_db", "plain"}
     (tl, tr, br, bl) = layers["change_db"]["corners"]
     assert tl[1] == tr[1] > br[1] == bl[1] and tl[0] == bl[0] < tr[0] == br[0]  # north-up lon/lat
     assert tl[0] <= 91.80 and tr[0] >= 91.84 and bl[1] <= 22.275 and tl[1] >= 22.305
@@ -180,3 +180,13 @@ def test_pngs_corners_alpha_and_palette(pair, tmp_path):
     arr = np.asarray(imgs["before_db"])
     gray = np.median(arr[..., 0][arr[..., 3] == 255])
     assert abs(gray - 13 / 25 * 255) < 3  # the -12 dB background on the shared -25..0 scale
+
+
+def test_plain_layer_is_separate_from_findings(pair, tmp_path):
+    result = run(*pair, tmp_path / "out")
+    layer = next(l for l in result["layers"] if l["id"] == "plain")
+    fc = json.loads((tmp_path / "out" / "findings.geojson").read_text(encoding="utf-8"))
+    assert set(layer["by_finding"]) == {f["id"] for f in fc["features"]}
+    assert [c["code"] for c in layer["categories"]] == [1, 2, 3, 4, 5, 6, 7]
+    assert Image.open(tmp_path / "out" / "plain.png").mode == "RGBA"
+    assert result["method"]["params"]["plain_reading"]["water_hv_db"] == -19.0

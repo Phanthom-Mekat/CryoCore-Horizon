@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     job_stale_seconds: int = Field(default=3600, ge=60)
     # QA only: serve a bundle whose manifest says synthetic_fixture (made from test fixtures, never NISAR). Off by default.
     allow_synthetic_qa: bool = False
+    # Case assistant (app/assistant.py): Google AI Studio key, server-side only. Unset disables the assistant.
+    gemini_api_key: SecretStr | None = Field(
+        default=None, exclude=True, validation_alias=AliasChoices("GEMINI_API_KEY", "CRYO_GEMINI_API_KEY", "gemini_api_key"))
+    gemini_model: str = "gemini-3.5-flash"
+    # Used when the main model is busy, hanging or out of quota (it then rests for 2 minutes). Empty string: no fallback.
+    gemini_fallback_model: str | None = "gemini-3.8-flash"
+    # Across all viewers: every question spends Gemini calls on the owner's key.
+    assistant_requests_per_minute: int = Field(default=20, ge=1, le=600)
 
     @property
     def resolved_database_path(self) -> Path:

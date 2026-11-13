@@ -52,7 +52,10 @@ export type CaseDetail = CaseSummary & {
   job: Job | null;
 };
 
-export type LayerId = "before_db" | "after_db" | "change_db";
+export type LayerId = "before_db" | "after_db" | "change_db" | "plain";
+/** One category of the plain reading (backend app/processing/plain.py): its pixel code in plain.png and its area. */
+export type PlainCategory = S["PlainCategory"];
+export type PlainId = PlainCategory["id"];
 export type CaseLayer = {
   id: LayerId;
   label: string;
@@ -62,8 +65,12 @@ export type CaseLayer = {
   crs_note: string;
   units: string;
   scale: { min: number; max: number };
-  palette: "gray" | "diverging";
+  palette: "gray" | "diverging" | "categories";
   nodata: "transparent";
+  /** plain layer only */
+  version?: string | null;
+  categories?: PlainCategory[] | null;
+  by_finding?: Record<string, string> | null;
 };
 
 export type FindingProps = {

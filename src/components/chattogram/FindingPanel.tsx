@@ -6,7 +6,8 @@ import { FileSearch, FileText, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { fmtArea, fmtDate, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
-import { CASE_ID, type CaseDetail, type Finding, type FindingDetail, type Timeseries } from "@/lib/chattogram/case-api";
+import { CASE_ID, type CaseDetail, type CaseLayer, type Finding, type FindingDetail, type PlainId, type Timeseries } from "@/lib/chattogram/case-api";
+import { PlainLine } from "./PlainAnswer";
 import { BackendText } from "./BackendText";
 import { FindingChart } from "./FindingChart";
 import { FINDING } from "./MapKey";
@@ -62,12 +63,15 @@ export function FindingPanel({
   timeseries,
   onClose,
   evidenceHref,
+  plain,
 }: {
   finding: Finding;
   detail: CaseDetail;
   timeseries: Timeseries;
   onClose: () => void;
   evidenceHref?: string;
+  /** the finding's plain reading, when the case has one */
+  plain?: { id: PlainId; layer: CaseLayer } | null;
 }) {
   const p = finding.properties;
   const t = useT();
@@ -117,6 +121,7 @@ export function FindingPanel({
       <h2 id="finding-h" className="c-acq-date">
         <BackendText text={p.kind} translated={f.kind[p.kind]} />, {area} km²
       </h2>
+      {plain && <PlainLine id={plain.id} layer={plain.layer} />}
       <p className={`c-quality is-${p.quality}`}>
         <strong>
           <BackendText text={p.quality} translated={f.quality[p.quality]} />

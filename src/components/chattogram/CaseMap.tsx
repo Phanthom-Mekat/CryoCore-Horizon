@@ -129,6 +129,7 @@ export function CaseMap({
     if (!MAPBOX_CONFIGURED) return;
     let dead = false;
     let disposeTheme: (() => void) | undefined;
+    let resized: ResizeObserver | undefined;
     loadMapbox().then((ml) => {
       if (dead || !el.current) return;
 
@@ -147,6 +148,9 @@ export function CaseMap({
       });
       m.addControl(new ml.AttributionControl({ compact: true }));
       map.current = m;
+      // Mapbox only follows window resizes; the page also narrows when the assistant panel docks beside it
+      resized = new ResizeObserver(() => m.resize());
+      resized.observe(el.current);
       disposeTheme = followMapTheme(m);
       m.touchZoomRotate.disableRotation();
       if (controls) {
@@ -272,6 +276,7 @@ export function CaseMap({
     }).catch(() => { if (!dead) setError("The interactive map could not start. Check WebGL support and reload."); });
     return () => {
       dead = true;
+      resized?.disconnect();
       disposeTheme?.();
       map.current?.remove();
       map.current = null;

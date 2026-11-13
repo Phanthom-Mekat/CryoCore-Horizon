@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from functools import lru_cache
 
-from . import cases as curated_cases, jobs
+from . import assistant, cases as curated_cases, jobs
 from .config import BACKEND_ROOT, Settings
 from .cases import list_cases, read_case
 from .display import preview
@@ -23,7 +23,8 @@ from .region import PRODUCTS, REGION
 from .schemas import Product, Region, Scene, ScenePage, SearchRequest, SearchResponse
 
 
-def create_app(settings: Settings | None = None, transport: httpx.BaseTransport | None = None):
+def create_app(settings: Settings | None = None, transport: httpx.BaseTransport | None = None,
+               gemini_transport: httpx.BaseTransport | None = None):
     settings = settings or Settings()
     database = Database(settings.resolved_database_path)
 
@@ -193,6 +194,7 @@ def create_app(settings: Settings | None = None, transport: httpx.BaseTransport 
 
     app.include_router(curated_cases.router(database, settings))
     app.include_router(jobs.router(database, settings))
+    app.include_router(assistant.router(settings, gemini_transport))
     return app
 
 

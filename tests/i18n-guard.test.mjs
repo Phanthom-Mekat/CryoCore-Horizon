@@ -14,10 +14,12 @@ const TRANSLATED = [
   "src/components/chattogram/CaseMap.tsx",
   "src/components/chattogram/CaseProvider.tsx",
   "src/components/chattogram/AreaInspector.tsx",
+  "src/components/chattogram/Assistant.tsx",
   "src/components/chattogram/CaseSourceToggle.tsx",
   "src/components/chattogram/FindingChart.tsx",
   "src/components/chattogram/FindingPanel.tsx",
   "src/components/chattogram/MapKey.tsx",
+  "src/components/chattogram/PlainAnswer.tsx",
   "src/components/chattogram/PixelInspector.tsx",
   "src/components/chattogram/PrepStatus.tsx",
   "src/components/chattogram/ProcessedBrief.tsx",
@@ -30,6 +32,7 @@ const TRANSLATED = [
   "src/components/chattogram/views/ExploreView.tsx",
   "src/components/chattogram/views/OverviewView.tsx",
   "src/components/chattogram/views/ProcessedView.tsx",
+  "src/components/chattogram/views/TourView.tsx",
 ];
 
 for (const path of TRANSLATED) {
