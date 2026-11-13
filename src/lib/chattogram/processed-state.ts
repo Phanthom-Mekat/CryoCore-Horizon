@@ -8,6 +8,8 @@ export type RadarState = {
   split: number;
   view: { lon: number; lat: number; zoom: number };
   point: [number, number] | null;
+  /** Two opposite corners of a measured area ([lon, lat] each), or null; present means area inspection. */
+  area: [[number, number], [number, number]] | null;
 };
 export function parseRadarState(params: URLSearchParams): RadarState {
   const bounded = (text: string | null | undefined, min: number, max: number, fallback: number) => {
@@ -18,6 +20,8 @@ export function parseRadarState(params: URLSearchParams): RadarState {
   const point = params.get("rp")?.split(",") ?? [];
   const lon = bounded(point[0], -180, 180, NaN), lat = bounded(point[1], -85, 85, NaN);
   const mode = params.get("layer");
+  const ra = params.get("ra")?.split(",") ?? [];
+  const corners = [bounded(ra[0], -180, 180, NaN), bounded(ra[1], -85, 85, NaN), bounded(ra[2], -180, 180, NaN), bounded(ra[3], -85, 85, NaN)];
   return {
     caseId: params.get("case"),
     mode: ["before", "after", "change", "swipe"].includes(mode ?? "") ? mode as RadarMode : "change",
@@ -26,6 +30,7 @@ export function parseRadarState(params: URLSearchParams): RadarState {
     split: bounded(params.get("split"), 0, 100, 50),
     view: { lon: bounded(pos[0], -180, 180, 91.845), lat: bounded(pos[1], -85, 85, 22.33), zoom: bounded(pos[2], 0, 22, 13) },
     point: point.length === 2 && Number.isFinite(lon) && Number.isFinite(lat) ? [lon, lat] : null,
+    area: ra.length === 4 && corners.every(Number.isFinite) ? [[corners[0], corners[1]], [corners[2], corners[3]]] : null,
   };
 }
 
@@ -36,5 +41,9 @@ export function radarQuery(state: RadarState): string {
     rv: [state.view.lon, state.view.lat, state.view.zoom].join(",") });
   // Preserve pixel coordinates exactly: rounding can move a point across a 20 m boundary.
   if (state.point) params.set("rp", state.point.join(","));
+  if (state.area) params.set("ra", state.area.flat().join(","));
   return params.toString();
 }
+
+/** The area part of a radar link alone (the report link carries it), or "" without an area. */
+export const areaQuery = (area: RadarState["area"]) => (area ? `ra=${area.flat().join(",")}` : "");

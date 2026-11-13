@@ -499,7 +499,7 @@ const en = {
     inspection: "Inspection mode",
     inspectPixel: "Pixel",
     inspectArea: "Area analysis",
-    areaShareHint: "Area selections are exported separately; Share radar view currently restores pixel selections only.",
+    areaShareHint: "Share radar view and the measured report both include the area you select.",
     /** Why the case in a shared link couldn't open (shown under the error when the link names a case). */
     errors: {
       badId: "This link contains an invalid processed case ID.",
@@ -570,6 +570,10 @@ const en = {
     errors: { notFound: "This processed case was not found.", failed: "The observation brief is unavailable. Please try again." },
     back: "Return to radar",
     preparing: "Preparing the measured observation brief…",
+    area: {
+      title: "Selected area",
+      intro: "The area chosen on the Calibrated radar page, measured from the same native rasters. Exploratory statistics: they describe radar change in this rectangle and do not establish water change.",
+    },
     label: "Measured observation brief · Experimental radar evidence",
     meta: (dates: S, metres: S) => `${dates} · Frequency A · ${metres} m native pixels`,
     establishes: "What this establishes.",
@@ -1243,7 +1247,7 @@ const bn: Messages = {
     inspection: "যাচাইয়ের ধরন",
     inspectPixel: "পিক্সেল",
     inspectArea: "এলাকা বিশ্লেষণ",
-    areaShareHint: "বেছে নেওয়া এলাকা আলাদাভাবে এক্সপোর্ট হয়; রাডার-দৃশ্যের শেয়ার লিংক এখন শুধু বেছে নেওয়া পিক্সেল ফিরিয়ে আনে।",
+    areaShareHint: "রাডার-দৃশ্যের শেয়ার লিংক আর পরিমাপের প্রতিবেদন — দুটিতেই আপনার বেছে নেওয়া এলাকা থাকে।",
     errors: {
       badId: "এই লিংকে প্রক্রিয়াজাত কেসের আইডিটি সঠিক নয়।",
       unavailable: "প্রক্রিয়াজাত ডেটা সাময়িকভাবে পাওয়া যাচ্ছে না।",
@@ -1341,6 +1345,10 @@ const bn: Messages = {
     errors: { notFound: "এই প্রক্রিয়াজাত কেসটি পাওয়া যায়নি।", failed: "পর্যবেক্ষণ প্রতিবেদনটি পাওয়া যাচ্ছে না। আবার চেষ্টা করুন।" },
     back: "রাডারে ফিরে যান",
     preparing: "মাপা পর্যবেক্ষণের প্রতিবেদন তৈরি হচ্ছে…",
+    area: {
+      title: "বেছে নেওয়া এলাকা",
+      intro: "ক্যালিব্রেটেড রাডার পাতায় বেছে নেওয়া এলাকা, একই মূল রাস্টার থেকে মাপা। এগুলো অনুসন্ধানমূলক পরিসংখ্যান: এই আয়তক্ষেত্রে রাডারের পরিবর্তন দেখায়, পানির পরিবর্তন প্রমাণ করে না।",
+    },
     label: "মাপা পর্যবেক্ষণের প্রতিবেদন · পরীক্ষামূলক রাডার-প্রমাণ",
     meta: (dates, metres) => `${dates} · ফ্রিকোয়েন্সি A · ${metres} মিটারের মূল পিক্সেল`,
     establishes: "এটি যা প্রতিষ্ঠা করে।",
