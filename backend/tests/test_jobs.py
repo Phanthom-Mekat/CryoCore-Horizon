@@ -256,3 +256,43 @@ def test_synthetic_fixture_bundle_runs_real_pipeline_but_is_served_only_for_qa(d
         png = client.get(layers[2]["url"])
         assert png.status_code == 200 and png.content.startswith(b"\x89PNG")
         assert client.get(f"/api/v1/curated-cases/{CASE}/export").json()["provenance"]["synthetic_fixture"] is True
+
+
+def test_cancel_api_is_protected_and_only_cancels_active_jobs(settings, database):
+    admin = {"X-Admin-Token": "admin-secret"}
+    with TestClient(create_app(settings)) as client:
+        job_id = client.post("/api/v1/jobs", json={"case_id": CASE}, headers=admin).json()["job_id"]
+        assert client.post(f"/api/v1/jobs/{job_id}/cancel").status_code == 403
+        assert client.post(f"/api/v1/jobs/{job_id}/cancel", headers={"X-Admin-Token": "nope"}).status_code == 403
+        assert client.post("/api/v1/jobs/999/cancel", headers=admin).status_code == 404
+        done = client.post(f"/api/v1/jobs/{job_id}/cancel", headers=admin)
+        assert done.status_code == 200 and done.json()["state"] == "cancelled"
+        assert client.post(f"/api/v1/jobs/{job_id}/cancel", headers=admin).status_code == 409
+        assert client.get("/api/v1/curated-cases").json()[0]["status"] == "not_processed"
+        again = client.post("/api/v1/jobs", json={"case_id": CASE}, headers=admin).json()["job_id"]
+        assert again != job_id  # a cancelled job frees the case for a new one
+
+
+def test_cancelled_queued_job_is_never_claimed(database, settings):
+    job_id = jobs.enqueue(database, CASE)
+    jobs.cancel(database, job_id)
+    assert jobs.claim(database) is None
+    assert worker.run_job(database, settings, job_id)["state"] == "cancelled"
+
+
+def test_job_cancelled_while_processing_publishes_nothing(database, settings, monkeypatch):
+    seed_scenes(database)
+    fake_downloads(monkeypatch)
+    fake_processing(monkeypatch)
+    real = worker._process_and_publish
+
+    def cancel_midway(database_, job_id, *args):
+        jobs.cancel(database_, job_id)  # an operator cancels while the science runs
+        return real(database_, job_id, *args)
+    monkeypatch.setattr(worker, "_process_and_publish", cancel_midway)
+    job = worker.run_job(database, settings, jobs.enqueue(database, CASE))
+    assert (job["state"], job["error_code"], job["retryable"]) == ("cancelled", "cancelled", False)
+    assert not (settings.resolved_data_dir / "cases" / CASE).exists()
+    assert not list((settings.resolved_data_dir / "cases").glob(".tmp-*"))
+    jobs.update(database, job["id"], state="succeeded")  # nothing overwrites a cancellation
+    assert jobs.get(database, job["id"])["state"] == "cancelled"

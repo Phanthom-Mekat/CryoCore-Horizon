@@ -56,10 +56,27 @@ def claim(database: Database, job_id: int | None = None) -> dict | None:
 
 
 def update(database: Database, job_id: int, **fields):
+    """Update a job's fields. A cancelled job is final: nothing (progress, success, failure, requeue) overwrites it."""
     fields["heartbeat_at"] = now_iso()
     with database.connect() as db:
-        db.execute(f"UPDATE processing_jobs SET {', '.join(f'{k} = ?' for k in fields)} WHERE id = ?",
+        db.execute(f"UPDATE processing_jobs SET {', '.join(f'{k} = ?' for k in fields)} WHERE id = ? AND state != 'cancelled'",
                    (*fields.values(), job_id))
+
+
+def cancel(database: Database, job_id: int) -> dict | None:
+    """Cancel a queued or running job. Returns the cancelled job, or None if it was not active.
+    A running worker notices at its next progress check and stops without publishing."""
+    with database.connect() as db:
+        return _job(db.execute("""UPDATE processing_jobs SET state = 'cancelled', error = 'Cancelled by an operator.',
+                                  error_code = 'cancelled', retryable = 0, finished_at = ?
+                                  WHERE id = ? AND state IN ('queued', 'running') RETURNING *""",
+                               (now_iso(), job_id)).fetchone())
+
+
+def is_cancelled(database: Database, job_id: int) -> bool:
+    with database.connect() as db:
+        row = db.execute("SELECT state FROM processing_jobs WHERE id = ?", (job_id,)).fetchone()
+    return row is not None and row["state"] == "cancelled"
 
 
 def fail(database: Database, settings: Settings, job: dict, code: str, message: str, retryable: bool) -> dict:
@@ -83,13 +100,16 @@ def recover_stale(database: Database, settings: Settings) -> int:
 def router(database: Database, settings: Settings) -> APIRouter:
     api = APIRouter(prefix="/api/v1", tags=["Processing jobs"])
 
-    @api.post("/jobs", status_code=202, response_model=JobCreated)
-    def create_job(body: JobCreate, x_admin_token: str | None = Header(default=None)):
+    def require_admin(token: str | None):
         expected = settings.admin_token.get_secret_value() if settings.admin_token else ""
         if not expected:
             raise HTTPException(status_code=403, detail="job creation disabled")
-        if not x_admin_token or not secrets.compare_digest(x_admin_token.encode(), expected.encode()):
+        if not token or not secrets.compare_digest(token.encode(), expected.encode()):
             raise HTTPException(status_code=403, detail="invalid admin token")
+
+    @api.post("/jobs", status_code=202, response_model=JobCreated)
+    def create_job(body: JobCreate, x_admin_token: str | None = Header(default=None)):
+        require_admin(x_admin_token)
         try:
             return {"job_id": enqueue(database, body.case_id)}
         except KeyError:
@@ -101,5 +121,15 @@ def router(database: Database, settings: Settings) -> APIRouter:
         if found is None:
             raise HTTPException(status_code=404, detail="Job not found.")
         return found
+
+    @api.post("/jobs/{job_id}/cancel", response_model=Job)
+    def cancel_job(job_id: int, x_admin_token: str | None = Header(default=None)):
+        require_admin(x_admin_token)
+        cancelled = cancel(database, job_id)
+        if cancelled is not None:
+            return cancelled
+        if get(database, job_id) is None:
+            raise HTTPException(status_code=404, detail="Job not found.")
+        raise HTTPException(status_code=409, detail="Only a queued or running job can be cancelled.")
 
     return api

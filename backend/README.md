@@ -50,6 +50,7 @@ install command when updating an existing environment.
 | GET | `/api/v1/curated-cases/{id}/export?format=json\|csv\|geojson` | Download with provenance (409 until ready) |
 | POST | `/api/v1/jobs` `{case_id}` | Queue processing (202). Needs `X-Admin-Token` = `CRYO_ADMIN_TOKEN`; 403 if unset |
 | GET | `/api/v1/jobs/{id}` | Job state, stage, progress, error, retryable, attempts |
+| POST | `/api/v1/jobs/{id}/cancel` | Cancel a queued or running job (admin token; 409 if it already finished). A running worker stops at its next progress check and publishes nothing |
 
 Case status is `ready` once a bundle is published, otherwise it follows the latest job: `not_processed`, `queued`,
 `running`, `failed`, or `needs_credentials` (the job failed for want of Earthdata Login). Every case GET reads only
@@ -138,9 +139,8 @@ the case.
 - Check calibration maturity, polarization, quality masks, and matching viewing
   geometry before comparing observations. Backscatter changes alone do not prove
   flooding or deforestation; validate against reference observations.
-- The `/chattogram` frontend uses this backend's real catalog metadata, always through the Next.js proxy routes. The separate
-  original glacier dashboard and pipeline still use the Jakobshavn sample dataset.
-- Read endpoints are public. Only `POST /api/v1/jobs` is protected, by the admin token. Bind to localhost until
+- The `/chattogram` frontend uses this backend's real catalog metadata, always through the Next.js proxy routes.
+- Read endpoints are public. Only `POST /api/v1/jobs` and `POST /api/v1/jobs/{id}/cancel` are protected, by the admin token. Bind to localhost until
   deployment controls are added.
 - Schema migrations are explicit and ordered (`MIGRATIONS` in `app/database.py`, recorded in `schema_version` and
   `PRAGMA user_version`). v1 holds the catalog (scenes, searches). v2 adds regions, cases, processing_jobs, assets,

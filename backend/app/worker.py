@@ -27,6 +27,15 @@ class JobFailure(Exception):
         self.code, self.retryable = code, retryable
 
 
+class JobCancelled(Exception):
+    """An operator cancelled the job (POST /api/v1/jobs/{id}/cancel); stop and publish nothing."""
+
+
+def _check_cancelled(database: Database, job_id: int):
+    if jobs.is_cancelled(database, job_id):
+        raise JobCancelled()
+
+
 def run_job(database: Database, settings: Settings, job_id: int | None = None, from_extracts: bool = False) -> dict | None:
     """Run one job to completion. With job_id, keep retrying it (with backoff) until it stops being queued.
     from_extracts: process the committed subsets in data/extracts/<case>/ instead of downloading the full files."""
@@ -37,6 +46,8 @@ def run_job(database: Database, settings: Settings, job_id: int | None = None, f
         try:
             _execute(database, settings, job, from_extracts)
             jobs.update(database, job["id"], state="succeeded", stage="published", progress=1.0, finished_at=now_iso())
+        except JobCancelled:
+            pass  # the job row already says cancelled; update() never overwrites it
         except (JobFailure, DownloadError) as exc:
             jobs.fail(database, settings, job, exc.code, str(exc), exc.retryable)
         except KeyboardInterrupt:
@@ -94,6 +105,7 @@ def _execute(database: Database, settings: Settings, job: dict, from_extracts: b
             def progress(done, total, index=index):
                 if total and time.monotonic() - last[0] > 2:
                     last[0] = time.monotonic()
+                    _check_cancelled(database, job_id)
                     jobs.update(database, job_id, progress=round(0.02 + 0.8 * (index + done / total) / 2, 4))
 
             got = download(client, src["url"], raw / src["name"], auth, src["size_bytes"], src["md5"], progress)
@@ -108,6 +120,7 @@ def process_files(database: Database, settings: Settings, job: dict, definition:
     """Process local before/after files into a temporary directory next to the final one (same disk, so the
     rename is atomic), then publish. files: {"before": Path, "after": Path}; sources: [before, after] SourceRefs."""
     case_id, job_id = job["case_id"], job["id"]
+    _check_cancelled(database, job_id)
     jobs.update(database, job_id, stage="process", progress=0.85)
     try:
         from .processing import GcovError, process_pair
@@ -138,6 +151,7 @@ def _process_and_publish(database, job_id, case_id, definition, process_pair, fi
     missing = [name for name in REQUIRED_FILES if not (tmp / name).is_file()]
     if missing:
         raise JobFailure("incomplete_output", f"Processing did not write {', '.join(missing)}; nothing was published.")
+    _check_cancelled(database, job_id)  # cancelled while processing: discard the finished bundle
     _publish(tmp, final)
     _record_run(database, case_id, job_id, manifest, final)
 
