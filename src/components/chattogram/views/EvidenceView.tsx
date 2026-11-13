@@ -8,7 +8,7 @@ import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { pilotCovers } from "@/lib/chattogram/processed";
 import { rainBefore } from "@/lib/chattogram/rain";
 import { METHOD_VERSION, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
-import { CASE_ID, type ProcessedCase } from "@/lib/chattogram/case-api";
+import { CASE_ID, holdsTo, type ProcessedCase } from "@/lib/chattogram/case-api";
 import { selectFinding } from "@/lib/chattogram/finding-selection";
 import { fmtArea, fmtDate, fmtDateTime, fmtNum, fmtSigned, fmtSize } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
@@ -90,7 +90,7 @@ export function EvidenceView() {
             <Download size={15} aria-hidden="true" />
             CSV
           </button>
-          <button type="button" className="c-btn" onClick={() => download(`${stem}.geojson`, JSON.stringify(briefGeojson(before, after, pc, finding)), "application/geo+json")}>
+          <button type="button" className="c-btn" onClick={() => download(`${stem}.geojson`, JSON.stringify(briefGeojson(before, after, pc, finding, pilot)), "application/geo+json")}>
             <Download size={15} aria-hidden="true" />
             GeoJSON
           </button>
@@ -130,6 +130,7 @@ export function EvidenceView() {
             finding={sel.finding}
             detail={pc.detail}
             timeseries={pc.timeseries}
+            sensitivity={pc.sensitivity}
             onClose={clearFinding}
             plain={(() => {
               const layer = plainLayer(pc);
@@ -340,6 +341,7 @@ function Processed({ pc, toCase, selected }: { pc: ProcessedCase; toCase: string
   const km2 = (v: number) => `${fmtArea(v)} km²`;
   const db = (v: number, signed = false) => `${signed ? fmtSigned(v, 1) : fmtNum(v, 1)} dB`;
   const provenance = d.analysis_area.properties?.provenance;
+  const hasCross = pc.findings.features.some((f) => f.properties.cross_pol_mean_delta_db !== undefined);
   return (
     <section className="c-ev-sources">
       <h2>
@@ -408,6 +410,68 @@ function Processed({ pc, toCase, selected }: { pc: ProcessedCase; toCase: string
         </div>
       </div>
 
+      {m?.cross_pol && (
+        <div className="c-ev-card">
+          <h3>{ev.cross.title(m.cross_pol.polarization)}</h3>
+          <dl className="c-ev-src">
+            {(
+              [
+                [ev.cross.median, db(m.cross_pol.median_change_db, true)],
+                [ev.cross.range, `${db(m.cross_pol.p10_change_db, true)} … ${db(m.cross_pol.p90_change_db, true)}`],
+                [ev.cross.valid, km2(m.cross_pol.valid_km2)],
+                [ev.cross.agree, ev.cross.agreeOf(fmtNum(m.cross_pol.findings_same_direction), fmtNum(m.cross_pol.findings_compared))],
+              ] as const
+            ).map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="c-hint">{ev.cross.note(m.cross_pol.polarization)}</p>
+        </div>
+      )}
+
+      <div className="c-ev-card">
+        <h3>{ev.sens.title}</h3>
+        {pc.sensitivity ? (
+          <>
+            <p className="c-hint">{ev.sens.intro(fmtNum(pc.sensitivity.published_threshold_db ?? m?.threshold_db ?? 0))}</p>
+            <div className="d-table-wrap">
+              <table className="d-table c-ev-sens">
+                <thead>
+                  <tr>
+                    <th scope="col">{ev.sens.threshold}</th>
+                    <th scope="col">{ev.sens.brighter}</th>
+                    <th scope="col">{ev.sens.darker}</th>
+                    <th scope="col">{ev.sens.regions}</th>
+                    <th scope="col">{ev.sens.present}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pc.sensitivity.rows.map((r) => {
+                    const published = r.threshold_db === pc.sensitivity!.published_threshold_db;
+                    return (
+                      <tr key={r.threshold_db} className={published ? "is-selected" : undefined}>
+                        <th scope="row">
+                          ±{fmtNum(r.threshold_db)} dB{published && <small className="c-ev-sel-tag">{ev.sens.published}</small>}
+                        </th>
+                        <td>{fmtArea(r.increase_km2)}</td>
+                        <td>{fmtArea(r.decrease_km2)}</td>
+                        <td>{fmtNum(r.increase_regions + r.decrease_regions)}</td>
+                        <td>{fmtNum(r.listed_findings_present)} / {fmtNum(pc.findings.features.length)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <p className="is-missing">{ev.sens.none}</p>
+        )}
+      </div>
+
       <div className="c-ev-card">
         <h3>{ev.caseFindings(fmtNum(pc.findings.features.length))}</h3>
         {pc.findings.features.length ? (
@@ -421,6 +485,8 @@ function Processed({ pc, toCase, selected }: { pc: ProcessedCase; toCase: string
                   <th>{ev.colMean}</th>
                   <th>{ev.colMedian}</th>
                   <th>{ev.colValid}</th>
+                  {hasCross && <th>{ev.colCross}</th>}
+                  {pc.sensitivity && <th>{ev.colHolds}</th>}
                   <th>{ev.colQuality}</th>
                 </tr>
               </thead>
@@ -447,6 +513,8 @@ function Processed({ pc, toCase, selected }: { pc: ProcessedCase; toCase: string
                       {db(p.median_before_db)} → {db(p.median_after_db)}
                     </td>
                     <td>{fmtNum(Math.round(p.valid_fraction * 100))}%</td>
+                    {hasCross && <td>{p.cross_pol_mean_delta_db == null ? "–" : db(p.cross_pol_mean_delta_db, true)}</td>}
+                    {pc.sensitivity && <td>{holdsTo(pc.sensitivity, p.id) === null ? "–" : `±${fmtNum(holdsTo(pc.sensitivity, p.id)!)} dB`}</td>}
                     <td>
                       <BackendText text={p.quality} translated={t.finding.quality[p.quality]} />
                       {": "}

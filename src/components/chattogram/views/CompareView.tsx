@@ -36,6 +36,7 @@ export function CompareView() {
   const t = useT();
   const c = t.compare;
   const [pos, setPos] = useState(50);
+  const [pol, setPol] = useState<"HH" | "HV">("HH");
   const frame = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const ready = useSyncedMaps();
@@ -58,8 +59,11 @@ export function CompareView() {
   // the processed case's pair gets its calibrated layers instead of the quicklooks; any other pair keeps the quicklooks
   const detail = processed.status === "ready" ? processed.data.detail : null;
   const pc = detail?.status === "ready" && processed.status === "ready" ? processed.data : null;
-  const lb = pc?.layers.find((l) => l.id === "before_db");
-  const la = pc?.layers.find((l) => l.id === "after_db");
+  const hasHv = !!pc?.layers.some((l) => l.id === "before_hv_db") && !!pc?.layers.some((l) => l.id === "after_hv_db");
+  const shownPol = hasHv ? pol : "HH";
+  const suffix = shownPol === "HV" ? "_hv_db" : "_db";
+  const lb = pc?.layers.find((l) => l.id === `before${suffix}`);
+  const la = pc?.layers.find((l) => l.id === `after${suffix}`);
   const calibrated = isCasePair && lb && la ? { before: lb, after: la } : null;
   const sameScale = calibrated && calibrated.before.scale.min === calibrated.after.scale.min && calibrated.before.scale.max === calibrated.after.scale.max;
   const toCase = pc && !isCasePair ? caseHref("/chattogram/compare") : null;
@@ -196,6 +200,18 @@ export function CompareView() {
 
       {calibrated ? (
         <div className="c-compare-foot">
+          {hasHv && (
+            <div className="c-compare-pol c-noprint">
+              <div className="p-segment" role="group" aria-label={c.polLabel}>
+                {(["HH", "HV"] as const).map((v) => (
+                  <button key={v} type="button" aria-pressed={shownPol === v} onClick={() => setPol(v)} lang="en" translate="no">
+                    {v}
+                  </button>
+                ))}
+              </div>
+              <span>{c.polHint}</span>
+            </div>
+          )}
           <p>
             <strong>{c.calibratedTitle}</strong>{" "}
             {sameScale

@@ -158,7 +158,8 @@ def test_repeatable(pair, tmp_path):
 def test_pngs_corners_alpha_and_palette(pair, tmp_path):
     result = run(*pair, tmp_path / "out")
     layers = {l["id"]: l for l in result["layers"]}
-    assert set(layers) == {"before_db", "after_db", "change_db", "plain"}
+    assert set(layers) == {"before_db", "after_db", "change_db", "before_hv_db", "after_hv_db", "change_hv_db", "plain"}
+    assert {l["polarization"] for l in layers.values() if l["id"] != "plain"} == {"HH", "HV"}
     (tl, tr, br, bl) = layers["change_db"]["corners"]
     assert tl[1] == tr[1] > br[1] == bl[1] and tl[0] == bl[0] < tr[0] == br[0]  # north-up lon/lat
     assert tl[0] <= 91.80 and tr[0] >= 91.84 and bl[1] <= 22.275 and tl[1] >= 22.305
@@ -180,6 +181,31 @@ def test_pngs_corners_alpha_and_palette(pair, tmp_path):
     arr = np.asarray(imgs["before_db"])
     gray = np.median(arr[..., 0][arr[..., 3] == 255])
     assert abs(gray - 13 / 25 * 255) < 3  # the -12 dB background on the shared -25..0 scale
+
+
+def test_cross_polarization_is_compared_but_never_detects(pair, tmp_path):
+    result = run(*pair, tmp_path / "out")
+    assert result["method"]["params"]["cross_polarization"] == "HVHV" and result["method"]["version"] == "0.2.0"
+    feats = json.loads((tmp_path / "out" / "findings.geojson").read_text(encoding="utf-8"))["features"]
+    inc = next(f["properties"] for f in feats if f["properties"]["kind"] == "increase" and near(f, *INCREASE[:2]))
+    dec = next(f["properties"] for f in feats if f["properties"]["kind"] == "decrease" and near(f, *DECREASE[:2]))
+    assert inc["cross_pol_mean_delta_db"] > 6 and dec["cross_pol_mean_delta_db"] < -6  # the fixture plants both pols
+    assert inc["cross_pol_valid_fraction"] == 1.0
+    x = result["metrics"]["cross_pol"]
+    assert x["polarization"] == "HV" and x["findings_compared"] == len(feats) and x["findings_same_direction"] >= 2
+    assert abs(x["median_change_db"]) < 1  # the unplanted background does not change
+    # Detection is HH only: the same pair without HV yields the same regions, areas and ids.
+    hh_only = (make_gcov(tmp_path / "b.h5", seed=1, terms=("HHHH",)),
+               make_gcov(tmp_path / "a.h5", seed=2, terms=("HHHH",), start="2026-02-03T23:41:09.000000000",
+                         plants=[INCREASE, DECREASE, (*BLOCKED, 8.0)], invalid_boxes=[BLOCKED]))
+    plain = run(*hh_only, tmp_path / "hh")
+    plain_feats = json.loads((tmp_path / "hh" / "findings.geojson").read_text(encoding="utf-8"))["features"]
+    assert "cross_pol" not in plain["metrics"] and plain["method"]["params"]["cross_polarization"] is None
+    assert [f["id"] for f in plain_feats] == [f["id"] for f in feats]
+    assert {k: v for k, v in result["metrics"].items() if k != "cross_pol"} == plain["metrics"]
+    assert "cross_pol_mean_delta_db" not in plain_feats[0]["properties"]
+    assert any(c.startswith("Single polarization (HH)") for c in plain["caveats"])
+    assert any(c.startswith("Regions are detected in HH only") for c in result["caveats"])
 
 
 def test_plain_layer_is_separate_from_findings(pair, tmp_path):

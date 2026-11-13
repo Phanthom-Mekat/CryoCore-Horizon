@@ -10,11 +10,10 @@ const EXTENSIONS = [".ts", ".tsx", "/index.ts"];
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    const url = specifier.startsWith("@/")
-      ? new URL(specifier.slice(2), SRC)
-      : specifier.startsWith(".") && context.parentURL?.startsWith("file:")
-        ? new URL(specifier, context.parentURL)
-        : null;
+    const alias = specifier.startsWith("@/");
+    // dependencies resolve themselves (CommonJS `require` there cannot take a file URL)
+    const local = specifier.startsWith(".") && context.parentURL?.startsWith("file:") && !context.parentURL.includes("/node_modules/");
+    const url = alias ? new URL(specifier.slice(2), SRC) : local ? new URL(specifier, context.parentURL) : null;
     if (url && !existsSync(fileURLToPath(url))) {
       const found = EXTENSIONS.map((ext) => new URL(url.href + ext)).find((u) => existsSync(fileURLToPath(u)));
       if (found) return nextResolve(found.href, context);

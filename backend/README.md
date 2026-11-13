@@ -50,6 +50,7 @@ install command when updating an existing environment.
 | GET | `/api/v1/curated-cases/{id}/export?format=json\|csv\|geojson` | Download with provenance (409 until ready) |
 | POST | `/api/v1/jobs` `{case_id}` | Queue processing (202). Needs `X-Admin-Token` = `CRYO_ADMIN_TOKEN`; 403 if unset |
 | GET | `/api/v1/jobs/{id}` | Job state, stage, progress, error, retryable, attempts |
+| POST | `/api/v1/jobs/{id}/cancel` | Cancel a queued or running job (admin token; 409 if it already finished). A running worker stops at its next progress check and publishes nothing |
 | GET | `/api/v1/assistant/status` | Whether the case assistant can answer (`GEMINI_API_KEY` set and the case published) and its model |
 | POST | `/api/v1/assistant/chat` `{messages, context}` | The case assistant (Gemini, `CRYO_GEMINI_MODEL`, default `gemini-3.5-flash`, fallback `gemini-3.8-flash`): streams one JSON event per line, `step`, `action` (map, layer, page, download, carried out by the browser), then `reply` or `error`. Read-only tools over the published case; limited to `CRYO_ASSISTANT_REQUESTS_PER_MINUTE` |
 
@@ -140,9 +141,8 @@ the case.
 - Check calibration maturity, polarization, quality masks, and matching viewing
   geometry before comparing observations. Backscatter changes alone do not prove
   flooding or deforestation; validate against reference observations.
-- The `/chattogram` frontend uses this backend's real catalog metadata, always through the Next.js proxy routes. The separate
-  original glacier dashboard and pipeline still use the Jakobshavn sample dataset.
-- Read endpoints are public. Only `POST /api/v1/jobs` is protected, by the admin token. Bind to localhost until
+- The `/chattogram` frontend uses this backend's real catalog metadata, always through the Next.js proxy routes.
+- Read endpoints are public. Only `POST /api/v1/jobs` and `POST /api/v1/jobs/{id}/cancel` are protected, by the admin token. Bind to localhost until
   deployment controls are added.
 - Schema migrations are explicit and ordered (`MIGRATIONS` in `app/database.py`, recorded in `schema_version` and
   `PRAGMA user_version`). v1 holds the catalog (scenes, searches). v2 adds regions, cases, processing_jobs, assets,

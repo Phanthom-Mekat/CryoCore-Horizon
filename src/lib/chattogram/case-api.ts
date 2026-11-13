@@ -52,13 +52,16 @@ export type CaseDetail = CaseSummary & {
   job: Job | null;
 };
 
-export type LayerId = "before_db" | "after_db" | "change_db" | "plain";
+/** HH layers detect; the HV ones (cross-polarization) are processed the same way and shown for comparison only. */
+export type LayerId = "before_db" | "after_db" | "change_db" | "before_hv_db" | "after_hv_db" | "change_hv_db" | "plain";
 /** One category of the plain reading (backend app/processing/plain.py): its pixel code in plain.png and its area. */
 export type PlainCategory = S["PlainCategory"];
 export type PlainId = PlainCategory["id"];
 export type CaseLayer = {
   id: LayerId;
   label: string;
+  /** "HH" or "HV"; absent in bundles published before HV was processed (all HH then). */
+  polarization?: string | null;
   date?: string | null;
   url: string; // /api/v1/cases/{id}/assets/<file>.png?v=…, rewritten to our proxy by assetUrl()
   corners: [number, number][]; // [lon, lat] TL, TR, BR, BL
@@ -84,6 +87,9 @@ export type FindingProps = {
   valid_fraction: number;
   quality: "strong" | "moderate" | "weak";
   quality_reason: string;
+  /** Mean HV change over the same pixels (null when none is valid in HV); absent before HV was processed. */
+  cross_pol_mean_delta_db?: number | null;
+  cross_pol_valid_fraction?: number | null;
 };
 export type Finding = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, FindingProps>;
 export type Findings = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon, FindingProps>;
@@ -92,9 +98,21 @@ export type FindingDetail = Finding & {
 };
 
 export type Timeseries = S["Timeseries"];
+/** The change result re-measured at other thresholds (backend/app/processing/sensitivity.py). */
+export type Sensitivity = S["Sensitivity"];
 
 /** Everything the views need once the case is ready. */
-export type ProcessedCase = { detail: CaseDetail; layers: CaseLayer[]; findings: Findings; timeseries: Timeseries };
+export type ProcessedCase = { detail: CaseDetail; layers: CaseLayer[]; findings: Findings; timeseries: Timeseries; sensitivity: Sensitivity | null };
+
+/** A layer's polarization: HH for bundles that predate the label. */
+export const layerPol = (l: Pick<CaseLayer, "polarization">) => l.polarization ?? "HH";
+
+/** The highest tested threshold (dB) at which a listed finding still appears, or null when not measured. */
+export const holdsTo = (s: Sensitivity | null, id: string) => s?.highest_threshold_by_finding[id] ?? null;
+
+/** True when a finding changes the same way in HV as in HH; null when HV has no value for it. */
+export const crossAgrees = (p: Pick<FindingProps, "kind" | "cross_pol_mean_delta_db">) =>
+  p.cross_pol_mean_delta_db == null ? null : p.cross_pol_mean_delta_db > 0 === (p.kind === "increase");
 
 /** States in which the backend is still working and the case should be polled. */
 export const isBusy = (d: CaseDetail) => d.status === "queued" || d.status === "running" || d.job?.state === "queued" || d.job?.state === "running";

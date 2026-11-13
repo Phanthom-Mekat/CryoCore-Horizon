@@ -99,6 +99,18 @@ class Method(BaseModel):
     params: dict
 
 
+class CrossPol(BaseModel):
+    """The cross-polarization comparison: processed like the detecting polarization, never used to detect."""
+    polarization: str
+    valid_km2: float
+    median_change_db: float
+    p10_change_db: float
+    p90_change_db: float
+    findings_same_direction: int
+    findings_compared: int
+    note: str
+
+
 class Metrics(BaseModel):
     analysis_km2: float
     valid_common_km2: float
@@ -106,6 +118,7 @@ class Metrics(BaseModel):
     increase_km2: float
     decrease_km2: float
     threshold_db: float
+    cross_pol: CrossPol | None = None
 
 
 class SourceRef(BaseModel):
@@ -149,8 +162,9 @@ class PlainCategory(BaseModel):
 
 
 class Layer(BaseModel):
-    id: Literal["before_db", "after_db", "change_db", "plain"]
+    id: Literal["before_db", "after_db", "change_db", "before_hv_db", "after_hv_db", "change_hv_db", "plain"]
     label: str
+    polarization: str | None = None
     date: str | None = None
     url: str
     corners: list[tuple[float, float]] = Field(min_length=4, max_length=4, description="[lon, lat]: TL, TR, BR, BL")
@@ -176,6 +190,8 @@ class FindingProperties(BaseModel):
     valid_fraction: float
     quality: Literal["strong", "moderate", "weak"]
     quality_reason: str
+    cross_pol_mean_delta_db: float | None = None
+    cross_pol_valid_fraction: float | None = None
 
 
 class Finding(BaseModel):

@@ -7,6 +7,7 @@ import { download } from "@/lib/chattogram/brief";
 import { fmtDate, fmtDateTime, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { BackendText } from "./BackendText";
+import type { RadarState } from "@/lib/chattogram/processed-state";
 
 type Measurement = { polarization: string; common_area_km2: number; common_valid_pixels: number; geographic_exclusion_km2: number; quality_excluded_pixels: number; median_change_db: number; p05_change_db: number; p95_change_db: number };
 type Brief = {
@@ -18,10 +19,12 @@ type Brief = {
   assets: { name: string; sha256: string }[];
   boundary: { source: string; year: number; license: string };
 };
+type AreaRow = { polarization: string; valid_area_km2: number; excluded_area_km2: number; before_median_db: number | null; after_median_db: number | null; change_median_db: number | null };
+type AreaEvidence = { status: string; selected_area_km2: number; selected_pixels: number; clipped_to_extent: boolean; measurements: AreaRow[]; geometry?: GeoJSON.Polygon };
 /** Identifiers, proper names and technical values that stay as published, in every language. */
 const Published = ({ children }: { children: ReactNode }) => <span lang="en" translate="no">{children}</span>;
 
-export function ProcessedBrief({ caseId }: { caseId: string }) {
+export function ProcessedBrief({ caseId, area }: { caseId: string; area: RadarState["area"] }) {
   const t = useT();
   const r = t.report;
   const texts = t.processed.texts;
@@ -30,6 +33,18 @@ export function ProcessedBrief({ caseId }: { caseId: string }) {
   const [report, setReport] = useState<Brief | null>(null);
   const [error, setError] = useState<keyof typeof r.errors | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // the area chosen on the Calibrated radar page, measured again from the same native rasters
+  const [areaData, setAreaData] = useState<AreaEvidence | "failed" | null>(null);
+  useEffect(() => {
+    if (!area) return;
+    const controller = new AbortController();
+    const q = new URLSearchParams({ lon1: String(area[0][0]), lat1: String(area[0][1]), lon2: String(area[1][0]), lat2: String(area[1][1]) });
+    fetch(`/api/earth/cases/${caseId}/area?${q}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) })
+      .then(async res => { if (!res.ok) throw new Error(String(res.status)); return res.json() as Promise<AreaEvidence>; })
+      .then(d => { if (!controller.signal.aborted) setAreaData(d); })
+      .catch(() => { if (!controller.signal.aborted) setAreaData("failed"); });
+    return () => controller.abort();
+  }, [caseId, area]);
   useEffect(() => {
     const controller = new AbortController();
     fetch(`/api/earth/cases/${caseId}/brief`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) })
@@ -52,7 +67,7 @@ export function ProcessedBrief({ caseId }: { caseId: string }) {
       <div className="c-links c-noprint">
         <Link className="c-btn" href="/chattogram/processed"><ArrowLeft size={15} />{r.back}</Link>
         <button className="c-btn is-primary" onClick={() => window.print()}><Printer size={15} />{r.print}</button>
-        <button className="c-btn" onClick={() => download(`radar-brief-${caseId}.json`, JSON.stringify(report, null, 2), "application/json")}><Download size={15} />{r.json}</button>
+        <button className="c-btn" onClick={() => download(`radar-brief-${caseId}.json`, JSON.stringify(area ? { ...report, selected_area: areaData === "failed" ? null : { corners_wgs84: area, ...areaData } } : report, null, 2), "application/json")}><Download size={15} />{r.json}</button>
         <a className="c-btn" href={`/api/earth/cases/${caseId}/brief?format=csv`}><Download size={15} />{r.csv}</a>
       </div>
     </header>
@@ -82,6 +97,20 @@ export function ProcessedBrief({ caseId }: { caseId: string }) {
       </table></div>
       <p className="c-hint">{r.tableHint}</p>
     </section>
+
+    {area && <section className="c-ev-card p-report-area">
+      <h2>{r.area.title}</h2>
+      <p className="c-hint">{r.area.intro}</p>
+      {areaData === null ? <p role="status">{t.area.reading}</p> : areaData === "failed" ? <p role="alert">{t.area.error}</p> : areaData.status === "outside_extent" ? <p>{t.area.outside}</p> : <>
+        <p>{t.area.selected(<strong key="area">{fmtNum(areaData.selected_area_km2, 4)} km²</strong>, fmtNum(areaData.selected_pixels))}</p>
+        {areaData.clipped_to_extent && <p className="c-hint">{t.area.clipped}</p>}
+        <div className="p-report-table" role="region" aria-label={r.area.title} tabIndex={0}><table>
+          <thead><tr><th scope="col">{r.cols.pol}</th><th scope="col">{t.area.validArea} (km²)</th><th scope="col">{t.area.excludedArea} (km²)</th><th scope="col">{t.area.beforeMedian} (dB)</th><th scope="col">{t.area.afterMedian} (dB)</th><th scope="col">{t.area.medianChange} (dB)</th></tr></thead>
+          <tbody>{areaData.measurements.map(m => <tr key={m.polarization}><th scope="row">{m.polarization}</th><td>{fmtNum(m.valid_area_km2, 4)}</td><td>{fmtNum(m.excluded_area_km2, 4)}</td><td>{m.before_median_db === null ? "—" : fmtNum(m.before_median_db, 2)}</td><td>{m.after_median_db === null ? "—" : fmtNum(m.after_median_db, 2)}</td><td>{m.change_median_db === null ? "—" : fmtSigned(m.change_median_db, 2)}</td></tr>)}</tbody>
+        </table></div>
+      </>}
+      <p className="c-hint">{t.area.caution}</p>
+    </section>}
 
     <section className="c-ev-card c-ev-limits"><h2>{r.limits}</h2><p><strong>{pilotText(report.validation_status)}</strong></p><ul>{report.limitations.map(l => <li key={l}>{pilotText(l)}</li>)}</ul></section>
     <section className="c-ev-card p-report-method"><h2>{r.how}</h2><p><strong><Published>{report.method}</Published></strong> · <Published>{report.grid.crs}</Published></p><p>{pilotText(report.validity_rule)}</p><p>{pilotText(report.alignment)}</p><p className="c-hint">{r.boundary(<Published key="source">{report.boundary.source}</Published>, fmtNum(report.boundary.year), <Published key="license">{report.boundary.license}</Published>)}</p></section>

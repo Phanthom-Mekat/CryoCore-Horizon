@@ -51,11 +51,11 @@
         "provenance_note": "About 176 km\u00b2 (EPSG:6933). About 16.7 km\u00b2 of it, the Karnaphuli channel and its mouth, lies outside the 2018 BBS/HDX division polygon, which leaves the river channel out. Selection: docs/case-selection.md."
       }
     },
-    "updated_at": "2026-11-13T08:50:16.806437+00:00",
+    "updated_at": "2026-11-13T09:08:21.676108+00:00",
     "synthetic_fixture": false,
     "method": {
       "name": "Single-pair signed gamma0 backscatter change",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "params": {
         "polarization": "HHHH",
         "frequency": "A",
@@ -74,6 +74,7 @@
         "strong_area_km2": 0.25,
         "strong_margin_db": 2.0,
         "strong_valid_fraction": 0.9,
+        "cross_polarization": "HVHV",
         "backscatter": "gamma0, RTC-corrected linear power, converted with 10*log10",
         "speckle_filter": "boxcar mean of valid linear power, 5x5, before dB",
         "valid_pixel": "mask 1..5 on both dates, finite, power > 0, pixel centre inside the analysis area",
@@ -117,7 +118,17 @@
       "excluded_km2": 0.0002,
       "increase_km2": 4.9087,
       "decrease_km2": 0.2023,
-      "threshold_db": 3.0
+      "threshold_db": 3.0,
+      "cross_pol": {
+        "polarization": "HV",
+        "valid_km2": 175.7086,
+        "median_change_db": 0.38,
+        "p10_change_db": -1.1,
+        "p90_change_db": 2.12,
+        "findings_same_direction": 40,
+        "findings_compared": 40,
+        "note": "HV is processed like HH but does not detect or grade regions. A finding changes in the same direction in HV when its HV mean change has the same sign as its HH change."
+      }
     },
     "caveats": [
       "Single before/after pair: this is a difference between two dates, not a trend, and it cannot say when between them a change happened.",
@@ -125,7 +136,7 @@
       "Tide state, river stage and wind on water can differ between the two acquisition times; on estuaries and coasts this alone can change backscatter strongly.",
       "Wet soil after rain, crop growth or harvest, vegetation, construction and moving ships all change backscatter; this method measures the change, not its cause.",
       "Layover and shadow on steep slopes are not separately masked; terrain correction (RTC) reduces but does not remove these geometry effects.",
-      "Single polarization (HH); other polarizations can respond differently.",
+      "Regions are detected in HH only. HV is processed the same way and shown alongside each finding for comparison; it is not used to detect or grade regions, and the two polarizations can respond differently to the same surface.",
       "No independent reference validation yet: each region is an observed radar change, not a confirmed water, flood or damage finding.",
       "Source data maturity is provisional (NISAR_L2_GCOV_PROVISIONAL_V1): calibration and processing may change in later releases.",
       "Only the 40 largest of 92 change regions are listed as findings; area totals include all of them.",
@@ -152,7 +163,7 @@
       }
     ],
     "job": {
-      "id": 5,
+      "id": 3,
       "state": "succeeded",
       "stage": "published",
       "progress": 1.0,
@@ -1153,7 +1164,9 @@
           "median_after_db": -4.64,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.243 km\u00b2; mean change +4.7 dB, 1.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.243 km\u00b2; mean change +4.7 dB, 1.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.52,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -2138,7 +2151,9 @@
           "median_after_db": -8.08,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.213 km\u00b2; mean change +5.0 dB, 2.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.213 km\u00b2; mean change +5.0 dB, 2.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 4.06,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -3129,7 +3144,9 @@
           "median_after_db": -4.32,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.199 km\u00b2; mean change +4.4 dB, 1.4 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.199 km\u00b2; mean change +4.4 dB, 1.4 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.11,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -3782,7 +3799,9 @@
           "median_after_db": -5.33,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.160 km\u00b2; mean change +5.1 dB, 2.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.160 km\u00b2; mean change +5.1 dB, 2.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.63,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -4573,7 +4592,9 @@
           "median_after_db": -3.68,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.155 km\u00b2; mean change +6.3 dB, 3.3 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.155 km\u00b2; mean change +6.3 dB, 3.3 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.46,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -5150,7 +5171,9 @@
           "median_after_db": -3.48,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.144 km\u00b2; mean change +5.2 dB, 2.2 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.144 km\u00b2; mean change +5.2 dB, 2.2 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.29,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -5631,7 +5654,9 @@
           "median_after_db": -6.98,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.122 km\u00b2; mean change +4.8 dB, 1.8 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.122 km\u00b2; mean change +4.8 dB, 1.8 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 5.51,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -6008,7 +6033,9 @@
           "median_after_db": -4.6,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.120 km\u00b2; mean change +5.6 dB, 2.6 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.120 km\u00b2; mean change +5.6 dB, 2.6 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.54,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -6427,7 +6454,9 @@
           "median_after_db": -8.41,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.119 km\u00b2; mean change +5.7 dB, 2.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.119 km\u00b2; mean change +5.7 dB, 2.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.93,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -6874,7 +6903,9 @@
           "median_after_db": -6.19,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.117 km\u00b2; mean change +5.9 dB, 2.9 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.117 km\u00b2; mean change +5.9 dB, 2.9 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 3.48,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -7405,7 +7436,9 @@
           "median_after_db": -5.47,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.108 km\u00b2; mean change +4.7 dB, 1.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.108 km\u00b2; mean change +4.7 dB, 1.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.92,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -8054,7 +8087,9 @@
           "median_after_db": -3.15,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.106 km\u00b2; mean change +4.6 dB, 1.6 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.106 km\u00b2; mean change +4.6 dB, 1.6 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.38,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -8577,7 +8612,9 @@
           "median_after_db": -7.66,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.102 km\u00b2; mean change +4.8 dB, 1.8 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.102 km\u00b2; mean change +4.8 dB, 1.8 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 3.56,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -8972,7 +9009,9 @@
           "median_after_db": -2.85,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.090 km\u00b2; mean change +6.8 dB, 3.8 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.090 km\u00b2; mean change +6.8 dB, 3.8 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.73,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -9447,7 +9486,9 @@
           "median_after_db": -3.83,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.086 km\u00b2; mean change +4.4 dB, 1.4 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.086 km\u00b2; mean change +4.4 dB, 1.4 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 3.12,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -10038,7 +10079,9 @@
           "median_after_db": -4.77,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.080 km\u00b2; mean change +4.2 dB, 1.2 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.080 km\u00b2; mean change +4.2 dB, 1.2 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 3.07,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -10603,7 +10646,9 @@
           "median_after_db": -5.63,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.076 km\u00b2; mean change +4.1 dB, 1.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.076 km\u00b2; mean change +4.1 dB, 1.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.52,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -10980,7 +11025,9 @@
           "median_after_db": -2.48,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.073 km\u00b2; mean change +5.3 dB, 2.3 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.073 km\u00b2; mean change +5.3 dB, 2.3 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.62,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -11381,7 +11428,9 @@
           "median_after_db": -7.58,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.072 km\u00b2; mean change +4.5 dB, 1.5 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.072 km\u00b2; mean change +4.5 dB, 1.5 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 4.97,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -11732,7 +11781,9 @@
           "median_after_db": -8.21,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.068 km\u00b2; mean change +5.0 dB, 2.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.068 km\u00b2; mean change +5.0 dB, 2.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 3.88,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -12083,7 +12134,9 @@
           "median_after_db": -5.31,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.068 km\u00b2; mean change +4.3 dB, 1.3 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.068 km\u00b2; mean change +4.3 dB, 1.3 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.62,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -12536,7 +12589,9 @@
           "median_after_db": -5.34,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.067 km\u00b2; mean change +4.7 dB, 1.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.067 km\u00b2; mean change +4.7 dB, 1.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.48,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -12969,7 +13024,9 @@
           "median_after_db": -4.72,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.066 km\u00b2; mean change +4.7 dB, 1.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.066 km\u00b2; mean change +4.7 dB, 1.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.25,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -13284,7 +13341,9 @@
           "median_after_db": -6.21,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.066 km\u00b2; mean change +5.0 dB, 2.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.066 km\u00b2; mean change +5.0 dB, 2.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.06,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -13591,7 +13650,9 @@
           "median_after_db": -3.66,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.063 km\u00b2; mean change +5.5 dB, 2.5 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.063 km\u00b2; mean change +5.5 dB, 2.5 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.51,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -13922,7 +13983,9 @@
           "median_after_db": -1.19,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.062 km\u00b2; mean change +5.9 dB, 2.9 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.062 km\u00b2; mean change +5.9 dB, 2.9 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.39,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -14289,7 +14352,9 @@
           "median_after_db": -4.19,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.058 km\u00b2; mean change +4.8 dB, 1.8 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.058 km\u00b2; mean change +4.8 dB, 1.8 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.03,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -14580,7 +14645,9 @@
           "median_after_db": -6.1,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.058 km\u00b2; mean change +5.4 dB, 2.4 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.058 km\u00b2; mean change +5.4 dB, 2.4 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 3.51,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -14807,7 +14874,9 @@
           "median_after_db": -5.59,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.055 km\u00b2; mean change +6.7 dB, 3.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.055 km\u00b2; mean change +6.7 dB, 3.7 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 3.24,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -15064,7 +15133,9 @@
           "median_after_db": -5.04,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.054 km\u00b2; mean change +4.1 dB, 1.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.054 km\u00b2; mean change +4.1 dB, 1.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.64,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -15435,7 +15506,9 @@
           "median_after_db": -6.68,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.053 km\u00b2; mean change -8.0 dB, 5.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.053 km\u00b2; mean change -8.0 dB, 5.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": -8.84,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -15796,7 +15869,9 @@
           "median_after_db": -4.09,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.051 km\u00b2; mean change +5.0 dB, 2.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.051 km\u00b2; mean change +5.0 dB, 2.0 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.17,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -16127,7 +16202,9 @@
           "median_after_db": -4.7,
           "valid_fraction": 1.0,
           "quality": "moderate",
-          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.051 km\u00b2; mean change +4.1 dB, 1.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Moderate: passes every check, but not all by a wide margin. 0.051 km\u00b2; mean change +4.1 dB, 1.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.21,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -16402,7 +16479,9 @@
           "median_after_db": -5.33,
           "valid_fraction": 1.0,
           "quality": "weak",
-          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.049 km\u00b2; mean change +4.5 dB, 1.5 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.049 km\u00b2; mean change +4.5 dB, 1.5 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.58,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -16809,7 +16888,9 @@
           "median_after_db": -5.04,
           "valid_fraction": 1.0,
           "quality": "weak",
-          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.049 km\u00b2; mean change +4.2 dB, 1.2 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.049 km\u00b2; mean change +4.2 dB, 1.2 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.96,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -17100,7 +17181,9 @@
           "median_after_db": -5.06,
           "valid_fraction": 1.0,
           "quality": "weak",
-          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.048 km\u00b2; mean change +5.4 dB, 2.4 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.048 km\u00b2; mean change +5.4 dB, 2.4 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 3.66,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -17395,7 +17478,9 @@
           "median_after_db": -3.77,
           "valid_fraction": 1.0,
           "quality": "weak",
-          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.048 km\u00b2; mean change +4.9 dB, 1.9 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.048 km\u00b2; mean change +4.9 dB, 1.9 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.62,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -17758,7 +17843,9 @@
           "median_after_db": -2.48,
           "valid_fraction": 1.0,
           "quality": "weak",
-          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.048 km\u00b2; mean change +4.9 dB, 1.9 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.048 km\u00b2; mean change +4.9 dB, 1.9 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 1.95,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -18049,7 +18136,9 @@
           "median_after_db": -4.22,
           "valid_fraction": 1.0,
           "quality": "weak",
-          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.047 km\u00b2; mean change +5.1 dB, 2.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.047 km\u00b2; mean change +5.1 dB, 2.1 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.4,
+          "cross_pol_valid_fraction": 1.0
         }
       },
       {
@@ -18380,7 +18469,9 @@
           "median_after_db": -7.47,
           "valid_fraction": 1.0,
           "quality": "weak",
-          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.047 km\u00b2; mean change +4.2 dB, 1.2 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates."
+          "quality_reason": "Weak: small, close to the size of speckle and misregistration effects. 0.047 km\u00b2; mean change +4.2 dB, 1.2 dB beyond the \u00b13 dB threshold; 100% of pixels in and around it are valid on both dates.",
+          "cross_pol_mean_delta_db": 2.42,
+          "cross_pol_valid_fraction": 1.0
         }
       }
     ]
@@ -18408,11 +18499,11 @@
   },
   "provenance": {
     "case_id": "karnaphuli-estuary",
-    "exported_at": "2026-11-13T08:56:14.993460+00:00",
-    "published_at": "2026-11-13T08:50:16.733526+00:00",
+    "exported_at": "2026-11-13T09:41:03.515323+00:00",
+    "published_at": "2026-11-13T09:08:21.575944+00:00",
     "method": {
       "name": "Single-pair signed gamma0 backscatter change",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "params": {
         "polarization": "HHHH",
         "frequency": "A",
@@ -18431,6 +18522,7 @@
         "strong_area_km2": 0.25,
         "strong_margin_db": 2.0,
         "strong_valid_fraction": 0.9,
+        "cross_polarization": "HVHV",
         "backscatter": "gamma0, RTC-corrected linear power, converted with 10*log10",
         "speckle_filter": "boxcar mean of valid linear power, 5x5, before dB",
         "valid_pixel": "mask 1..5 on both dates, finite, power > 0, pixel centre inside the analysis area",
@@ -18497,7 +18589,7 @@
       "Tide state, river stage and wind on water can differ between the two acquisition times; on estuaries and coasts this alone can change backscatter strongly.",
       "Wet soil after rain, crop growth or harvest, vegetation, construction and moving ships all change backscatter; this method measures the change, not its cause.",
       "Layover and shadow on steep slopes are not separately masked; terrain correction (RTC) reduces but does not remove these geometry effects.",
-      "Single polarization (HH); other polarizations can respond differently.",
+      "Regions are detected in HH only. HV is processed the same way and shown alongside each finding for comparison; it is not used to detect or grade regions, and the two polarizations can respond differently to the same surface.",
       "No independent reference validation yet: each region is an observed radar change, not a confirmed water, flood or damage finding.",
       "Source data maturity is provisional (NISAR_L2_GCOV_PROVISIONAL_V1): calibration and processing may change in later releases.",
       "Only the 40 largest of 92 change regions are listed as findings; area totals include all of them.",

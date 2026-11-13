@@ -5,7 +5,7 @@ import type { Map as MapboxMap } from "mapbox-gl";
 import { ArrowDownToLine, ArrowUpRight, Layers, ScanLine, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { parseRadarState, radarQuery, type RadarMode, type RadarState } from "@/lib/chattogram/processed-state";
+import { areaQuery, parseRadarState, radarQuery, type RadarMode, type RadarState } from "@/lib/chattogram/processed-state";
 import { CaseMap } from "../CaseMap";
 import { PixelInspector } from "../PixelInspector";
 import { AreaInspector } from "../AreaInspector";
@@ -49,8 +49,8 @@ function RadarWorkspace({ initial }: { initial: RadarState }) {
   const [split, setSplit] = useState(initial.split);
   const [view, setView] = useState(initial.view);
   const [point, setPoint] = useState<[number, number] | null>(initial.point);
-  const [inspectionMode, setInspectionMode] = useState<"pixel" | "area">("pixel");
-  const [areaPoints, setAreaPoints] = useState<[number, number][]>([]);
+  const [inspectionMode, setInspectionMode] = useState<"pixel" | "area">(initial.area ? "area" : "pixel");
+  const [areaPoints, setAreaPoints] = useState<[number, number][]>(initial.area ?? []);
   const [areaGeometry, setAreaGeometry] = useState<GeoJSON.Polygon | null>(null);
   const selectArea = (p: [number, number]) => {
     setAreaGeometry(null);
@@ -105,9 +105,12 @@ function RadarWorkspace({ initial }: { initial: RadarState }) {
   const date = (index: number) => fmtDate(data.sources[index].acquisition);
   const polName = pol === "HHHH" ? "HH" : "HV";
   const active = `${mode === "swipe" ? "after" : mode}-${pol}.tif`;
+  // a complete area selection travels with the share link and the report link
+  const sharedArea = area && areaPoints.length === 2 ? ([areaPoints[0], areaPoints[1]] as [[number, number], [number, number]]) : null;
+  const reportHref = `/chattogram/processed/${data.id}/brief${sharedArea ? `?${areaQuery(sharedArea)}` : ""}`;
   const share = async () => {
     const url = new URL("/chattogram/processed", window.location.origin);
-    url.search = radarQuery({ caseId: data.id, mode, polarization: pol, opacity, split, view, point });
+    url.search = radarQuery({ caseId: data.id, mode, polarization: pol, opacity, split, view, point, area: sharedArea });
     try { await navigator.clipboard.writeText(url.toString()); setShareCopied(true); }
     catch { setShareCopied(false); }
     setShareLink(url.toString()); // after the copy attempt, so the box never flashes the wrong status
@@ -116,7 +119,7 @@ function RadarWorkspace({ initial }: { initial: RadarState }) {
     <header className="c-bar">
       <div><p className="c-eyebrow">{p.eyebrow}</p><h1>{p.title}</h1><p className="c-bar-meta">{p.meta(date(0), date(1))}</p></div>
       <div className="c-links">
-        {!replaying && <><button className="c-btn" onClick={share}>{p.share}</button><Link className="c-btn is-primary" href={`/chattogram/processed/${data.id}/brief`}>{p.briefLink} <ArrowUpRight size={16} /></Link></>}
+        {!replaying && <><button className="c-btn" onClick={share}>{p.share}</button><Link className="c-btn is-primary" href={reportHref}>{p.briefLink} <ArrowUpRight size={16} /></Link></>}
         <a className="c-btn" href={caseFile(fp, data.id, `assets/${active}`)} download={fp ? active : undefined}><ArrowDownToLine size={16} />{p.download}</a>
       </div>
     </header>

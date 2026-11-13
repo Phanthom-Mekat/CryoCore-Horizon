@@ -6,7 +6,7 @@
 // the keys are always there (null / false without a selection), so tools reading the files see one shape.
 import { compatibility, type Acquisition } from "./acquisitions";
 import type { Region } from "./api";
-import { methodId, type ProcessedCase } from "./case-api";
+import { holdsTo, methodId, type ProcessedCase } from "./case-api";
 import { selectFinding } from "./finding-selection";
 import { pilotCovers, type ProcessedCase as PilotCase } from "./processed";
 import { rainBefore, type RainSeries } from "./rain";
@@ -43,6 +43,8 @@ function processedSection(pc: ProcessedCase | null | undefined, before: Acquisit
     caveats: d.caveats,
     sources: d.sources,
     findings: pc.findings.features.map((f) => f.properties),
+    // how the result depends on the ±dB threshold; null when the case predates the sweep
+    threshold_sensitivity: pc.sensitivity ?? null,
   };
 }
 
@@ -65,6 +67,7 @@ function selectedSection(pc: ProcessedCase | null | undefined, before: Acquisiti
     same_pair_as_compared: d.before.granule === before.granule && d.after.granule === after.granule,
     pair_dates: { before: d.before.date, after: d.after.date },
     method_version: methodId(d),
+    still_found_up_to_threshold_db: holdsTo(pc.sensitivity ?? null, id),
     source_granules: d.sources.map((s) => s.granule),
     share_url: shareUrl && withFinding(shareUrl, id),
     replay_url: replayUrl && withFinding(replayUrl, id),
@@ -152,6 +155,7 @@ function pilotEvidence(p: PilotCase, covers: boolean, liveUrl: string | null) {
     statistics: { note: "change = after minus before, dB; percentiles are 5th, 50th, 95th; area is projected grid area", ...p.statistics },
     assets: p.assets,
     limitations: p.limitations,
+    window_wgs84: p.footprint_wgs84 ?? null,
     // a replay has no backend to link to; its values come from the snapshot named in data_source
     manifest_url: liveUrl ? new URL(`/api/earth/cases/${p.id}`, liveUrl).toString() : null,
   };
@@ -209,7 +213,7 @@ export function briefCsv(before: Acquisition, after: Acquisition, pc?: Processed
   return [head.join(","), ...rows.map((r) => head.map((k) => cell(r[k])).join(","))].join("\n");
 }
 
-export function briefGeojson(before: Acquisition, after: Acquisition, pc?: ProcessedCase | null, findingId: string | null = null) {
+export function briefGeojson(before: Acquisition, after: Acquisition, pc?: ProcessedCase | null, findingId: string | null = null, pilot: PilotCase | null = null) {
   const p = processedSection(pc, before, after);
   const selectedId = selected(pc, findingId)?.properties.id;
   const provenance = p && { before_granule: p.pair.before.granule, after_granule: p.pair.after.granule, method: methodId(p), claim: p.claim, synthetic_fixture: p.synthetic_fixture };
@@ -225,6 +229,25 @@ export function briefGeojson(before: Acquisition, after: Acquisition, pc?: Proce
         ? [
             { type: "Feature", properties: { role: "analysis_area", name: p.title, provenance: p.analysis_area.provenance }, geometry: p.analysis_area.geometry },
             ...pc.findings.features.map((f) => ({ type: "Feature", properties: { role: "finding", ...f.properties, selected: f.properties.id === selectedId, ...provenance }, geometry: f.geometry })),
+          ]
+        : []),
+      // the calibrated pilot's processed window, when the backend published its outline
+      ...(pilot?.footprint_wgs84
+        ? [
+            {
+              type: "Feature",
+              properties: {
+                role: "calibrated_pilot_window",
+                case_id: pilot.id,
+                title: pilot.title,
+                method: pilot.method,
+                claim: pilot.claim,
+                covers_compared_pair: pilotCovers(pilot, before.conceptId, after.conceptId),
+                before_granule: pilot.sources[0]?.granule_id ?? null,
+                after_granule: pilot.sources[1]?.granule_id ?? null,
+              },
+              geometry: pilot.footprint_wgs84,
+            },
           ]
         : []),
     ],

@@ -157,6 +157,7 @@ export function ExploreView() {
             finding={selFinding}
             detail={pc.detail}
             timeseries={pc.timeseries}
+            sensitivity={pc.sensitivity}
             onClose={clearFinding}
             evidenceHref={href("/chattogram/evidence")}
             plain={plainL && plainOf(pc, selFinding.properties.id) ? { id: plainOf(pc, selFinding.properties.id)!, layer: plainL } : null}

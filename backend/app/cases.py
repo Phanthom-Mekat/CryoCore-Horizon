@@ -251,7 +251,23 @@ def read_case(root: Path, case_id: str):
     if not re.fullmatch(r"[a-f0-9]{24}", case_id): return None
     path = root / case_id / "manifest.json"
     if not path.is_file(): return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if manifest.get("crs") and manifest.get("bounds"):
+        manifest["footprint_wgs84"] = window_outline(manifest["crs"], manifest["bounds"])
+    return manifest
+
+
+def window_outline(crs: str, bounds) -> dict:
+    """The processed window's outline as a GeoJSON polygon in WGS84 (edges densified, since UTM edges curve in lon/lat)."""
+    from pyproj import Transformer
+    left, bottom, right, top = bounds
+    to_wgs84 = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
+    edge = [i / 8 for i in range(8)]
+    xs = ([left + (right - left) * f for f in edge] + [right] * 8 + [right - (right - left) * f for f in edge] + [left] * 8)
+    ys = ([top] * 8 + [top - (top - bottom) * f for f in edge] + [bottom] * 8 + [bottom + (top - bottom) * f for f in edge])
+    lon, lat = to_wgs84.transform(xs, ys)
+    ring = [[round(x, 7), round(y, 7)] for x, y in zip(lon, lat)]
+    return {"type": "Polygon", "coordinates": [ring + [ring[0]]]}
 
 
 def list_cases(root: Path):

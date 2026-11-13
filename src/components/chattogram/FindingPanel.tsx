@@ -6,7 +6,7 @@ import { FileSearch, FileText, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { fmtArea, fmtDate, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
-import { CASE_ID, type CaseDetail, type CaseLayer, type Finding, type FindingDetail, type PlainId, type Timeseries } from "@/lib/chattogram/case-api";
+import { CASE_ID, crossAgrees, holdsTo, type CaseDetail, type CaseLayer, type Finding, type FindingDetail, type PlainId, type Sensitivity, type Timeseries } from "@/lib/chattogram/case-api";
 import { PlainLine } from "./PlainAnswer";
 import { BackendText } from "./BackendText";
 import { FindingChart } from "./FindingChart";
@@ -61,6 +61,7 @@ export function FindingPanel({
   finding,
   detail,
   timeseries,
+  sensitivity,
   onClose,
   evidenceHref,
   plain,
@@ -68,6 +69,7 @@ export function FindingPanel({
   finding: Finding;
   detail: CaseDetail;
   timeseries: Timeseries;
+  sensitivity: Sensitivity | null;
   onClose: () => void;
   evidenceHref?: string;
   /** the finding's plain reading, when the case has one */
@@ -101,6 +103,14 @@ export function FindingPanel({
   const sources = evidence?.sources ?? detail.sources;
   const checks = evidence?.reference_checks ?? [];
   const threshold = detail.metrics?.threshold_db;
+  // HV (cross-polarization): compared, never used to find the area; undefined for bundles published before it existed
+  const hv = p.cross_pol_mean_delta_db;
+  const hvText = hv == null ? "" : `${fmtSigned(hv, 1)} dB`;
+  // threshold sweep: the highest tested threshold at which this area is still found, and the next one up
+  const tested = sensitivity?.rows.map((r) => r.threshold_db) ?? [];
+  const top = holdsTo(sensitivity, p.id);
+  const next = top === null ? undefined : tested.find((v) => v > top);
+  const range = tested.length ? `${fmtNum(tested[0])}–${fmtNum(tested[tested.length - 1])}` : "";
 
   return (
     <section className="c-panel-block c-finding" aria-labelledby="finding-h">
@@ -151,7 +161,16 @@ export function FindingPanel({
           <dt>{f.validBoth}</dt>
           <dd>{f.validShare(fmtNum(Math.round(p.valid_fraction * 100)))}</dd>
         </div>
+        {hv !== undefined && (
+          <div>
+            <dt>{f.cross.mean}</dt>
+            <dd>{hv === null ? "–" : hvText}</dd>
+          </div>
+        )}
       </dl>
+      {hv !== undefined && (
+        <p className="c-hint c-finding-cross">{hv === null ? f.cross.none : crossAgrees(p) ? f.cross.same(hvText) : f.cross.opposite(hvText)}</p>
+      )}
       <h3>{f.chart.title}</h3>
       <FindingChart finding={finding} detail={detail} timeseries={timeseries} />
       {evidenceHref && (
@@ -172,6 +191,9 @@ export function FindingPanel({
         </span>
         {t.stop}
       </p>
+
+      <h3>{f.robust.title}</h3>
+      <p>{top === null ? f.robust.none : next === undefined ? f.robust.top(fmtNum(top), range) : f.robust.until(fmtNum(top), fmtNum(next), range)}</p>
 
       <h3>{f.uncertain}</h3>
       <p>
