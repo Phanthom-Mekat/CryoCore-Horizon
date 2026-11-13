@@ -1286,6 +1286,102 @@
   margin: 0;
   font-size: clamp(1.3rem, 2vw, 1.7rem);
 }
+/* before → after dates under the title, each with its label above it */
+.c-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--c-text);
+  font-weight: 600;
+}
+.c-pair > span {
+  display: grid;
+}
+.c-pair small,
+.c-figures dt,
+.c-stat-sub {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--c-muted);
+}
+.c-pair > svg {
+  color: var(--c-muted);
+}
+.c-processed-body {
+  display: grid;
+  gap: 10px;
+}
+/* the three area figures: same card, cells and type as the KPI strips above (dashboard.css .d-kpis). Three cells
+   don't split into the strip's two columns, so below its 1200px step they stack: narrower, the Bangla lines wrap 3–4 deep */
+.c-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  background: var(--c-navy);
+}
+.c-figures > div {
+  min-width: 0;
+  padding: 18px 20px;
+  border-left: 1px solid var(--c-line);
+}
+.c-figures > div:first-child {
+  border-left: 0;
+}
+.c-figures dt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.c-figures dt svg {
+  flex: none;
+}
+/* icons take the map's signed-change colours, so brighter and darker read the same as the finding legend */
+.c-figures .is-up dt svg {
+  color: var(--c-change-pos);
+}
+.c-figures .is-down dt svg {
+  color: var(--c-change-neg);
+}
+.c-figures dd {
+  margin: 0;
+}
+.c-stat-value {
+  margin: 6px 0 4px;
+  font: 600 1.55rem/1.15 var(--sans);
+  color: var(--c-text);
+}
+.c-figures dd small {
+  margin-left: 6px;
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--c-muted);
+}
+.c-stat-sub {
+  line-height: 1.4;
+}
+@media (max-width: 1200px) {
+  .c-figures {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .c-figures > div {
+    border-left: 0;
+  }
+  .c-figures > div + div {
+    border-top: 1px solid var(--c-line);
+  }
+}
+@media (max-width: 640px) {
+  .c-figures > div {
+    padding: 14px;
+  }
+  .c-stat-value {
+    font-size: 1.25rem;
+  }
+}
 /* per-date summary under the timeline: same column, same axis as the date ticks */
 .c-sum-axis {
   display: grid;

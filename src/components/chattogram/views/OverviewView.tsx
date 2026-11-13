@@ -117,7 +117,7 @@ export function OverviewView() {
                   <Scan size={16} aria-hidden="true" />
                   {o.validBoth}
                 </dt>
-                <dd>
+                <dd className="c-stat-value">
                   {fmtArea(m.valid_common_km2)}
                   <small>km²</small>
                 </dd>
@@ -128,7 +128,7 @@ export function OverviewView() {
                   <TrendingUp size={16} aria-hidden="true" />
                   {o.increase}
                 </dt>
-                <dd>
+                <dd className="c-stat-value">
                   {fmtArea(m.increase_km2)}
                   <small>km²</small>
                 </dd>
@@ -139,7 +139,7 @@ export function OverviewView() {
                   <TrendingDown size={16} aria-hidden="true" />
                   {o.decrease}
                 </dt>
-                <dd>
+                <dd className="c-stat-value">
                   {fmtArea(m.decrease_km2)}
                   <small>km²</small>
                 </dd>

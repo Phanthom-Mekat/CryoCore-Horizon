@@ -168,6 +168,7 @@ Merged from `feat/chattogram-home` and documented in [docs/curated-case.md](docs
 - [x] Run `prepare-case karnaphuli-estuary` on real NISAR files (13 Nov: job 2 succeeded; 175.71 km² valid, 4.91 km² increase, 0.20 km² decrease, 92 regions, 40 listed). Needed the CloudFront host fix above.
 - [ ] Add a cancel action (`cancelled` is allowed by the schema but nothing sets it).
 - [x] Translate the new UI into Bangla (F15): the Overview's processed section, `FindingPanel`, Evidence's "Processed" section and claim, `PrepStatus` (every state), About's "Data preparation" card, the synthetic-data banner, the calibrated page's share link, two-corner area selection and measured report (chart, table and print view; the pilot's fixed claim and limitations too), and the processed-layer text in Explore, Compare, the map key and timeline (layer names, dB legend, per-date statistics). The analysis-area name drawn on the map stays English (WebGL can't shape Bengali).
+- [x] Style the Overview's processed-case figures and dates (they showed as plain stacked text): a strip matching the KPI strips, three cells on desktop, stacked below 1200 px.
 
 ### Cleanup — 13 November 2026
 
