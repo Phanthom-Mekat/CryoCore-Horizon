@@ -1179,7 +1179,8 @@
 .c-step-icon {
   color: var(--ice);
 }
-.c-step h2 {
+.c-step h2,
+.c-step h3 {
   font: 600 1.08rem var(--sans);
   color: var(--snow);
 }
@@ -2052,3 +2053,421 @@
 .p-histogram strong { text-align: right; }
 .p-area-inspector > p { line-height: 1.6; }
 .p-area-inspector .c-links { flex-wrap: wrap; margin-top: 12px; }
+
+/* ---------- Overview: one radar pass, full bleed, then a quiet page ----------
+   The hero is always dark (it is a radar image); everything below follows the app theme. */
+.ov {
+  --ov-slate: #0e1a24;
+  --ov-silver: #dce4ea;
+  --ov-silt: #c9a35f;
+  display: grid;
+  gap: 72px;
+  padding-bottom: 32px;
+}
+.ov-pass {
+  display: grid;
+  gap: 12px;
+  margin: -24px -28px 0; /* bleed to the shell's edges (dashboard.css .d-body padding) */
+}
+.ov-pass-frame {
+  position: relative;
+  height: clamp(520px, 78svh, 820px);
+  overflow: hidden;
+  background: var(--ov-slate);
+  touch-action: pan-y;
+  cursor: ew-resize;
+  user-select: none;
+}
+.ov-pass.is-change .ov-pass-frame,
+.ov-pass.is-fallback .ov-pass-frame {
+  cursor: default;
+}
+.ov-pass.is-fallback .c-map {
+  position: absolute;
+  inset: 0;
+}
+/* duotone: radar silver on monsoon slate, so water reads as deep slate and land as silver */
+.ov-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 40%;
+  transform: scale(1.06);
+  filter: grayscale(1) contrast(1.45) brightness(0.64);
+  pointer-events: none;
+}
+.ov-img-before {
+  clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+}
+.ov-img-change {
+  filter: none;
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+.is-change .ov-img-change {
+  opacity: 1;
+}
+.ov-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(14 26 36 / 0.92) 0%, rgb(14 26 36 / 0.55) 38%, rgb(14 26 36 / 0) 62%),
+    linear-gradient(0deg, rgb(14 26 36 / 0.85) 0%, rgb(14 26 36 / 0) 35%),
+    linear-gradient(180deg, rgb(14 26 36 / 0.7) 0%, rgb(14 26 36 / 0) 16%);
+  mix-blend-mode: normal;
+  pointer-events: none;
+}
+.ov-pass-frame::before {
+  /* lifts the radar's black water to slate, so the duotone holds in both app themes */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--ov-slate);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.is-change .ov-pass-frame::before {
+  opacity: 0;
+}
+.ov-scrim,
+.ov-date,
+.ov-scan,
+.ov-copy,
+.ov-controls {
+  z-index: 2;
+}
+.ov-date {
+  position: absolute;
+  top: 22px;
+  margin: 0;
+  color: var(--ov-silver);
+  font: 500 0.9rem var(--sans);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
+  transition: opacity 300ms ease;
+}
+.ov-date.is-l {
+  left: 28px;
+}
+.ov-date.is-r {
+  right: 28px;
+}
+.ov-scan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--pos);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ov-silt);
+  box-shadow: 0 0 24px 2px rgb(201 163 95 / 0.55);
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+.ov-scan span {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ov-silt);
+  color: var(--ov-slate);
+  transform: translate(-50%, -50%);
+}
+.is-change .ov-scan,
+.is-change .ov-img-before,
+.is-change .ov-date {
+  opacity: 0;
+}
+.ov-range {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+.ov-pass-frame:has(.ov-range:focus-visible) .ov-scan span {
+  outline: 3px solid var(--ov-silver);
+  outline-offset: 3px;
+}
+.ov-copy {
+  position: absolute;
+  left: 28px;
+  bottom: 40px;
+  display: grid;
+  gap: 18px;
+  max-width: min(620px, calc(100% - 56px));
+  color: var(--ov-silver);
+  cursor: auto;
+}
+.ov-copy h1 {
+  margin: 0;
+  font: 400 clamp(2.6rem, 5.6vw, 5rem)/0.98 var(--serif);
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-wrap: balance;
+}
+.ov-lede {
+  margin: 0;
+  max-width: 34em;
+  color: rgb(220 228 234 / 0.86);
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+.ov-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ov-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid rgb(220 228 234 / 0.35);
+  border-radius: 999px;
+  color: var(--ov-silver);
+  font: 500 0.95rem var(--sans);
+  text-decoration: none;
+  backdrop-filter: blur(6px);
+  transition: background 200ms ease, border-color 200ms ease;
+}
+.ov-btn:hover {
+  border-color: var(--ov-silver);
+  background: rgb(220 228 234 / 0.08);
+}
+.ov-btn.is-primary {
+  border-color: var(--ov-silt);
+  background: var(--ov-silt);
+  color: var(--ov-slate);
+}
+.ov-btn.is-primary:hover {
+  background: #d8b675;
+}
+.ov-btn:focus-visible,
+.ov-toggle button:focus-visible {
+  outline: 2px solid var(--ov-silver);
+  outline-offset: 3px;
+}
+.ov-controls {
+  position: absolute;
+  right: 28px;
+  bottom: 40px;
+}
+.ov-toggle {
+  display: flex;
+  padding: 4px;
+  border: 1px solid rgb(220 228 234 / 0.25);
+  border-radius: 999px;
+  background: rgb(14 26 36 / 0.7);
+  backdrop-filter: blur(8px);
+}
+.ov-toggle button {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(220 228 234 / 0.75);
+  font: 500 0.85rem var(--sans);
+  cursor: pointer;
+}
+.ov-toggle button[aria-pressed="true"] {
+  background: var(--ov-silver);
+  color: var(--ov-slate);
+}
+.ov-pass-foot {
+  min-height: 52px;
+  padding: 0 28px;
+  color: var(--c-muted);
+  font-size: 0.88rem;
+}
+.ov-pass-foot p {
+  margin: 0;
+  max-width: 60em;
+}
+.ov-pass-foot .c-change-key {
+  width: min(340px, 100%);
+  margin: 0;
+}
+/* below the hero: quiet, theme-coloured, one column of reading width for text */
+.ov-head {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.ov-head h2,
+.ov-check h2,
+.ov-data h2 {
+  margin: 0;
+  font: 400 clamp(1.8rem, 3vw, 2.5rem)/1.05 var(--serif);
+  letter-spacing: -0.02em;
+  color: var(--c-text);
+}
+.ov-head p {
+  margin: 0;
+  max-width: 44em;
+  color: var(--c-muted);
+}
+.ov-answer {
+  display: grid;
+  gap: 24px;
+}
+.ov-nums {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+  margin: 0;
+}
+.ov-nums > div {
+  display: grid;
+  gap: 8px;
+}
+.ov-nums dd {
+  margin: 0;
+  font: 400 clamp(3rem, 7vw, 5.4rem)/0.95 var(--serif);
+  letter-spacing: -0.03em;
+  color: var(--c-text);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ov-nums .is-up dd {
+  color: var(--c-change-pos);
+}
+.ov-nums .is-down dd {
+  color: var(--c-change-neg);
+}
+.ov-nums dd small {
+  margin-left: 8px;
+  font: 400 1rem var(--sans);
+  letter-spacing: 0;
+  color: var(--c-muted);
+}
+.ov-nums dt {
+  color: var(--c-muted);
+  font-size: 1rem;
+}
+.ov-note {
+  margin: 0;
+  max-width: 60em;
+  color: var(--c-muted);
+  font-size: 0.86rem;
+}
+.ov-check {
+  display: grid;
+  gap: 28px;
+}
+.ov-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+.ov-step {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  color: var(--c-muted);
+  text-decoration: none;
+}
+.ov-step svg {
+  color: var(--c-focus);
+}
+.ov-step h3 {
+  margin: 0;
+  color: var(--c-text);
+  font: 600 1.1rem var(--sans);
+}
+.ov-step p {
+  margin: 0;
+  line-height: 1.6;
+}
+.ov-step > span {
+  color: var(--c-focus);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 200ms ease;
+}
+.ov-step:hover > span,
+.ov-step:focus-visible > span {
+  text-decoration-color: currentColor;
+}
+.ov-step:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+.ov-data {
+  display: grid;
+  gap: 16px;
+  padding-top: 32px;
+  border-top: 1px solid var(--c-line);
+}
+.ov-data h2 {
+  font-size: 1.4rem;
+}
+.ov-data ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--c-muted);
+}
+.ov-data a {
+  color: var(--c-focus);
+}
+@media (max-width: 900px) {
+  .ov {
+    gap: 56px;
+  }
+  .ov-pass {
+    margin: -16px -16px 0;
+  }
+  .ov-pass-frame {
+    height: clamp(560px, 86svh, 760px);
+  }
+  .ov-scrim {
+    background: linear-gradient(0deg, rgb(14 26 36 / 0.95) 0%, rgb(14 26 36 / 0.7) 45%, rgb(14 26 36 / 0) 75%);
+  }
+  .ov-copy {
+    left: 20px;
+    right: 20px;
+    bottom: 84px;
+    max-width: none;
+  }
+  .ov-controls {
+    left: 20px;
+    right: auto;
+    bottom: 24px;
+  }
+  .ov-date.is-l {
+    left: 20px;
+  }
+  .ov-date.is-r {
+    right: 20px;
+  }
+  .ov-pass-foot {
+    padding: 0 16px;
+  }
+  .ov-nums,
+  .ov-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-img-change,
+  .ov-scan,
+  .ov-date,
+  .ov-btn {
+    transition: none;
+  }
+}

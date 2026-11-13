@@ -1,319 +1,285 @@
 "use client";
 
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Check, Columns2, FileSearch, Layers, Map as MapIcon, Radar, Ruler, Scan, ScanLine, ShieldCheck, Satellite, Activity, TrendingDown, TrendingUp } from "lucide-react";
-import { Kpi, KpiStrip } from "@/components/dashboard/ui";
-import { compatibility, covers } from "@/lib/chattogram/acquisitions";
-import { fmtArea, fmtDate, fmtDayMonth, fmtNum, fmtSigned } from "@/lib/i18n/format";
+import { ArrowLeftRight, Check, Columns2, FileSearch, Map as MapIcon } from "lucide-react";
+import { covers } from "@/lib/chattogram/acquisitions";
+import { CASE_ID, assetUrl } from "@/lib/chattogram/case-api";
+import { fmtArea, fmtDate, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { BackendText } from "../BackendText";
-import { CaseMap, quicklookSrc } from "../CaseMap";
+import { CaseMap } from "../CaseMap";
 import { FOCUS, useCase, usePilot } from "../CaseProvider";
-import { PrepStatus } from "../PrepStatus";
 import { ChangeKey } from "../MapKey";
-import { CASE_ID, assetUrl } from "@/lib/chattogram/case-api";
+import { PrepStatus } from "../PrepStatus";
 import { WardTeaser } from "../WardTeaser";
 
 const OVERVIEW_VIEW = { lon: 91.95, lat: 22.75, zoom: 6.7 };
 const STEPS = [
-  { n: 1, icon: MapIcon, link: "/chattogram/explore" },
-  { n: 2, icon: Columns2, link: "/chattogram/compare" },
-  { n: 3, icon: FileSearch, link: "/chattogram/evidence" },
+  { icon: MapIcon, link: "/chattogram/explore" },
+  { icon: Columns2, link: "/chattogram/compare" },
+  { icon: FileSearch, link: "/chattogram/evidence" },
 ];
+const still = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** The front door: the question, the numbers, the way through the case, and the comparison to start with. */
+/**
+ * The radar pass: the case's two calibrated images on one grid, full bleed, with the headline on top. A scan line sweeps
+ * across once (the satellite's pass), then follows the reader's pointer or arrow keys. "Change map" swaps in the signed change.
+ */
+function RadarPass({ before, after, change, dates, children }: { before: string; after: string; change: string | null; dates: [string, string]; children: ReactNode }) {
+  const t = useT();
+  const s = t.overview.story;
+  const [pos, setPos] = useState(100);
+  const [mode, setMode] = useState<"pair" | "change">("pair");
+  const frame = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const touched = useRef(false);
+  useEffect(() => {
+    if (still()) return setPos(50);
+    let raf = 0;
+    const t0 = performance.now() + 500;
+    const step = (now: number) => {
+      if (touched.current) return; // the reader took over
+      const k = Math.max(0, Math.min(1, (now - t0) / 2400));
+      setPos(100 - 50 * (1 - Math.pow(1 - k, 3))); // the pass sweeps in from the right edge and settles mid-frame
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    const done = setTimeout(() => !touched.current && setPos(50), 3200); // lands even where frames are throttled
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(done);
+    };
+  }, []);
+  const drag = (e: PointerEvent) => {
+    const r = frame.current!.getBoundingClientRect();
+    setPos(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+  };
+  return (
+    <section className={`ov-pass is-${mode}`} aria-label={s.passLabel}>
+      <div
+        className="ov-pass-frame"
+        ref={frame}
+        style={{ "--pos": `${pos}%` } as CSSProperties}
+        onPointerDown={(e) => {
+          if (mode !== "pair" || (e.target as HTMLElement).closest("a, button")) return;
+          touched.current = dragging.current = true;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          drag(e);
+        }}
+        onPointerMove={(e) => dragging.current && drag(e)}
+        onPointerUp={() => (dragging.current = false)}
+      >
+        {/* eslint-disable @next/next/no-img-element -- the case's published layers: static PNGs on one grid */}
+        <img className="ov-img" src={after} alt={t.overview.calibratedAlt(dates[1])} draggable={false} />
+        <img className="ov-img ov-img-before" src={before} alt={t.overview.calibratedAlt(dates[0])} draggable={false} />
+        {change && <img className="ov-img ov-img-change" src={change} alt={t.overview.heroFigAlt(`${dates[0]} – ${dates[1]}`)} draggable={false} />}
+        {/* eslint-enable @next/next/no-img-element */}
+        <div className="ov-scrim" aria-hidden="true" />
+        <p className="ov-date is-l">{dates[0]}</p>
+        <p className="ov-date is-r">{dates[1]}</p>
+        <div className="ov-scan" aria-hidden="true">
+          <span>
+            <ArrowLeftRight size={15} />
+          </span>
+        </div>
+        <input
+          type="range"
+          className="ov-range"
+          min={0}
+          max={100}
+          value={Math.round(pos)}
+          disabled={mode !== "pair"}
+          onChange={(e) => {
+            touched.current = true;
+            setPos(Number(e.target.value));
+          }}
+          aria-label={s.reveal(dates[0], dates[1])}
+        />
+        <div className="ov-copy">{children}</div>
+        <div className="ov-controls">
+          <div className="ov-toggle" role="group" aria-label={s.viewLabel}>
+            <button type="button" aria-pressed={mode === "pair"} onClick={() => setMode("pair")}>
+              {s.viewPair}
+            </button>
+            {change && (
+              <button type="button" aria-pressed={mode === "change"} onClick={() => setMode("change")}>
+                {s.viewChange}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="ov-pass-foot">{mode === "change" ? <ChangeKey /> : <p>{s.dragHint}</p>}</div>
+    </section>
+  );
+}
+
+/** The front door: the radar pass with the question on it, then the measured answer, ways to check it, and its sources. */
 export function OverviewView() {
-  const { load, explorer, stack, before, after, href, source, processed, caseHref, isCasePair } = useCase();
+  const { load, explorer, stack, before, after, href, processed, caseHref } = useCase();
   const t = useT();
   const o = t.overview;
+  const s = o.story;
   const pilotLoad = usePilot();
   if (load.status !== "ready" || !stack || !before || !after) return null;
-  const detail = processed.status === "ready" ? processed.data.detail : null;
-  const m = detail?.status === "ready" ? detail.metrics : null;
-  const span = detail ? `${fmtDate(detail.before.date)} → ${fmtDate(detail.after.date)}` : "";
-  const provenance = detail?.analysis_area.properties?.provenance;
 
-  const all = load.data.acquisitions;
-  const overCity = load.data.stacks.filter((s) => covers(s.items[0], FOCUS.lonLat));
-  const provisional = all.filter((a) => a.maturity === "Provisional").length;
-  const days = Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5);
-  const g = stack.items[0];
-  const starts = all.map((a) => a.start).sort();
-  const differs = compatibility(before, after).filter((c) => !c.ok);
-  const year = fmtNum(load.data.region.provenance.year);
-  const pilot = pilotLoad.status === "ready" ? pilotLoad.data : null;
-  const hh = pilot?.statistics.HHHH;
-  // supporting checks on the measured result: HV agreement and the next-stricter threshold of the sweep
-  const pc = processed.status === "ready" ? processed.data : null;
-  const listed = pc?.findings.features.length ?? 0;
-  const sens = pc?.sensitivity ?? null;
-  const stricter = sens && m ? sens.rows.find((r) => r.threshold_db > m.threshold_db) : undefined;
-  // the case's own calibrated images, served as static files: the hero shows the measured change, not an empty map
-  const layerSrc = (id: string) => {
-    const l = pc && m ? pc.layers.find((x) => x.id === id) : undefined;
+  const pc = processed.status === "ready" && processed.data.detail.status === "ready" ? processed.data : null;
+  const detail = processed.status === "ready" ? processed.data.detail : null;
+  const m = pc?.detail.metrics ?? null;
+  const src = (id: string) => {
+    const l = pc?.layers.find((x) => x.id === id);
     return l && pc ? assetUrl(CASE_ID, l, pc.detail.updated_at) : null;
   };
-  const changeSrc = layerSrc("change_db");
-  const pairSrc = isCasePair ? [layerSrc("before_db"), layerSrc("after_db")] : [null, null];
+  const [beforeSrc, afterSrc, changeSrc] = [src("before_db"), src("after_db"), src("change_db")];
+  const dates: [string, string] | null = pc ? [fmtDate(pc.detail.before.date), fmtDate(pc.detail.after.date)] : null;
+  const openCase = caseHref("/chattogram/explore") ?? href("/chattogram/explore");
+
+  const all = load.data.acquisitions;
+  const overCity = load.data.stacks.filter((x) => covers(x.items[0], FOCUS.lonLat));
+  const provisional = all.filter((a) => a.maturity === "Provisional").length;
+  const pilot = pilotLoad.status === "ready" ? pilotLoad.data : null;
+  const listed = pc?.findings.features.length ?? 0;
+  const stricter = pc?.sensitivity && m ? pc.sensitivity.rows.find((r) => r.threshold_db > m.threshold_db) : undefined;
   const pct = (v: number) => (m && m.valid_common_km2 ? (v / m.valid_common_km2) * 100 : 0);
+  const tiny = (v: number) => (v > 0 && v < 0.01 ? `< ${fmtNum(0.01, 2)}` : fmtArea(v));
+
+  const copy = (
+    <>
+      <h1>{s.title}</h1>
+      <p className="ov-lede">{dates ? s.lede(dates[0], dates[1]) : s.ledeNoCase}</p>
+      <div className="ov-actions">
+        <Link className="ov-btn is-primary" href={openCase}>
+          {o.openCase}
+        </Link>
+        <Link className="ov-btn" href={href("/chattogram/compare")}>
+          {o.startCompare}
+        </Link>
+      </div>
+    </>
+  );
 
   return (
-    <div className="c-overview">
-      <section className="c-hero">
-        <div className="c-hero-copy">
-          <p className="c-eyebrow">{o.eyebrow}</p>
-          <h1>{o.title}</h1>
-          <p className="c-hero-lede">{o.lede}</p>
-          <div className="c-hero-actions">
-            <Link className="c-btn is-primary" href={href("/chattogram/compare")}>
-              <Columns2 size={16} aria-hidden="true" />
-              {o.startCompare}
-              <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-            <Link className="c-btn" href={href("/chattogram/explore")}>
-              <MapIcon size={16} aria-hidden="true" />
-              {o.exploreMap}
-            </Link>
+    <div className="ov">
+      {beforeSrc && afterSrc && dates ? (
+        <RadarPass before={beforeSrc} after={afterSrc} change={changeSrc} dates={dates}>
+          {copy}
+        </RadarPass>
+      ) : (
+        <section className="ov-pass is-fallback">
+          <div className="ov-pass-frame">
+            <CaseMap label={o.mapLabel(fmtDate(after.start))} view={OVERVIEW_VIEW} image={after} imageOpacity={0.9} footprints={[after]} selected={after.conceptId} boundary={load.data.region.boundary} controls={false} />
+            <div className="ov-scrim" aria-hidden="true" />
+            <div className="ov-copy">{copy}</div>
           </div>
-        </div>
-        {changeSrc && detail ? (
-          <figure className="c-hero-fig">
-            <Link href={caseHref("/chattogram/explore") ?? href("/chattogram/explore")} className="c-hero-fig-img" aria-label={o.openCase}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- the published change layer, a static PNG */}
-              <img src={changeSrc} alt={o.heroFigAlt(span)} />
-            </Link>
-            <figcaption>
-              <p>{o.heroFigCaption(span)}</p>
-              <ChangeKey />
-            </figcaption>
-          </figure>
-        ) : (
-        <div className="c-hero-map">
-          <CaseMap
-            label={o.mapLabel(fmtDate(after.start))}
-            view={OVERVIEW_VIEW}
-            image={after}
-            imageOpacity={0.9}
-            footprints={[after]}
-            selected={after.conceptId}
-            boundary={load.data.region.boundary}
-            controls={false}
-          />
-          <p className="c-hero-map-cap">{o.mapCaption(fmtDate(after.start), year)}</p>
-        </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      <section className={`c-processed${m ? " is-ready" : ""}`} aria-labelledby="processed-h">
-        <div className="c-processed-head">
-          <div className="c-processed-title">
-          <p className="c-eyebrow">{m ? o.caseMeasured : o.casePending}</p>
-          <h2 id="processed-h">{detail ? <BackendText text={detail.title} translated={o.caseTitles[detail.id]} /> : o.caseFallbackTitle}</h2>
-          {detail && (
-            <p className="c-pair" aria-label={o.casePair(span)}>
-              <span>
-                <small>{t.before}</small>
-                {fmtDate(detail.before.date)}
-              </span>
-              <ArrowRight size={16} aria-hidden="true" />
-              <span>
-                <small>{t.after}</small>
-                {fmtDate(detail.after.date)}
-              </span>
+      {pc && m ? (
+        <section className="ov-answer" aria-labelledby="answer-h">
+          <div className="ov-head">
+            <h2 id="answer-h">{s.answerTitle}</h2>
+            <p>
+              <BackendText text={pc.detail.title} translated={o.caseTitles[pc.detail.id]} />, {s.answerLede(fmtNum(m.threshold_db))}
             </p>
-          )}
           </div>
-          <Link className="c-btn is-primary" href={caseHref("/chattogram/explore") ?? href("/chattogram/explore")}>
-            {o.openCase}
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
-        </div>
-        {detail && m ? (
-          <div className="c-processed-body">
-            <dl className="c-figures" aria-label={o.caseFigures(span)}>
-              <div>
-                <dt>
-                  <Scan size={16} aria-hidden="true" />
-                  {o.validBoth}
-                </dt>
-                <dd className="c-stat-value">
-                  {fmtArea(m.valid_common_km2)}
-                  <small>km²</small>
-                </dd>
-                <dd className="c-stat-sub">{o.validBothSub(fmtArea(m.analysis_km2), span)}</dd>
-              </div>
-              <div className="is-up">
-                <dt>
-                  <TrendingUp size={16} aria-hidden="true" />
-                  {o.increase}
-                </dt>
-                <dd className="c-stat-value">
-                  {fmtArea(m.increase_km2)}
-                  <small>km²</small>
-                </dd>
-                <dd className="c-stat-sub">{o.increaseSub(fmtNum(m.threshold_db), span)}</dd>
-              </div>
-              <div className="is-down">
-                <dt>
-                  <TrendingDown size={16} aria-hidden="true" />
-                  {o.decrease}
-                </dt>
-                <dd className="c-stat-value">
-                  {fmtArea(m.decrease_km2)}
-                  <small>km²</small>
-                </dd>
-                <dd className="c-stat-sub">{o.decreaseSub(fmtNum(m.threshold_db), span)}</dd>
-              </div>
-            </dl>
-            <div className="c-share">
-              <p className="c-share-label">{o.shareLabel}</p>
-              <div className="c-share-track" role="img" aria-label={o.resultShare(fmtNum(pct(m.increase_km2), 1), fmtNum(pct(m.decrease_km2), 1))}>
-                <span className="is-up" style={{ width: `${pct(m.increase_km2)}%` }} />
-                <span className="is-down" style={{ width: `${pct(m.decrease_km2)}%` }} />
-              </div>
-              <p className="c-share-legend">
-                <span className="is-up">{o.shareUp} {fmtNum(pct(m.increase_km2), 1)}%</span>
-                <span className="is-down">{o.shareDown} {fmtNum(pct(m.decrease_km2), 1)}%</span>
-                <span>{o.shareRest(fmtNum(m.threshold_db))}</span>
-              </p>
+          <dl className="ov-nums">
+            <div>
+              <dd>
+                {fmtArea(m.valid_common_km2)}
+                <small>km²</small>
+              </dd>
+              <dt>{s.compared}</dt>
             </div>
-            {(m.cross_pol || stricter) && (
-              <ul className="c-result-checks" aria-label={o.checksLabel}>
-                {m.cross_pol && (
-                  <li>
-                    <Check size={15} aria-hidden="true" />
-                    {o.checkHv(fmtNum(m.cross_pol.findings_same_direction), fmtNum(m.cross_pol.findings_compared), m.cross_pol.polarization)}
-                  </li>
-                )}
-                {stricter && (
-                  <li>
-                    <Check size={15} aria-hidden="true" />
-                    {o.checkRobust(fmtNum(stricter.listed_findings_present), fmtNum(listed), fmtNum(stricter.threshold_db))}
-                  </li>
-                )}
-                <li>
-                  <Check size={15} aria-hidden="true" />
-                  {o.checkCoverage(m.excluded_km2 > 0 && m.excluded_km2 < 0.01 ? `< ${fmtNum(0.01, 2)}` : fmtArea(m.excluded_km2))}
-                </li>
-              </ul>
-            )}
-            <p className="c-hint">
-              {o.caseHint}
-              {provenance && (
-                <>
-                  {" "}
-                  {o.analysisArea} <BackendText text={provenance} translated={o.areaProvenance[provenance]} />
-                  {t.stop}
-                </>
-              )}
+            <div className="is-up">
+              <dd>
+                {fmtArea(m.increase_km2)}
+                <small>km²</small>
+              </dd>
+              <dt>{s.brighter}</dt>
+            </div>
+            <div className="is-down">
+              <dd>
+                {fmtArea(m.decrease_km2)}
+                <small>km²</small>
+              </dd>
+              <dt>{s.darker}</dt>
+            </div>
+          </dl>
+          <div className="c-share">
+            <div className="c-share-track" role="img" aria-label={o.resultShare(fmtNum(pct(m.increase_km2), 1), fmtNum(pct(m.decrease_km2), 1))}>
+              <span className="is-up" style={{ width: `${pct(m.increase_km2)}%` }} />
+              <span className="is-down" style={{ width: `${pct(m.decrease_km2)}%` }} />
+            </div>
+            <p className="c-share-legend">
+              <span className="is-up">
+                {o.shareUp} {fmtNum(pct(m.increase_km2), 1)}%
+              </span>
+              <span className="is-down">
+                {o.shareDown} {fmtNum(pct(m.decrease_km2), 1)}%
+              </span>
+              <span>{o.shareRest(fmtNum(m.threshold_db))}</span>
             </p>
           </div>
-        ) : (
-          <div className="c-processed-body">
-            <PrepStatus />
-          </div>
-        )}
-      </section>
+          <ul className="c-result-checks" aria-label={o.checksLabel}>
+            {m.cross_pol && (
+              <li>
+                <Check size={15} aria-hidden="true" />
+                {o.checkHv(fmtNum(m.cross_pol.findings_same_direction), fmtNum(m.cross_pol.findings_compared), m.cross_pol.polarization)}
+              </li>
+            )}
+            {stricter && (
+              <li>
+                <Check size={15} aria-hidden="true" />
+                {o.checkRobust(fmtNum(stricter.listed_findings_present), fmtNum(listed), fmtNum(stricter.threshold_db))}
+              </li>
+            )}
+            <li>
+              <Check size={15} aria-hidden="true" />
+              {o.checkCoverage(tiny(m.excluded_km2))}
+            </li>
+          </ul>
+          <p className="ov-note">{o.caseHint}</p>
+        </section>
+      ) : (
+        <section className="ov-answer" aria-label={o.casePending}>
+          <PrepStatus />
+        </section>
+      )}
 
       <WardTeaser />
 
-      <section className="c-steps" aria-label={o.stepsLabel}>
-        {STEPS.map(({ n, icon: Icon, link }, i) => (
-          <Link key={n} href={href(link)} className="c-step">
-            <span className="c-step-n">{fmtNum(n).padStart(2, fmtNum(0))}</span>
-            <Icon size={20} aria-hidden="true" className="c-step-icon" />
-            <h2>{o.steps[i].title}</h2>
-            <p>{o.steps[i].body}</p>
-            <span className="c-step-cta">
-              {o.steps[i].cta} <ArrowRight size={15} aria-hidden="true" />
-            </span>
-          </Link>
-        ))}
-      </section>
-
-      <section className="c-feature" aria-labelledby="feature-h">
-        <div className="c-feature-copy">
-          <p className="c-eyebrow">{o.featured}</p>
-          <h2 id="feature-h">{t.vs(fmtDate(before.start), fmtDate(after.start))}</h2>
-          <p>
-            {o.featuredBody(
-              fmtNum(days),
-              g.track === null ? "–" : fmtNum(g.track),
-              g.frame === null ? "–" : fmtNum(g.frame),
-              t.direction[g.direction],
-              t.place.focus,
-            )}{" "}
-            {differs.length ? o.featuredCare(differs.map((c) => t.checks[c.key].noun).join(", ")) : o.featuredSame}
-          </p>
-          <Link className="c-btn is-primary" href={href("/chattogram/compare")}>
-            {o.openComparison}
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="c-feature-pair">
-          {[
-            { role: t.before, a: before },
-            { role: t.after, a: after },
-          ].map(({ role, a }, i) => (
-            <figure key={a.conceptId + role} className={pairSrc[i] ? "is-calibrated" : undefined}>
-              {pairSrc[i] ? (
-                // eslint-disable-next-line @next/next/no-img-element -- the case's calibrated layer, a static PNG
-                <img src={pairSrc[i]!} alt={o.calibratedAlt(fmtDate(a.start))} loading="lazy" />
-              ) : a.frozen || source.mode === "live" ? (
-                // eslint-disable-next-line @next/next/no-img-element -- quicklook from the frozen case or our proxy, sized by CSS
-                <img src={quicklookSrc(a)} alt={t.quicklookOf(fmtDate(a.start))} loading="lazy" />
-              ) : (
-                <div className="c-thumb-missing">{o.notFrozen}</div>
-              )}
-              <figcaption>
-                <strong>{role}</strong> {fmtDate(a.start)}
-              </figcaption>
-            </figure>
+      <section className="ov-check" aria-labelledby="steps-h">
+        <h2 id="steps-h">{s.checkTitle}</h2>
+        <div className="ov-steps">
+          {STEPS.map(({ icon: Icon, link }, i) => (
+            <Link key={link} href={href(link)} className="ov-step">
+              <Icon size={20} aria-hidden="true" />
+              <h3>{o.steps[i].title}</h3>
+              <p>{o.steps[i].body}</p>
+              <span>{o.steps[i].cta}</span>
+            </Link>
           ))}
         </div>
       </section>
 
-      <section className="c-data" aria-labelledby="data-h">
-        <div className="c-data-head">
-          <h2 id="data-h">{o.dataBehind}</h2>
-          <p>{o.dataBehindBody}</p>
-        </div>
-        <KpiStrip label={o.kpis}>
-          <Kpi label={o.kpiScenes} value={fmtNum(all.length)} sub={o.kpiScenesSub(fmtNum(explorer?.summary.outside_division ?? 0))} icon={Layers} />
-          <Kpi
-            label={o.kpiDays}
-            value={explorer ? fmtNum(explorer.summary.observation_days) : "–"}
-            sub={o.kpiDaysSub(fmtDate(starts[0]), fmtDate(starts.at(-1)!))}
-            icon={CalendarDays}
-          />
-          <Kpi label={o.kpiStacks} value={fmtNum(overCity.length)} sub={o.kpiStacksSub} icon={Satellite} />
-          <Kpi label={o.kpiProvisional} value={o.kpiProvisionalValue(fmtNum(provisional), fmtNum(all.length))} sub={o.kpiProvisionalSub} icon={ShieldCheck} />
-        </KpiStrip>
-        {pilot && hh && (
-          <KpiStrip label={o.pilotKpis}>
-            <Kpi label={o.kpiPilot} value={o.kpiPilotValue(fmtDayMonth(pilot.sources[0].acquisition), fmtDate(pilot.sources[1].acquisition))} sub={o.kpiPilotSub} icon={Radar} />
-            <Kpi label={o.kpiArea} value={fmtNum(hh.common_area_km2, 2)} unit="km²" sub={o.kpiAreaSub(fmtNum(hh.outside_roi_area_km2, 2))} icon={ScanLine} />
-            <Kpi label={o.kpiMedian} value={fmtSigned(hh.median_change_db)} unit="dB" sub={o.kpiMedianSub(fmtSigned(pilot.statistics.HVHV.median_change_db))} icon={Activity} />
-            <Kpi label={o.kpiSpread} value={o.kpiSpreadValue(fmtSigned(hh.change_percentiles_db[0]), fmtSigned(hh.change_percentiles_db[2]))} unit="dB" sub={o.kpiSpreadSub} icon={Ruler} />
-          </KpiStrip>
-        )}
-      </section>
-
-      <section className="c-honest" aria-label={o.honestLabel}>
-        <Radar size={18} aria-hidden="true" />
-        <p>
-          {m ? (
-            <>
-              <strong>{o.realNow}</strong> {o.realNowCaseBody} <strong>{o.notClaimed}</strong> {o.notClaimedBody}
-            </>
-          ) : (
-            <>
-              <strong>{o.realNow}</strong> {o.realNowBody} <strong>{o.next}</strong> {o.nextBody}
-            </>
-          )}{" "}
-          <Link href={href("/chattogram/processed")}>{o.openPilot}</Link>
-          {t.stop} <Link href={href("/chattogram/about")}>{o.canCant}</Link>
-        </p>
+      <section className="ov-data" aria-labelledby="data-h">
+        <h2 id="data-h">{s.dataTitle}</h2>
+        <ul>
+          <li>{s.dataScenes(fmtNum(all.length))}</li>
+          {explorer && <li>{s.dataDays(fmtNum(explorer.summary.observation_days))}</li>}
+          <li>{s.dataStacks(fmtNum(overCity.length))}</li>
+          <li>{s.dataProvisional(fmtNum(provisional), fmtNum(all.length))}</li>
+          {pilot && (
+            <li>
+              <Link href={href("/chattogram/processed")}>{s.dataPilot(fmtNum(pilot.statistics.HHHH.common_area_km2, 1), fmtSigned(pilot.statistics.HHHH.median_change_db))}</Link>
+            </li>
+          )}
+          <li>
+            <Link href={href("/chattogram/about")}>{o.canCant}</Link>
+          </li>
+        </ul>
+        {detail && !pc && <p className="ov-note">{o.casePending}</p>}
       </section>
     </div>
   );
