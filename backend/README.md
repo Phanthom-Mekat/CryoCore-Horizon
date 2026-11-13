@@ -51,6 +51,8 @@ install command when updating an existing environment.
 | POST | `/api/v1/jobs` `{case_id}` | Queue processing (202). Needs `X-Admin-Token` = `CRYO_ADMIN_TOKEN`; 403 if unset |
 | GET | `/api/v1/jobs/{id}` | Job state, stage, progress, error, retryable, attempts |
 | POST | `/api/v1/jobs/{id}/cancel` | Cancel a queued or running job (admin token; 409 if it already finished). A running worker stops at its next progress check and publishes nothing |
+| GET | `/api/v1/assistant/status` | Whether the case assistant can answer (`GEMINI_API_KEY` set and the case published) and its model |
+| POST | `/api/v1/assistant/chat` `{messages, context}` | The case assistant (Gemini, `CRYO_GEMINI_MODEL`, default `gemini-3.5-flash`, fallback `gemini-3.8-flash`): streams one JSON event per line, `step`, `action` (map, layer, page, download, carried out by the browser), then `reply` or `error`. Read-only tools over the published case; limited to `CRYO_ASSISTANT_REQUESTS_PER_MINUTE` |
 
 Case status is `ready` once a bundle is published, otherwise it follows the latest job: `not_processed`, `queued`,
 `running`, `failed`, or `needs_credentials` (the job failed for want of Earthdata Login). Every case GET reads only

@@ -18345,7 +18345,24 @@
         "pixel_area_m2": 100.045,
         "min_region_px": 200,
         "connectivity": 4,
-        "timeseries_stats": "over pixels valid on both dates; mean_db = 10*log10(mean linear power)"
+        "timeseries_stats": "over pixels valid on both dates; mean_db = 10*log10(mean linear power)",
+        "plain_reading": {
+          "version": "0.1.0",
+          "water_hv_db": -19.0,
+          "object_hh_db": 3.0,
+          "plants_hv_db": 1.5,
+          "rules": {
+            "water": "no change region; HV <= -19 dB on both dates",
+            "object": "region median HH >= 3 dB on the date it is brighter",
+            "water_came": "darker region; median HV above -19 dB before and at or below it after",
+            "water_went": "brighter region; median HV at or below -19 dB before and above it after, HV rose less than 1.5 dB",
+            "plants_grew": "brighter region; median HV rose by at least 1.5 dB",
+            "plants_lost": "darker region; median HV fell by at least 1.5 dB",
+            "surface": "change region that fits none of the above"
+          },
+          "unit": "each HH change region as a whole, from its median HH and HV on each date (5x5 boxcar, dB); first matching rule wins",
+          "water_background": "outside change regions; same opening and minimum region size as the change regions"
+        }
       }
     },
     "sources": [
@@ -18380,7 +18397,8 @@
       "Regions are detected in HH only. HV is processed the same way and shown alongside each finding for comparison; it is not used to detect or grade regions, and the two polarizations can respond differently to the same surface.",
       "No independent reference validation yet: each region is an observed radar change, not a confirmed water, flood or damage finding.",
       "Source data maturity is provisional (NISAR_L2_GCOV_PROVISIONAL_V1): calibration and processing may change in later releases.",
-      "Only the 40 largest of 92 change regions are listed as findings; area totals include all of them."
+      "Only the 40 largest of 92 change regions are listed as findings; area totals include all of them.",
+      "The plain reading (water came or went, plants grew or were lost, ship, building or metal) applies L-band rules of thumb to HH and HV together. Each is a likely explanation, not a field-checked one: a tide, wet soil or a moored boat can produce the same radar change."
     ],
     "attribution": "NASA-ISRO NISAR data via NASA Earthdata / ASF DAAC"
   }

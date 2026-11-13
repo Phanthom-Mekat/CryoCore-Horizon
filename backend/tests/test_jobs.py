@@ -252,7 +252,7 @@ def test_synthetic_fixture_bundle_runs_real_pipeline_but_is_served_only_for_qa(d
         assert {(f["properties"]["kind"]) for f in client.get(f"/api/v1/curated-cases/{CASE}/findings").json()["features"]} \
             == {"increase", "decrease"}
         layers = client.get(f"/api/v1/curated-cases/{CASE}/layers").json()
-        assert [layer["id"] for layer in layers] == ["before_db", "after_db", "change_db", "before_hv_db", "after_hv_db", "change_hv_db"]
+        assert [layer["id"] for layer in layers] == ["before_db", "after_db", "change_db", "before_hv_db", "after_hv_db", "change_hv_db", "plain"]
         png = client.get(layers[2]["url"])
         assert png.status_code == 200 and png.content.startswith(b"\x89PNG")
         assert client.get(f"/api/v1/curated-cases/{CASE}/export").json()["provenance"]["synthetic_fixture"] is True

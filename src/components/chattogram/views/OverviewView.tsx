@@ -14,7 +14,7 @@ import { ChangeKey } from "../MapKey";
 import { PrepStatus } from "../PrepStatus";
 import { WardTeaser } from "../WardTeaser";
 
-const OVERVIEW_VIEW = { lon: 91.95, lat: 22.75, zoom: 6.7 };
+const OVERVIEW_VIEW = { lon: 91.845, lat: 22.31, zoom: 10.3 };
 const STEPS = [
   { icon: MapIcon, link: "/chattogram/explore" },
   { icon: Columns2, link: "/chattogram/compare" },

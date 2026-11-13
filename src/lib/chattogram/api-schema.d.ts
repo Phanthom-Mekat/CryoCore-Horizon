@@ -764,7 +764,7 @@ export interface components {
              * Id
              * @enum {string}
              */
-            id: "before_db" | "after_db" | "change_db" | "before_hv_db" | "after_hv_db" | "change_hv_db";
+            id: "before_db" | "after_db" | "change_db" | "before_hv_db" | "after_hv_db" | "change_hv_db" | "plain";
             /** Label */
             label: string;
             /** Polarization */
@@ -790,12 +790,23 @@ export interface components {
              * Palette
              * @enum {string}
              */
-            palette: "gray" | "diverging";
+            palette: "gray" | "diverging" | "categories";
             /**
              * Nodata
              * @constant
              */
             nodata: "transparent";
+            /** Version */
+            version?: string | null;
+            /** Categories */
+            categories?: components["schemas"]["PlainCategory"][] | null;
+            /**
+             * By Finding
+             * @description plain layer only: each listed finding's category id
+             */
+            by_finding?: {
+                [key: string]: string;
+            } | null;
         };
         /** Method */
         Method: {
@@ -823,6 +834,25 @@ export interface components {
             /** Threshold Db */
             threshold_db: number;
             cross_pol?: components["schemas"]["CrossPol"] | null;
+        };
+        /** PlainCategory */
+        PlainCategory: {
+            /**
+             * Code
+             * @description Pixel identity in plain.png (its RGBA is `color` at the layer's alpha)
+             */
+            code: number;
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "water" | "object" | "water_came" | "water_went" | "plants_grew" | "plants_lost" | "surface";
+            /** Color */
+            color: string;
+            /** Rule */
+            rule: string;
+            /** Area Km2 */
+            area_km2: number;
         };
         /** Region */
         Region: {

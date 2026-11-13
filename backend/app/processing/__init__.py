@@ -13,7 +13,7 @@ import shapely
 from pyproj import Geod, Transformer
 from rasterio.features import geometry_mask
 
-from . import change, findings, render, sensitivity
+from . import change, findings, plain, render, sensitivity
 from .gcov import DIAGONAL_TERMS, GcovError, full_grid, metadata, power_terms, read, window_for_bounds
 from .grid import after_on_grid, pixel_area_km2
 
@@ -43,6 +43,9 @@ DEFAULT_PARAMS = {
 }
 SYNTHETIC_CAVEAT = ("SYNTHETIC QA DATA - NOT NISAR: these inputs are generated test fixtures, so every layer, number "
                     "and region here is made up and describes no real place or date.")
+PLAIN_CAVEAT = ("The plain reading (water came or went, plants grew or were lost, ship, building or metal) applies "
+                "L-band rules of thumb to HH and HV together. Each is a likely explanation, not a field-checked one: "
+                "a tide, wet soil or a moored boat can produce the same radar change.")
 TERM_NAMES = {"HHHH": "HH", "VVVV": "VV", "HVHV": "HV", "VHVH": "VH", "RHRH": "RH", "RVRV": "RV"}
 CROSS_TERMS = {"HHHH": "HVHV", "VVVV": "VHVH"}  # the co-pol term detects; its cross-pol term is shown alongside
 
@@ -188,6 +191,16 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
     fc, total, listed = findings.build(regions, delta, bdb, adb, common, inside, grid, pixel_km2,
                                p, f"{granules[0]}|{granules[1]}|{FINDING_ID_VERSION}", cross_delta=xdelta)
 
+    # Plain-language reading needs HH and HV on both dates; without HV the case simply has no "plain" layer.
+    codes = None
+    if term == "HHHH" and all("HVHV" in t.get(frequency, []) for t in (power_terms(before_h5), power_terms(after_h5))):
+        hv_b, _ = read(before_h5, frequency, "HVHV", (r0, r1), (c0, c1))
+        hv_a, _, _ = after_on_grid(after_h5, frequency, "HVHV", grid)
+        hv_b, hv_a = (change.to_db(change.boxcar(x, p["speckle_size"])) for x in (hv_b, hv_a))
+        codes, read_as = plain.classify(regions, bdb, adb, hv_b, hv_a, common, p["opening_px"], min_px)
+        # kept on the plain layer, never in findings.geojson: findings stay observed radar change only
+        plain_by_finding = {fid: read_as[kind][lab - 1] for fid, kind, lab in listed}
+
     analysis_km2 = abs(Geod(ellps="WGS84").geometry_area_perimeter(analysis_area)[0]) / 1e6
     valid_km2 = int(common.sum()) * pixel_km2
     metrics = {
@@ -242,6 +255,14 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
             "note": f"{xpol} is processed like {pol} but does not detect or grade regions. A finding changes in the same "
                     f"direction in {xpol} when its {xpol} mean change has the same sign as its {pol} change.",
         }
+    if codes is not None:
+        shown = render.warp(np.where(codes > 0, codes, np.nan).astype(np.float32), grid, dst, w, h, categorical=True)
+        render.save_png(plain.rgba(shown), out_dir / "plain.png")
+        layers.append({"id": "plain", "label": "What likely happened (plain reading)", "file": "plain.png",
+                       "corners": corners, "crs_note": crs_note, "units": "category",
+                       "scale": {"min": 0, "max": len(plain.CATEGORIES)}, "palette": "categories",
+                       "nodata": "transparent", "version": plain.VERSION,
+                       "categories": plain.summary(codes, pixel_km2), "by_finding": plain_by_finding})
 
     # Both dates over the same common-valid pixels, so the two points are comparable.
     points = []
@@ -275,11 +296,19 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
         "connectivity": 4,
         "timeseries_stats": "over pixels valid on both dates; mean_db = 10*log10(mean linear power)",
     }
+    if codes is not None:
+        method_params["plain_reading"] = {
+            "version": plain.VERSION, "water_hv_db": plain.WATER_HV_DB, "object_hh_db": plain.OBJECT_HH_DB,
+            "plants_hv_db": plain.PLANTS_HV_DB, "rules": plain.RULES,
+            "unit": "each HH change region as a whole, from its median HH and HV on each date (5x5 boxcar, dB); "
+                    "first matching rule wins",
+            "water_background": "outside change regions; same opening and minimum region size as the change regions"}
     excluded_share = metrics["excluded_km2"] / analysis_km2 if analysis_km2 else 0.0
     return {
         "method": {"name": METHOD_NAME, "version": METHOD_VERSION, "params": method_params},
         "metrics": metrics,
-        "caveats": ([SYNTHETIC_CAVEAT] if synthetic else []) + _caveats(p, sources, how, excluded_share, total, term, cross),
+        "caveats": ([SYNTHETIC_CAVEAT] if synthetic else []) + _caveats(p, sources, how, excluded_share, total, term, cross)
+                   + ([PLAIN_CAVEAT] if codes is not None else []),
         "synthetic_fixture": synthetic,
         "layers": layers,
         "findings_count": len(fc["features"]),

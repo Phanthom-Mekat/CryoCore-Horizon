@@ -51,16 +51,16 @@ export default function Home() {
           <HeroGlobe />
           <div className="hero-copy">
             <p className="kicker">Team CryoCore Horizon, NASA Space Apps Challenge 2026</p>
-            <h1>Monsoon cloud hides Chattogram for months. Radar still sees it.</h1>
+            <h1>After the flood, where do you check first?</h1>
             <p className="lede">
-              You&rsquo;re riding beside NISAR, the NASA–ISRO radar satellite, 747 km up. At dawn its beam images a 240 km strip of the Bengal
-              delta, straight through the cloud. We follow one monsoon of those images to see where the water spreads and pulls back.
+              When monsoon clouds hide Chattogram&rsquo;s streets and fields, NASA–ISRO radar can still see the ground. Compare two dates and
+              find places along the Karnaphuli where the surface may have changed.
             </p>
             <div className="actions">
-              <Link className="btn" href="/chattogram">
-                Explore the radar map
+              <Link className="btn" href="/chattogram/tour?source=frozen">
+                See what changed
               </Link>
-              <a className="link" href="#clouds">Why radar</a>
+              <Link className="link" href="/chattogram">Open the case study</Link>
             </div>
             <p className="hero-note">The pass is simulated from NISAR&rsquo;s orbit, not its actual schedule. Spacecraft and Earth are to scale.</p>
           </div>

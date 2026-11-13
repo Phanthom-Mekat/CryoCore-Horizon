@@ -18,6 +18,7 @@ registerHooks({
       const found = EXTENSIONS.map((ext) => new URL(url.href + ext)).find((u) => existsSync(fileURLToPath(u)));
       if (found) return nextResolve(found.href, context);
     }
-    return nextResolve(alias ? url.href : specifier, context);
+    // anything else as written: a file: URL breaks require() of relative paths inside CommonJS packages (sharp)
+    return nextResolve(specifier.startsWith("@/") ? url.href : specifier, context);
   },
 });

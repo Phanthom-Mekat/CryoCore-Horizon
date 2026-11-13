@@ -153,8 +153,16 @@ class Scale(BaseModel):
     max: float
 
 
+class PlainCategory(BaseModel):
+    code: int = Field(description="Pixel identity in plain.png (its RGBA is `color` at the layer's alpha)")
+    id: Literal["water", "object", "water_came", "water_went", "plants_grew", "plants_lost", "surface"]
+    color: str
+    rule: str
+    area_km2: float
+
+
 class Layer(BaseModel):
-    id: Literal["before_db", "after_db", "change_db", "before_hv_db", "after_hv_db", "change_hv_db"]
+    id: Literal["before_db", "after_db", "change_db", "before_hv_db", "after_hv_db", "change_hv_db", "plain"]
     label: str
     polarization: str | None = None
     date: str | None = None
@@ -163,8 +171,11 @@ class Layer(BaseModel):
     crs_note: str
     units: str
     scale: Scale
-    palette: Literal["gray", "diverging"]
+    palette: Literal["gray", "diverging", "categories"]
     nodata: Literal["transparent"]
+    version: str | None = None
+    categories: list[PlainCategory] | None = None
+    by_finding: dict[str, str] | None = Field(None, description="plain layer only: each listed finding's category id")
 
 
 class FindingProperties(BaseModel):
