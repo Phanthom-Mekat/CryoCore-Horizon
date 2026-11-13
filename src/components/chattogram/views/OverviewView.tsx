@@ -10,6 +10,8 @@ import { BackendText } from "../BackendText";
 import { CaseMap, quicklookSrc } from "../CaseMap";
 import { FOCUS, useCase, usePilot } from "../CaseProvider";
 import { PrepStatus } from "../PrepStatus";
+import { ChangeKey } from "../MapKey";
+import { CASE_ID, assetUrl } from "@/lib/chattogram/case-api";
 import { WardTeaser } from "../WardTeaser";
 
 const OVERVIEW_VIEW = { lon: 91.95, lat: 22.75, zoom: 6.7 };
@@ -21,7 +23,7 @@ const STEPS = [
 
 /** The front door: the question, the numbers, the way through the case, and the comparison to start with. */
 export function OverviewView() {
-  const { load, explorer, stack, before, after, href, source, processed, caseHref } = useCase();
+  const { load, explorer, stack, before, after, href, source, processed, caseHref, isCasePair } = useCase();
   const t = useT();
   const o = t.overview;
   const pilotLoad = usePilot();
@@ -46,6 +48,13 @@ export function OverviewView() {
   const listed = pc?.findings.features.length ?? 0;
   const sens = pc?.sensitivity ?? null;
   const stricter = sens && m ? sens.rows.find((r) => r.threshold_db > m.threshold_db) : undefined;
+  // the case's own calibrated images, served as static files: the hero shows the measured change, not an empty map
+  const layerSrc = (id: string) => {
+    const l = pc && m ? pc.layers.find((x) => x.id === id) : undefined;
+    return l && pc ? assetUrl(CASE_ID, l, pc.detail.updated_at) : null;
+  };
+  const changeSrc = layerSrc("change_db");
+  const pairSrc = isCasePair ? [layerSrc("before_db"), layerSrc("after_db")] : [null, null];
   const pct = (v: number) => (m && m.valid_common_km2 ? (v / m.valid_common_km2) * 100 : 0);
 
   return (
@@ -67,6 +76,18 @@ export function OverviewView() {
             </Link>
           </div>
         </div>
+        {changeSrc && detail ? (
+          <figure className="c-hero-fig">
+            <Link href={caseHref("/chattogram/explore") ?? href("/chattogram/explore")} className="c-hero-fig-img" aria-label={o.openCase}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- the published change layer, a static PNG */}
+              <img src={changeSrc} alt={o.heroFigAlt(span)} />
+            </Link>
+            <figcaption>
+              <p>{o.heroFigCaption(span)}</p>
+              <ChangeKey />
+            </figcaption>
+          </figure>
+        ) : (
         <div className="c-hero-map">
           <CaseMap
             label={o.mapLabel(fmtDate(after.start))}
@@ -80,6 +101,7 @@ export function OverviewView() {
           />
           <p className="c-hero-map-cap">{o.mapCaption(fmtDate(after.start), year)}</p>
         </div>
+        )}
       </section>
 
       <section className={`c-processed${m ? " is-ready" : ""}`} aria-labelledby="processed-h">
@@ -232,9 +254,12 @@ export function OverviewView() {
           {[
             { role: t.before, a: before },
             { role: t.after, a: after },
-          ].map(({ role, a }) => (
-            <figure key={a.conceptId + role}>
-              {a.frozen || source.mode === "live" ? (
+          ].map(({ role, a }, i) => (
+            <figure key={a.conceptId + role} className={pairSrc[i] ? "is-calibrated" : undefined}>
+              {pairSrc[i] ? (
+                // eslint-disable-next-line @next/next/no-img-element -- the case's calibrated layer, a static PNG
+                <img src={pairSrc[i]!} alt={o.calibratedAlt(fmtDate(a.start))} loading="lazy" />
+              ) : a.frozen || source.mode === "live" ? (
                 // eslint-disable-next-line @next/next/no-img-element -- quicklook from the frozen case or our proxy, sized by CSS
                 <img src={quicklookSrc(a)} alt={t.quicklookOf(fmtDate(a.start))} loading="lazy" />
               ) : (
