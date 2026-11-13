@@ -15,6 +15,7 @@ const TRANSLATED = [
   "src/components/chattogram/CaseProvider.tsx",
   "src/components/chattogram/AreaInspector.tsx",
   "src/components/chattogram/CaseSourceToggle.tsx",
+  "src/components/chattogram/FindingChart.tsx",
   "src/components/chattogram/FindingPanel.tsx",
   "src/components/chattogram/MapKey.tsx",
   "src/components/chattogram/PixelInspector.tsx",

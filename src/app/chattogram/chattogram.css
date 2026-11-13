@@ -1316,6 +1316,57 @@
 .c-finding-sources small {
   color: var(--c-dim);
 }
+/* FindingChart: dot (this area), tick (analysis-area mean), band (10th–90th percentile) */
+.c-fchart {
+  margin: 8px 0 0;
+}
+.c-fchart > svg {
+  display: block;
+  width: 100%;
+  max-width: 440px; /* on the svg: the Evidence card widens its children to 78ch */
+  height: auto;
+}
+.c-fchart-grid {
+  stroke: var(--c-line);
+}
+.c-fchart-axis {
+  fill: var(--c-dim);
+  font: 10px var(--mono);
+}
+.c-fchart-date {
+  fill: var(--c-muted);
+  font: 600 11px var(--sans);
+}
+.c-fchart-band {
+  fill: var(--c-line-2);
+}
+.c-fchart-mean {
+  stroke: var(--c-text);
+  stroke-width: 2;
+}
+.c-fchart-dot {
+  stroke: var(--c-panel);
+  stroke-width: 2;
+}
+.c-fchart-value {
+  fill: var(--c-text);
+  font: 600 10px var(--mono);
+}
+.c-fchart-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--c-muted);
+  font-size: 0.78rem;
+}
+.c-fchart-key li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .c-processed {
   display: grid;
   gap: 12px;

@@ -6,8 +6,9 @@ import { FileSearch, FileText, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { fmtArea, fmtDate, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
-import { CASE_ID, type CaseDetail, type Finding, type FindingDetail } from "@/lib/chattogram/case-api";
+import { CASE_ID, type CaseDetail, type Finding, type FindingDetail, type Timeseries } from "@/lib/chattogram/case-api";
 import { BackendText } from "./BackendText";
+import { FindingChart } from "./FindingChart";
 import { FINDING } from "./MapKey";
 import { useCase } from "./CaseProvider";
 
@@ -28,7 +29,19 @@ function Check({ check }: { check: unknown }) {
  * Click-to-explain (F07): what changed, why we think so, what is uncertain, and where every number comes from.
  * On Explore `evidenceHref` links to the same finding on Evidence, which shows this panel as its selected-finding card.
  */
-export function FindingPanel({ finding, detail, onClose, evidenceHref }: { finding: Finding; detail: CaseDetail; onClose: () => void; evidenceHref?: string }) {
+export function FindingPanel({
+  finding,
+  detail,
+  timeseries,
+  onClose,
+  evidenceHref,
+}: {
+  finding: Finding;
+  detail: CaseDetail;
+  timeseries: Timeseries;
+  onClose: () => void;
+  evidenceHref?: string;
+}) {
   const p = finding.properties;
   const t = useT();
   const f = t.finding;
@@ -107,6 +120,8 @@ export function FindingPanel({ finding, detail, onClose, evidenceHref }: { findi
           <dd>{f.validShare(fmtNum(Math.round(p.valid_fraction * 100)))}</dd>
         </div>
       </dl>
+      <h3>{f.chart.title}</h3>
+      <FindingChart finding={finding} detail={detail} timeseries={timeseries} />
       {evidenceHref && (
         <div className="c-links">
           <Link className="c-btn" href={evidenceHref}>

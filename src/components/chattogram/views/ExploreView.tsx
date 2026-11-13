@@ -99,7 +99,7 @@ export function ExploreView() {
       </section>
 
       <aside className="c-panel" aria-label={e.panel}>
-        {selFinding && pc && <FindingPanel key={selFinding.properties.id} finding={selFinding} detail={pc.detail} onClose={() => set({ f: null })} evidenceHref={href("/chattogram/evidence")} />}
+        {selFinding && pc && <FindingPanel key={selFinding.properties.id} finding={selFinding} detail={pc.detail} timeseries={pc.timeseries} onClose={() => set({ f: null })} evidenceHref={href("/chattogram/evidence")} />}
 
         <div className="c-panel-block">
           {pc ? (

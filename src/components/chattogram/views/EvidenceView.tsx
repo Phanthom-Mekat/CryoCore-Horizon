@@ -121,6 +121,7 @@ export function EvidenceView() {
             key={sel.finding.properties.id}
             finding={sel.finding}
             detail={pc.detail}
+            timeseries={pc.timeseries}
             onClose={() => {
               set({ f: null });
               document.getElementById("ev-title")?.focus(); // the close button is gone; keep keyboard users on the page

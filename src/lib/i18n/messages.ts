@@ -616,6 +616,20 @@ const en = {
     sources: "Sources",
     qaReport: "QA report",
     evidenceLink: "Evidence for this finding",
+    /** The chart under "What changed" (FindingChart). */
+    chart: {
+      title: "Against the whole analysis area",
+      aria: (before: S, after: S) =>
+        `This area’s median γ⁰ on ${before} and ${after}, against the whole analysis area’s mean and 10th–90th percentile range, in dB. The numbers are in the table below.`,
+      area: "This area, median",
+      caseMean: "Whole analysis area, mean",
+      caseRange: "Whole analysis area, 10th–90th percentile",
+      caseP10: "Whole analysis area, 10th percentile",
+      caseP90: "Whole analysis area, 90th percentile",
+      noCase: "No analysis-area summary for this date",
+      tip: (date: S, v: S, mean: S, p10: S, p90: S) => `${date}: this area ${v} dB; whole analysis area mean ${mean} dB (10th–90th percentile ${p10} to ${p90} dB)`,
+      tipNoCase: (date: S, v: S) => `${date}: this area ${v} dB; no analysis-area summary for this date`,
+    },
   },
   keys: {
     water: "Water change candidates",
@@ -1320,6 +1334,19 @@ const bn: Messages = {
     sources: "উৎস",
     qaReport: "মান-যাচাই প্রতিবেদন",
     evidenceLink: "এই পরিবর্তন-এলাকার প্রমাণ",
+    chart: {
+      title: "পুরো বিশ্লেষণ এলাকার তুলনায়",
+      aria: (before, after) =>
+        `${before} ও ${after} তারিখে এই এলাকার মধ্যমা γ⁰, পুরো বিশ্লেষণ এলাকার গড় ও ১০তম–৯০তম পার্সেন্টাইল পরিসরের পাশে, dB-তে। সংখ্যাগুলো নিচের সারণিতে আছে।`,
+      area: "এই এলাকা, মধ্যমা",
+      caseMean: "পুরো বিশ্লেষণ এলাকা, গড়",
+      caseRange: "পুরো বিশ্লেষণ এলাকা, ১০তম–৯০তম পার্সেন্টাইল",
+      caseP10: "পুরো বিশ্লেষণ এলাকা, ১০তম পার্সেন্টাইল",
+      caseP90: "পুরো বিশ্লেষণ এলাকা, ৯০তম পার্সেন্টাইল",
+      noCase: "এই তারিখে বিশ্লেষণ এলাকার সারাংশ নেই",
+      tip: (date, v, mean, p10, p90) => `${date}: এই এলাকা ${v} dB; পুরো বিশ্লেষণ এলাকার গড় ${mean} dB (১০তম–৯০তম পার্সেন্টাইল ${p10} থেকে ${p90} dB)`,
+      tipNoCase: (date, v) => `${date}: এই এলাকা ${v} dB; এই তারিখে বিশ্লেষণ এলাকার সারাংশ নেই`,
+    },
   },
   keys: {
     water: "পানির পরিবর্তনের সম্ভাব্য এলাকা",
