@@ -9,6 +9,7 @@ import { fmtDate, fmtNum, fmtTime } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { CaseMap, quicklookSrc } from "../CaseMap";
 import { CASE_ID, fmtDb, layerImage } from "@/lib/chattogram/case-api";
+import { BackendText } from "../BackendText";
 import { CaseBar } from "../CaseBar";
 import { RainCard } from "../RainCard";
 import { useCase, type View } from "../CaseProvider";
@@ -62,6 +63,8 @@ export function CompareView() {
   const calibrated = isCasePair && lb && la ? { before: lb, after: la } : null;
   const sameScale = calibrated && calibrated.before.scale.min === calibrated.after.scale.min && calibrated.before.scale.max === calibrated.after.scale.max;
   const toCase = pc && !isCasePair ? caseHref("/chattogram/compare") : null;
+  // the area name is drawn by the map in WebGL, which can't shape Bengali, so it stays as the backend writes it
+  const areaName = detail ? `${detail.title} · analysis area` : undefined;
 
   const dates = [...stack.items].sort((a, b) => a.start.localeCompare(b.start));
   const checks = compatibility(before, after);
@@ -90,7 +93,7 @@ export function CompareView() {
           </Link>
         }
       />
-      <p className="c-compare-foot"><Link href="/chattogram/processed">Compare calibrated radar layers →</Link> · The processed pilot has a shared dB scale, coverage masks and downloadable measurements.</p>
+      <p className="c-compare-foot"><Link href="/chattogram/processed">{c.pilotLink}</Link> · {c.pilotNote}</p>
     <div className="c-compare">
       <div className="c-compare-bar">
         <label className="c-field">
@@ -119,13 +122,13 @@ export function CompareView() {
         <div className="c-reveal-layer">
           <CaseMap
             allowTerrain={false}
-            label={calibrated ? `Calibrated γ⁰ of ${fmtDate(after.start)}` : t.quicklookOf(fmtDate(after.start))}
+            label={calibrated ? c.calibratedOf(fmtDate(after.start)) : t.quicklookOf(fmtDate(after.start))}
             view={view}
             onMove={onMove}
             image={calibrated ? null : after}
             processed={calibrated && layerImage(CASE_ID, calibrated.after, pc!.detail.updated_at)}
             area={detail?.analysis_area ?? null}
-            areaName={detail ? `${detail.title} · analysis area` : undefined}
+            areaName={areaName}
             imageOpacity={1}
             onReady={ready(1)}
             controls={false}
@@ -134,13 +137,13 @@ export function CompareView() {
         <div className="c-reveal-layer c-reveal-before">
           <CaseMap
             allowTerrain={false}
-            label={calibrated ? `Calibrated γ⁰ of ${fmtDate(before.start)}` : t.quicklookOf(fmtDate(before.start))}
+            label={calibrated ? c.calibratedOf(fmtDate(before.start)) : t.quicklookOf(fmtDate(before.start))}
             view={view}
             onMove={onMove}
             image={calibrated ? null : before}
             processed={calibrated && layerImage(CASE_ID, calibrated.before, pc!.detail.updated_at)}
             area={detail?.analysis_area ?? null}
-            areaName={detail ? `${detail.title} · analysis area` : undefined}
+            areaName={areaName}
             imageOpacity={1}
             onReady={ready(0)}
           />
@@ -194,12 +197,11 @@ export function CompareView() {
       {calibrated ? (
         <div className="c-compare-foot">
           <p>
-            <strong>Calibrated layers.</strong> This is the processed case’s pair, so both sides show calibrated backscatter (γ⁰, {calibrated.before.units}) computed
-            from the full GCOV files, clipped to the analysis rectangle, on the same map extent and{" "}
+            <strong>{c.calibratedTitle}</strong>{" "}
             {sameScale
-              ? `one shared contrast scale (${fmtDb(calibrated.before.scale.min)} to ${fmtDb(calibrated.before.scale.max)}). Darker is a weaker return, such as smooth water.`
-              : "contrast scales that differ between the two dates, so compare brightness with care."}{" "}
-            No-data pixels are transparent. {calibrated.before.crs_note}
+              ? c.calibratedSame(calibrated.before.units, fmtDb(calibrated.before.scale.min), fmtDb(calibrated.before.scale.max))
+              : c.calibratedDiffer(calibrated.before.units)}{" "}
+            {c.noData} <BackendText text={calibrated.before.crs_note} translated={t.processed.texts[calibrated.before.crs_note]} />
           </p>
           <DbKey min={calibrated.before.scale.min} max={calibrated.before.scale.max} />
         </div>
@@ -209,8 +211,7 @@ export function CompareView() {
           {toCase && pc && (
             <>
               {" "}
-              Calibrated layers exist for the processed pair, {fmtDate(pc.detail.before.date)} → {fmtDate(pc.detail.after.date)}:{" "}
-              <Link href={toCase}>compare that pair</Link>.
+              {c.casePair(fmtDate(pc.detail.before.date), fmtDate(pc.detail.after.date), <Link key="pair" href={toCase}>{c.casePairLink}</Link>)}
             </>
           )}
         </p>

@@ -4,6 +4,7 @@
 // `synthetic_fixture` is true, from QA test fixtures, which the UI labels loudly); the UI never fills gaps.
 import type { components } from "./api-schema";
 import type { ProcessedImage } from "./processed";
+import { fmtNum, fmtSigned } from "@/lib/i18n/format";
 
 type S = components["schemas"];
 
@@ -103,7 +104,8 @@ export function assetUrl(caseId: string, layer: CaseLayer, updatedAt: string) {
   return `/api/earth/curated-cases/${encodeURIComponent(caseId)}/assets/${encodeURIComponent(name)}?v=${encodeURIComponent(v)}`;
 }
 
-export const fmtDb = (v: number, signed = false) => `${signed && v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} dB`;
+/** dB to one decimal in the interface language, with a typographic minus (and a + when `signed`). */
+export const fmtDb = (v: number, signed = false) => `${signed ? fmtSigned(v, 1) : fmtNum(v, 1)} dB`;
 /** "name/version" of the case's method, or a plain statement that none was recorded. */
 export const methodId = (d: Pick<CaseDetail, "method">) => (d.method ? `${d.method.name}/${d.method.version}` : "method not recorded");
 

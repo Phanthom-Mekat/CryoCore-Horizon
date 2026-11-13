@@ -3,6 +3,7 @@
 import { CHANGE, WATER, changeColor, type WaterCategory } from "@/lib/chattogram/palette";
 import { fmtNum } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
+import { BackendText } from "./BackendText";
 
 type Swatch = { label: string; color: string; stripe: number; icon: string };
 
@@ -55,21 +56,23 @@ export function ChangeKey({ limit = CHANGE.limitDb }: { limit?: number }) {
   );
 }
 
-/** Calibrated backscatter on one gray scale (the same for both dates), no-data transparent. */
-export function DbKey({ min, max, title = "Backscatter γ⁰, dB" }: { min: number; max: number; title?: string }) {
-  const f = (v: number) => (v < 0 ? `−${-v}` : String(v));
+/** Calibrated backscatter on one gray scale (the same for both dates), no-data transparent. `layer` is the backend's layer name. */
+export function DbKey({ min, max, layer }: { min: number; max: number; layer?: string }) {
+  const t = useT();
+  const k = t.keys;
+  const translated = layer ? t.processed.texts[layer] : undefined;
   return (
-    <figure className="c-change-key" aria-label={`${title}, from ${f(min)} dB (black) to ${f(max)} dB (white); no data is transparent`}>
-      <p className="c-change-title">{title}</p>
+    <figure className="c-change-key" aria-label={k.dbAria(layer ? (translated ?? layer) : k.dbTitle, fmtNum(min), fmtNum(max))}>
+      <p className="c-change-title">{layer ? <BackendText text={layer} translated={translated} /> : k.dbTitle}</p>
       <div className="c-change-ramp" style={{ background: "linear-gradient(90deg, #000, #fff)" }} />
       <div className="c-change-ticks" aria-hidden="true">
-        <span>{f(min)}</span>
-        <span>{f((min + max) / 2)}</span>
-        <span>{f(max)}</span>
+        <span>{fmtNum(min)}</span>
+        <span>{fmtNum((min + max) / 2)}</span>
+        <span>{fmtNum(max)}</span>
       </div>
       <figcaption>
-        <span>← darker: smoother surface</span>
-        <span>no data: clear</span>
+        <span>{k.dbDarker}</span>
+        <span>{k.dbNoData}</span>
       </figcaption>
     </figure>
   );
@@ -84,4 +87,7 @@ export const FINDING = {
   decrease: { label: "Observed decrease (darker)", color: CHANGE.neg, stripe: 135, icon: "▼" },
 } as const;
 
-export const FindingKey = () => <StripeKey label="Observed radar change areas" items={FINDING} />;
+export function FindingKey() {
+  const t = useT();
+  return <StripeKey label={t.keys.findings} items={FINDING} labels={{ increase: t.keys.increase, decrease: t.keys.decrease }} />;
+}

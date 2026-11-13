@@ -111,7 +111,7 @@ export function Timeline({
 }
 
 type Point = Timeseries["points"][number];
-const db = (v: number) => `${v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}`;
+const db = (v: number) => fmtNum(v, 1);
 
 /**
  * Per-date backscatter summary on the timeline's own axis: mean γ⁰ (dot) with its 10th–90th percentile range (whisker).
@@ -119,6 +119,7 @@ const db = (v: number) => `${v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}`;
  * Values are matched by granule, so a value is never shown against a different product of the same day.
  */
 function Summary({ sorted, points, current, pos }: { sorted: Acquisition[]; points: Point[]; current: string | null; pos: (a: Acquisition) => number }) {
+  const tl = useT().timeline;
   const by = new Map(points.map((p) => [p.granule, p]));
   const shown = sorted.filter((a) => by.has(a.granule));
   if (!shown.length) return null;
@@ -126,7 +127,7 @@ function Summary({ sorted, points, current, pos }: { sorted: Acquisition[]; poin
   const [lo, hi] = [Math.floor(Math.min(...vals)), Math.ceil(Math.max(...vals))];
   const y = (v: number) => (hi > lo ? ((hi - v) / (hi - lo)) * 100 : 50); // % from the top
   const tip = (a: Acquisition, p: Point) =>
-    `${fmtDate(a.start)}: mean ${db(p.mean_db)} dB (10th–90th percentile ${db(p.p10_db)} to ${db(p.p90_db)} dB), ${p.valid_km2.toFixed(1)} km² valid`;
+    tl.tip(fmtDate(a.start), db(p.mean_db), db(p.p10_db), db(p.p90_db), fmtNum(p.valid_km2, 1));
 
   return (
     <>
@@ -144,21 +145,23 @@ function Summary({ sorted, points, current, pos }: { sorted: Acquisition[]; poin
               <i className="c-sum-dot" style={{ top: `${y(p.mean_db)}%` }} />
             </span>
           ) : (
-            <span key={a.conceptId} className="c-sum-gap" style={{ left: `${pos(a)}%` }} title={`${fmtDate(a.start)}: not processed`}>
+            <span key={a.conceptId} className="c-sum-gap" style={{ left: `${pos(a)}%` }} title={tl.gapTip(fmtDate(a.start))}>
               –
             </span>
           );
         })}
       </div>
-      <table className="c-sr">
-        <caption>Mean calibrated backscatter (γ⁰) over the analysis area per processed date, dB</caption>
+      {/* the wrapper stays 1px wide: a table grows to its content and would widen the page at 390 px */}
+      <div className="c-sr">
+        <table>
+        <caption>{tl.caption}</caption>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Mean</th>
-            <th>10th percentile</th>
-            <th>90th percentile</th>
-            <th>Valid area, km²</th>
+            <th>{tl.date}</th>
+            <th>{tl.mean}</th>
+            <th>{tl.p10}</th>
+            <th>{tl.p90}</th>
+            <th>{tl.validArea}</th>
           </tr>
         </thead>
         <tbody>
@@ -172,16 +175,17 @@ function Summary({ sorted, points, current, pos }: { sorted: Acquisition[]; poin
                     <td>{db(p.mean_db)}</td>
                     <td>{db(p.p10_db)}</td>
                     <td>{db(p.p90_db)}</td>
-                    <td>{p.valid_km2.toFixed(1)}</td>
+                    <td>{fmtNum(p.valid_km2, 1)}</td>
                   </>
                 ) : (
-                  <td colSpan={4}>Not processed</td>
+                  <td colSpan={4}>{tl.notProcessed}</td>
                 )}
               </tr>
             );
           })}
         </tbody>
-      </table>
+        </table>
+      </div>
     </>
   );
 }

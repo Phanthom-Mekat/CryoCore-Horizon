@@ -2,9 +2,6 @@
 // Bangla switch changes all of their text. Translate a component, then add it here; the test names any English left.
 // English kept on purpose (technical details, source citations, proper names) goes inside an element marked
 // lang="en" translate="no". Plain lang="en" only labels the language, so untranslated UI marked that way still fails.
-//
-// Not listed yet: English added with the processed case (13 Nov 2026) in MapKey, Timeline, ExploreView and
-// CompareView. Each goes on the list once translated.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -19,13 +16,17 @@ const TRANSLATED = [
   "src/components/chattogram/AreaInspector.tsx",
   "src/components/chattogram/CaseSourceToggle.tsx",
   "src/components/chattogram/FindingPanel.tsx",
+  "src/components/chattogram/MapKey.tsx",
   "src/components/chattogram/PixelInspector.tsx",
   "src/components/chattogram/PrepStatus.tsx",
   "src/components/chattogram/ProcessedBrief.tsx",
   "src/components/chattogram/RainCard.tsx",
   "src/components/chattogram/RainChart.tsx",
+  "src/components/chattogram/Timeline.tsx",
   "src/components/chattogram/views/AboutView.tsx",
+  "src/components/chattogram/views/CompareView.tsx",
   "src/components/chattogram/views/EvidenceView.tsx",
+  "src/components/chattogram/views/ExploreView.tsx",
   "src/components/chattogram/views/OverviewView.tsx",
   "src/components/chattogram/views/ProcessedView.tsx",
 ];

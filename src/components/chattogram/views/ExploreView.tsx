@@ -15,6 +15,7 @@ import { Timeline } from "../Timeline";
 import { ChangeKey, DbKey, FindingKey } from "../MapKey";
 import { FindingPanel } from "../FindingPanel";
 import { PrepStatus } from "../PrepStatus";
+import { BackendText } from "../BackendText";
 
 export function ExploreView() {
   const { load, stack, before, after, view, pick, set, href, processed, finding, caseHref } = useCase();
@@ -38,10 +39,15 @@ export function ExploreView() {
   const detail = processed.status === "ready" ? processed.data.detail : null;
   const pc = detail?.status === "ready" && processed.status === "ready" ? processed.data : null;
   const shownLayer = pc?.layers.find((l) => l.id === layer) ?? null;
+  // the backend names layers in English; this reads them in the interface language where we have a translation
+  const texts = t.processed.texts;
+  const layerName = (l: { label: string }) => texts[l.label] ?? l.label;
   const overlay =
     pc && shownLayer
-      ? { ...layerImage(CASE_ID, shownLayer, pc.detail.updated_at), label: `${shownLayer.label}${shownLayer.date ? `, ${fmtDate(shownLayer.date)}` : ""}` }
+      ? { ...layerImage(CASE_ID, shownLayer, pc.detail.updated_at), label: `${layerName(shownLayer)}${shownLayer.date ? `, ${fmtDate(shownLayer.date)}` : ""}` }
       : null;
+  // the area name is drawn by the map in WebGL, which can't shape Bengali, so it stays as the backend writes it
+  const areaName = detail ? `${detail.title} · analysis area` : undefined;
   const selFinding = pc?.findings.features.find((f) => f.properties.id === finding) ?? null;
   const toCase = detail ? caseHref("/chattogram/explore") : null;
   const onCaseStack = !!detail && stack.items.some((a) => a.granule === detail.before.granule);
@@ -65,11 +71,11 @@ export function ExploreView() {
           </Link>
         }
       />
-      <p className="c-compare-foot"><Link href="/chattogram/processed">Open the calibrated radar pilot →</Link> · Measured HH/HV layers and signed change for the July–October subset.</p>
+      <p className="c-compare-foot"><Link href="/chattogram/processed">{e.pilotLink}</Link> · {e.pilotNote}</p>
     <div className="c-explore">
       <section className="c-stage" aria-label={e.mapRegion}>
         <CaseMap
-          label={overlay ? `Map of ${FOCUS.name} with ${overlay.label}` : e.mapLabel(t.place.focus, fmtDate(shown.start))}
+          label={overlay ? e.mapLabelLayer(t.place.focus, overlay.label) : e.mapLabel(t.place.focus, fmtDate(shown.start))}
           view={view}
           onMove={onMove}
           image={overlay ? null : shown}
@@ -82,7 +88,7 @@ export function ExploreView() {
           }}
           boundary={load.data.region.boundary}
           area={detail?.analysis_area ?? null}
-          areaName={detail ? `${detail.title} · analysis area` : undefined}
+          areaName={areaName}
           findings={pc && showFindings ? pc.findings : null}
           selectedFinding={selFinding?.properties.id ?? null}
           onFinding={onFinding}
@@ -96,40 +102,42 @@ export function ExploreView() {
         <div className="c-panel-block">
           {pc ? (
             <>
-              <p className="c-label">Processed case · {pc.detail.title}</p>
+              <p className="c-label">
+                {e.processedCase} · <BackendText text={pc.detail.title} translated={t.overview.caseTitles[pc.detail.id]} />
+              </p>
               <fieldset className="c-layers">
                 <legend className="c-hint">
-                  Calibrated layers of {fmtDate(pc.detail.before.date)} → {fmtDate(pc.detail.after.date)}, inside the analysis rectangle
+                  {e.layersOf(fmtDate(pc.detail.before.date), fmtDate(pc.detail.after.date))}
                 </legend>
                 {pc.layers.map((l) => (
                   <label key={l.id}>
                     <input type="radio" name="layer" checked={layer === l.id} onChange={() => setLayer(l.id)} />
-                    {l.label}
+                    <BackendText text={l.label} translated={texts[l.label]} />
                     {l.date ? ` (${fmtDate(l.date)})` : ""}
                   </label>
                 ))}
                 <label>
                   <input type="radio" name="layer" checked={!shownLayer} onChange={() => setLayer("quicklook")} />
-                  Browse quicklook of the selected date
+                  {e.quicklookLayer}
                 </label>
                 <label>
                   <input type="checkbox" checked={showFindings} onChange={(ev) => setShowFindings(ev.target.checked)} />
-                  Areas of observed change ({pc.findings.features.length})
+                  {e.findingsToggle(fmtNum(pc.findings.features.length))}
                 </label>
               </fieldset>
               {shownLayer?.palette === "diverging" && <ChangeKey limit={Math.max(Math.abs(shownLayer.scale.min), Math.abs(shownLayer.scale.max))} />}
-              {shownLayer?.palette === "gray" && <DbKey min={shownLayer.scale.min} max={shownLayer.scale.max} title={`${shownLayer.label}, ${shownLayer.units}`} />}
-              {shownLayer && <p className="c-hint">{shownLayer.crs_note}</p>}
+              {shownLayer?.palette === "gray" && <DbKey min={shownLayer.scale.min} max={shownLayer.scale.max} layer={shownLayer.label} />}
+              {shownLayer && <p className="c-hint"><BackendText text={shownLayer.crs_note} translated={texts[shownLayer.crs_note]} /></p>}
               {showFindings && pc.findings.features.length > 0 && (
                 <>
                   <FindingKey />
-                  <p className="c-hint">Click an outlined area for what changed, why we think so and what is uncertain.</p>
+                  <p className="c-hint">{e.findingsHint}</p>
                 </>
               )}
-              {showFindings && !pc.findings.features.length && <p className="c-hint">No area passed the method’s change threshold.</p>}
+              {showFindings && !pc.findings.features.length && <p className="c-hint">{e.findingsNone}</p>}
               {!onCaseStack && toCase && (
                 <p className="c-hint">
-                  The timeline shows another stack. <Link href={toCase}>Open the case’s stack and dates</Link>
+                  {e.otherStack} <Link href={toCase}>{e.openCaseStack}</Link>
                 </p>
               )}
             </>
@@ -152,7 +160,7 @@ export function ExploreView() {
         </div>
 
         <div className="c-panel-block">
-          <p className="c-label">{overlay ? "Selected date (its quicklook is hidden under the processed layer)" : e.shown}</p>
+          <p className="c-label">{overlay ? e.shownUnder : e.shown}</p>
           <h2 className="c-acq-date">{fmtDate(shown.start)}</h2>
           <dl className="c-facts">
             <div>
@@ -205,7 +213,7 @@ export function ExploreView() {
           <ul className="c-legend">
             <li>
               <i className="c-key c-key-rgb" aria-hidden="true" />
-              {overlay ? "Processed layer above: calibrated γ⁰ from the GCOV files, in dB." : e.legendRgb}
+              {overlay ? e.legendProcessed : e.legendRgb}
             </li>
             <li>
               <i className="c-key c-key-foot" aria-hidden="true" />
