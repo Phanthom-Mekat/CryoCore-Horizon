@@ -616,6 +616,13 @@ const en = {
     sources: "Sources",
     qaReport: "QA report",
     evidenceLink: "Evidence for this finding",
+    /** A link's `f` that the case doesn't have (UnknownFinding); `id` is the finding id from the link. */
+    unknown: {
+      title: (id: N): N[] => ["This finding isn’t in the case: ", id],
+      why: "The link may come from an earlier processing of this case, or have been edited.",
+      pick: "Pick a finding on the map instead.",
+      clear: "Clear it",
+    },
     /** The chart under "What changed" (FindingChart). */
     chart: {
       title: "Against the whole analysis area",
@@ -1334,6 +1341,12 @@ const bn: Messages = {
     sources: "উৎস",
     qaReport: "মান-যাচাই প্রতিবেদন",
     evidenceLink: "এই পরিবর্তন-এলাকার প্রমাণ",
+    unknown: {
+      title: (id) => ["পরিবর্তন-এলাকা ", id, " কেসে নেই।"],
+      why: "লিংকটি হয়তো এই কেসের আগের কোনো প্রক্রিয়াকরণের, অথবা লিংকটি বদলানো হয়েছে।",
+      pick: "এর বদলে মানচিত্রে একটি পরিবর্তন-এলাকা বেছে নিন।",
+      clear: "সরিয়ে দিন",
+    },
     chart: {
       title: "পুরো বিশ্লেষণ এলাকার তুলনায়",
       aria: (before, after) =>

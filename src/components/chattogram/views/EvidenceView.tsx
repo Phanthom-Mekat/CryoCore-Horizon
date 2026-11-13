@@ -14,7 +14,7 @@ import { fmtArea, fmtDate, fmtDateTime, fmtNum, fmtSigned, fmtSize } from "@/lib
 import { useT } from "@/lib/i18n/useT";
 import { BackendText } from "../BackendText";
 import { useCase, usePilot } from "../CaseProvider";
-import { FindingPanel } from "../FindingPanel";
+import { FindingPanel, UnknownFinding } from "../FindingPanel";
 import { MethodName } from "../MethodName";
 import { FINDING } from "../MapKey";
 import { PrepStatus } from "../PrepStatus";
@@ -34,6 +34,10 @@ export function EvidenceView() {
   const measured = pc && isCasePair ? pc : null; // the processed numbers describe exactly this pair
   const toCase = pc && !isCasePair ? caseHref("/chattogram/evidence") : null;
   const sel = selectFinding(pc, finding); // the finding picked on Explore (URL `f`)
+  const clearFinding = () => {
+    set({ f: null });
+    document.getElementById("ev-title")?.focus(); // the button is gone; keep keyboard users on the page
+  };
   const region = load.data.region;
   const checks = compatibility(before, after);
   const days = Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5);
@@ -102,6 +106,9 @@ export function EvidenceView() {
         </div>
       </header>
 
+      {sel.kind === "unknown" && (
+        <UnknownFinding id={sel.id} onClear={clearFinding} />
+      )}
       {pc && sel.kind === "selected" && (
         // FindingPanel is the labelled region; this wrapper only adds the heading row
         <div className="c-ev-selected">
@@ -122,10 +129,7 @@ export function EvidenceView() {
             finding={sel.finding}
             detail={pc.detail}
             timeseries={pc.timeseries}
-            onClose={() => {
-              set({ f: null });
-              document.getElementById("ev-title")?.focus(); // the close button is gone; keep keyboard users on the page
-            }}
+            onClose={clearFinding}
           />
         </div>
       )}

@@ -1300,6 +1300,16 @@
 .c-quality.is-weak {
   border-color: var(--d-bad);
 }
+.c-finding-unknown {
+  border-left: 3px solid var(--d-warn);
+  background: var(--c-panel);
+}
+.c-finding-unknown p {
+  font-size: 0.88rem;
+}
+.c-finding-unknown .c-btn {
+  margin-top: 8px;
+}
 .c-finding-checks,
 .c-finding-sources {
   display: grid;

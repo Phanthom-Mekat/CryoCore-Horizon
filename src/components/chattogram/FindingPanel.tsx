@@ -26,6 +26,33 @@ function Check({ check }: { check: unknown }) {
 }
 
 /**
+ * A link's `f` that the case doesn't have (an old link, or a case processed again): say so, and offer to clear it.
+ * `onMap` adds the hint to pick another finding, for the page that has the map.
+ */
+export function UnknownFinding({ id, onClear, onMap = false }: { id: string; onClear: () => void; onMap?: boolean }) {
+  const u = useT().finding.unknown;
+  return (
+    <div className="c-panel-block c-finding-unknown" role="status">
+      <p>
+        {u.title(
+          <span key="id" className="c-mono" lang="en" translate="no">
+            {id}
+          </span>,
+        )}
+      </p>
+      <p className="c-hint">
+        {u.why}
+        {onMap && <> {u.pick}</>}
+      </p>
+      <button type="button" className="c-btn c-noprint" onClick={onClear}>
+        <X size={15} aria-hidden="true" />
+        {u.clear}
+      </button>
+    </div>
+  );
+}
+
+/**
  * Click-to-explain (F07): what changed, why we think so, what is uncertain, and where every number comes from.
  * On Explore `evidenceHref` links to the same finding on Evidence, which shows this panel as its selected-finding card.
  */

@@ -98,6 +98,8 @@ flooding or replace independent validation.
   `selected_finding` (its values as published, outline, `pair_dates`, `same_pair_as_compared`, method version, source
   granules, `share_url` and `replay_url` with `f`), and `selected: true` on its CSV row and GeoJSON feature. Without a
   selection those keys are still there (`null` / `false`), so the files keep one shape.
+- "Copy link to this view" and "Copy replay link" keep `f`, so the link opens the same finding on Explore and Evidence.
+  An `f` the case doesn't have shows a "this finding isn't in the case" note with a button that clears it.
 - The finding panel's chart puts the finding's published median on each date beside the analysis area's mean and
   10th–90th percentile from the case timeseries, matched by granule. A date with no timeseries point shows the finding
   alone. Its numbers are in a "Show the numbers" table.
