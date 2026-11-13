@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, Download, FileText, History, Link2, Printer, X } from "lucide-react";
+import { ArrowUpRight, Check, Download, FileText, History, Link2, Map as MapIcon, Printer, X } from "lucide-react";
 import { api } from "@/lib/chattogram/api";
 import { compatibility, type Acquisition } from "@/lib/chattogram/acquisitions";
 import { pilotCovers } from "@/lib/chattogram/processed";
 import { rainBefore } from "@/lib/chattogram/rain";
 import { METHOD_VERSION, briefCsv, briefGeojson, briefJson, download } from "@/lib/chattogram/brief";
 import { CASE_ID, type ProcessedCase } from "@/lib/chattogram/case-api";
+import { selectFinding } from "@/lib/chattogram/finding-selection";
 import { fmtArea, fmtDate, fmtDateTime, fmtNum, fmtSigned, fmtSize } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { BackendText } from "../BackendText";
 import { useCase, usePilot } from "../CaseProvider";
+import { FindingPanel } from "../FindingPanel";
 import { MethodName } from "../MethodName";
 import { FINDING } from "../MapKey";
 import { PrepStatus } from "../PrepStatus";
@@ -20,7 +22,7 @@ import { PrepStatus } from "../PrepStatus";
 // The page follows the interface language; the downloaded brief (JSON, CSV, GeoJSON) stays in English, since it is a data
 // file for other tools and its field names must not change with the reader's language.
 export function EvidenceView() {
-  const { load, before, after, source, rain, href, processed, isCasePair, caseHref } = useCase();
+  const { load, before, after, source, rain, href, processed, isCasePair, caseHref, finding, set } = useCase();
   const t = useT();
   const ev = t.evidence;
   const findings = usePilot();
@@ -31,6 +33,7 @@ export function EvidenceView() {
   const pc = processed.status === "ready" && processed.data.detail.status === "ready" ? processed.data : null;
   const measured = pc && isCasePair ? pc : null; // the processed numbers describe exactly this pair
   const toCase = pc && !isCasePair ? caseHref("/chattogram/evidence") : null;
+  const sel = selectFinding(pc, finding); // the finding picked on Explore (URL `f`)
   const region = load.data.region;
   const checks = compatibility(before, after);
   const days = Math.round((Date.parse(after.start) - Date.parse(before.start)) / 864e5);
@@ -63,7 +66,7 @@ export function EvidenceView() {
             ),
           )}
         </p>
-        <h1>
+        <h1 id="ev-title" tabIndex={-1}>
           {t.place.region}: {t.vs(fmtDate(before.start), fmtDate(after.start))}
         </h1>
         <p className="c-ev-claim">
@@ -98,6 +101,33 @@ export function EvidenceView() {
           )}
         </div>
       </header>
+
+      {pc && sel.kind === "selected" && (
+        // FindingPanel is the labelled region; this wrapper only adds the heading row
+        <div className="c-ev-selected">
+          <div className="c-ev-selected-head">
+            <p className="c-label">{ev.selectedLabel}</p>
+            <Link className="c-btn c-noprint" href={href("/chattogram/explore")}>
+              <MapIcon size={15} aria-hidden="true" />
+              {ev.showOnMap}
+            </Link>
+            {toCase && (
+              <p className="c-hint">
+                {ev.selectedOtherPair(`${fmtDate(pc.detail.before.date)} → ${fmtDate(pc.detail.after.date)}`)} <Link href={toCase}>{ev.caseOpenPair}</Link>
+              </p>
+            )}
+          </div>
+          <FindingPanel
+            key={sel.finding.properties.id}
+            finding={sel.finding}
+            detail={pc.detail}
+            onClose={() => {
+              set({ f: null });
+              document.getElementById("ev-title")?.focus(); // the close button is gone; keep keyboard users on the page
+            }}
+          />
+        </div>
+      )}
 
       <section className="c-ev-grid">
         <div className="c-ev-card">
@@ -220,7 +250,7 @@ export function EvidenceView() {
         )}
       </section>
 
-      {pc && <Processed pc={pc} toCase={toCase} />}
+      {pc && <Processed pc={pc} toCase={toCase} selected={sel.kind === "selected" ? sel.finding.properties.id : null} />}
 
       <section className="c-ev-sources">
         <h2>{ev.sources}</h2>
@@ -288,8 +318,8 @@ function Source({ role, a }: { role: string; a: Acquisition }) {
   );
 }
 
-/** The processed case as the backend published it: metrics, findings, method, caveats and sources. */
-function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null }) {
+/** The processed case as the backend published it: metrics, findings, method, caveats and sources. `selected` marks a finding's row. */
+function Processed({ pc, toCase, selected }: { pc: ProcessedCase; toCase: string | null; selected: string | null }) {
   const { source, frozenCurated } = useCase();
   const t = useT();
   const ev = t.evidence;
@@ -384,10 +414,15 @@ function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null })
                 </tr>
               </thead>
               <tbody>
-                {pc.findings.features.map(({ properties: p }) => (
-                  <tr key={p.id}>
-                    <td className="c-mono" lang="en" translate="no">
-                      {p.id}
+                {pc.findings.features.map(({ properties: p }) => {
+                  const isSelected = p.id === selected;
+                  return (
+                  <tr key={p.id} className={isSelected ? "is-selected" : undefined} aria-current={isSelected ? "true" : undefined}>
+                    <td>
+                      <span className="c-mono" lang="en" translate="no">
+                        {p.id}
+                      </span>
+                      {isSelected && <small className="c-ev-sel-tag">{ev.selectedRow}</small>}
                     </td>
                     <td>
                       <span aria-hidden="true" style={{ color: FINDING[p.kind]?.color }}>
@@ -407,7 +442,8 @@ function Processed({ pc, toCase }: { pc: ProcessedCase; toCase: string | null })
                       <BackendText text={p.quality_reason} />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

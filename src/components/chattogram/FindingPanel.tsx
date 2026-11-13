@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, X } from "lucide-react";
+import Link from "next/link";
+import { FileSearch, FileText, X } from "lucide-react";
 import { api, toLoadError, type Load } from "@/lib/chattogram/api";
 import { fmtArea, fmtDate, fmtNum, fmtSigned } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
@@ -23,8 +24,11 @@ function Check({ check }: { check: unknown }) {
   return <>{parts.flatMap((p, i) => (i ? [" · ", p] : [p]))}</>;
 }
 
-/** Click-to-explain (F07): what changed, why we think so, what is uncertain, and where every number comes from. */
-export function FindingPanel({ finding, detail, onClose }: { finding: Finding; detail: CaseDetail; onClose: () => void }) {
+/**
+ * Click-to-explain (F07): what changed, why we think so, what is uncertain, and where every number comes from.
+ * On Explore `evidenceHref` links to the same finding on Evidence, which shows this panel as its selected-finding card.
+ */
+export function FindingPanel({ finding, detail, onClose, evidenceHref }: { finding: Finding; detail: CaseDetail; onClose: () => void; evidenceHref?: string }) {
   const p = finding.properties;
   const t = useT();
   const f = t.finding;
@@ -66,7 +70,7 @@ export function FindingPanel({ finding, detail, onClose }: { finding: Finding; d
             {p.id}
           </span>
         </p>
-        <button type="button" className="c-btn c-finding-close" onClick={onClose} aria-label={f.close}>
+        <button type="button" className="c-btn c-finding-close c-noprint" onClick={onClose} aria-label={f.close}>
           <X size={15} aria-hidden="true" />
         </button>
       </div>
@@ -103,6 +107,14 @@ export function FindingPanel({ finding, detail, onClose }: { finding: Finding; d
           <dd>{f.validShare(fmtNum(Math.round(p.valid_fraction * 100)))}</dd>
         </div>
       </dl>
+      {evidenceHref && (
+        <div className="c-links">
+          <Link className="c-btn" href={evidenceHref}>
+            <FileSearch size={15} aria-hidden="true" />
+            {f.evidenceLink}
+          </Link>
+        </div>
+      )}
 
       <h3>{f.why}</h3>
       <p>

@@ -416,6 +416,9 @@
 .d-table tr.is-selected {
   background: rgb(143 227 255 / 0.08);
 }
+.d-table tr.is-selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--c-focus, var(--ice));
+}
 .d-table tbody th button {
   color: var(--snow);
   font: inherit;

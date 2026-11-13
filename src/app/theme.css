@@ -152,7 +152,8 @@ html:not([data-theme="dark"]) .atlas-place { color: #ffffff; }
 :lang(bn) .d-nav-group,
 :lang(bn) .d-nav-tag,
 :lang(bn) .c-tick-mark,
-:lang(bn) .c-step-n {
+:lang(bn) .c-step-n,
+:lang(bn) .c-finding h3 {
   letter-spacing: 0;
   text-transform: none;
 }

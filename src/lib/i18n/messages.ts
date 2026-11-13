@@ -375,6 +375,11 @@ const en = {
     colValid: "Valid",
     colQuality: "Quality",
     noCaseFindings: "No area passed the method’s change threshold.",
+    selectedLabel: "Selected finding",
+    /** Under the selected finding when Evidence compares other dates than the case. */
+    selectedOtherPair: (span: S) => `Measured on the case pair, ${span}, not on the dates above.`,
+    showOnMap: "Show on the map",
+    selectedRow: "Selected",
     processedFrom: "Processed from",
     stored: "The case as the backend stores it:",
   },
@@ -610,6 +615,7 @@ const en = {
     checksFailed: "Reference checks couldn’t be loaded",
     sources: "Sources",
     qaReport: "QA report",
+    evidenceLink: "Evidence for this finding",
   },
   keys: {
     water: "Water change candidates",
@@ -1051,6 +1057,10 @@ const bn: Messages = {
     colValid: "বৈধ",
     colQuality: "প্রমাণের মান",
     noCaseFindings: "কোনো এলাকা পদ্ধতির পরিবর্তন-সীমা পার হয়নি।",
+    selectedLabel: "বেছে নেওয়া পরিবর্তন-এলাকা",
+    selectedOtherPair: (span) => `কেসের তারিখ-জোড়ায় (${span}) মাপা, ওপরের তারিখগুলোয় নয়।`,
+    showOnMap: "মানচিত্রে দেখুন",
+    selectedRow: "বেছে নেওয়া",
     processedFrom: "যে ফাইলগুলো থেকে প্রক্রিয়া করা হয়েছে",
     stored: "ব্যাকএন্ডে কেসটি যেভাবে সংরক্ষিত:",
   },
@@ -1309,6 +1319,7 @@ const bn: Messages = {
     checksFailed: "রেফারেন্স যাচাই লোড করা যায়নি",
     sources: "উৎস",
     qaReport: "মান-যাচাই প্রতিবেদন",
+    evidenceLink: "এই পরিবর্তন-এলাকার প্রমাণ",
   },
   keys: {
     water: "পানির পরিবর্তনের সম্ভাব্য এলাকা",

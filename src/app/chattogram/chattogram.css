@@ -720,6 +720,42 @@
   border-radius: 10px;
   background: var(--c-navy);
 }
+/* the finding picked on Explore, shown first on Evidence (the Explore panel, full width) */
+.c-ev-selected {
+  margin-top: 28px;
+  border: 1px solid var(--c-line);
+  border-left: 3px solid var(--c-focus);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.c-ev-selected-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px 0;
+  background: var(--c-panel);
+}
+.c-ev-selected-head .c-hint {
+  flex-basis: 100%;
+  margin: 0;
+}
+.c-ev-selected-head .c-label {
+  margin: 0;
+}
+.c-ev-selected .c-finding {
+  border-bottom: 0;
+}
+.c-ev-selected .c-finding > :not(.c-finding-head):not(h2) {
+  max-width: 78ch;
+}
+.c-ev-sel-tag {
+  display: block;
+  margin-top: 2px;
+  font-weight: 600;
+  color: var(--c-text);
+}
 .c-ev-card h2,
 .c-ev-sources > h2 {
   margin-bottom: 10px;
@@ -863,7 +899,10 @@
     background: #fff !important;
   }
   .c-evidence,
-  .c-ev-card {
+  .c-ev-card,
+  .c-ev-selected,
+  .c-ev-selected-head,
+  .c-ev-selected .c-finding {
     background: #fff !important;
     color: #111 !important;
   }
@@ -873,7 +912,8 @@
   .c-ev-src dd,
   .c-ev-claim,
   .c-ev-levels dt,
-  .c-ev-sources > h2 {
+  .c-ev-sources > h2,
+  .c-ev-selected * {
     color: #111 !important;
   }
   .c-ev-card {

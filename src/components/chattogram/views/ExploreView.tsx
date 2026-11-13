@@ -8,6 +8,7 @@ import { fmtDate, fmtNum, fmtSize, fmtTime } from "@/lib/i18n/format";
 import { useT } from "@/lib/i18n/useT";
 import { CaseMap } from "../CaseMap";
 import { CASE_ID, layerImage, type LayerId } from "@/lib/chattogram/case-api";
+import { selectFinding } from "@/lib/chattogram/finding-selection";
 import { FOCUS, useCase } from "../CaseProvider";
 import { CaseBar } from "../CaseBar";
 import { RainCard } from "../RainCard";
@@ -48,7 +49,8 @@ export function ExploreView() {
       : null;
   // the area name is drawn by the map in WebGL, which can't shape Bengali, so it stays as the backend writes it
   const areaName = detail ? `${detail.title} · analysis area` : undefined;
-  const selFinding = pc?.findings.features.find((f) => f.properties.id === finding) ?? null;
+  const sel = selectFinding(pc, finding);
+  const selFinding = sel.kind === "selected" ? sel.finding : null;
   const toCase = detail ? caseHref("/chattogram/explore") : null;
   const onCaseStack = !!detail && stack.items.some((a) => a.granule === detail.before.granule);
 
@@ -97,7 +99,7 @@ export function ExploreView() {
       </section>
 
       <aside className="c-panel" aria-label={e.panel}>
-        {selFinding && pc && <FindingPanel key={selFinding.properties.id} finding={selFinding} detail={pc.detail} onClose={() => set({ f: null })} />}
+        {selFinding && pc && <FindingPanel key={selFinding.properties.id} finding={selFinding} detail={pc.detail} onClose={() => set({ f: null })} evidenceHref={href("/chattogram/evidence")} />}
 
         <div className="c-panel-block">
           {pc ? (
