@@ -36,7 +36,9 @@ def grade(area_km2: float, mean_delta_db: float, valid_fraction: float, threshol
 
 def build(regions: dict, delta, before_db, after_db, valid_common, inside, grid: Grid, pixel_km2: float,
           p: dict, id_seed: str):
-    """regions: {"increase": (labels, counts), "decrease": (labels, counts)}. Returns (FeatureCollection, total)."""
+    """regions: {"increase": (labels, counts), "decrease": (labels, counts)}.
+
+    Returns (FeatureCollection, total regions, [(finding id, kind, region label)] for each listed finding)."""
     ranked = sorted(
         ((int(c), kind, i + 1) for kind, (_, counts) in regions.items() for i, c in enumerate(counts)),
         key=lambda r: (-r[0], r[1], r[2]),
@@ -49,7 +51,7 @@ def build(regions: dict, delta, before_db, after_db, valid_common, inside, grid:
         return np.round(np.column_stack([x, y]), 7)
 
     boxes = {kind: ndimage.find_objects(labels) for kind, (labels, _) in regions.items()}
-    features = []
+    features, listed = [], []
     for rank, (npx, kind, lab) in enumerate(ranked[: p["max_findings"]], start=1):
         labels = regions[kind][0]
         sl = boxes[kind][lab - 1]
@@ -70,6 +72,7 @@ def build(regions: dict, delta, before_db, after_db, valid_common, inside, grid:
         mean_delta = float(np.mean(d, dtype=np.float64))
         quality, reason = grade(area, mean_delta, valid_fraction, p["threshold_db"], p)
         fid = "chg-" + hashlib.sha1(f"{id_seed}|{kind}|{rank}".encode()).hexdigest()[:12]
+        listed.append((fid, kind, lab))
         features.append({
             "type": "Feature",
             "id": fid,
@@ -87,4 +90,4 @@ def build(regions: dict, delta, before_db, after_db, valid_common, inside, grid:
                 "quality_reason": reason,
             },
         })
-    return {"type": "FeatureCollection", "features": features}, total
+    return {"type": "FeatureCollection", "features": features}, total, listed

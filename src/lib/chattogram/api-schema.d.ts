@@ -140,6 +140,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cases/{case_id}/area": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Case Area */
+        get: operations["case_area_api_v1_cases__case_id__area_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cases/{case_id}/brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Case Brief */
+        get: operations["case_brief_api_v1_cases__case_id__brief_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cases/{case_id}/sample": {
         parameters: {
             query?: never;
@@ -353,6 +387,23 @@ export interface paths {
         };
         /** Timeseries */
         get: operations["timeseries_api_v1_curated_cases__case_id__timeseries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/curated-cases/{case_id}/sensitivity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sensitivity */
+        get: operations["sensitivity_api_v1_curated_cases__case_id__sensitivity_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -861,6 +912,43 @@ export interface components {
             /** Scenes */
             scenes: components["schemas"]["Scene"][];
         };
+        /**
+         * Sensitivity
+         * @description The change result re-measured at other thresholds; empty when the case isn't ready or predates the file.
+         */
+        Sensitivity: {
+            /**
+             * Units
+             * @default dB
+             * @constant
+             */
+            units: "dB";
+            /** Published Threshold Db */
+            published_threshold_db: number | null;
+            /** Note */
+            note: string | null;
+            /** Rows */
+            rows: components["schemas"]["SensitivityRow"][];
+            /** Highest Threshold By Finding */
+            highest_threshold_by_finding: {
+                [key: string]: number;
+            };
+        };
+        /** SensitivityRow */
+        SensitivityRow: {
+            /** Threshold Db */
+            threshold_db: number;
+            /** Increase Km2 */
+            increase_km2: number;
+            /** Decrease Km2 */
+            decrease_km2: number;
+            /** Increase Regions */
+            increase_regions: number;
+            /** Decrease Regions */
+            decrease_regions: number;
+            /** Listed Findings Present */
+            listed_findings_present: number;
+        };
         /** SourceRef */
         SourceRef: {
             /** Granule */
@@ -1108,6 +1196,75 @@ export interface operations {
     case_api_v1_cases__case_id__get: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    case_area_api_v1_cases__case_id__area_get: {
+        parameters: {
+            query: {
+                lon1: number;
+                lat1: number;
+                lon2: number;
+                lat2: number;
+            };
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    case_brief_api_v1_cases__case_id__brief_get: {
+        parameters: {
+            query?: {
+                format?: "json" | "csv";
+            };
             header?: never;
             path: {
                 case_id: string;
@@ -1524,6 +1681,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Timeseries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sensitivity_api_v1_curated_cases__case_id__sensitivity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sensitivity"];
                 };
             };
             /** @description Validation Error */

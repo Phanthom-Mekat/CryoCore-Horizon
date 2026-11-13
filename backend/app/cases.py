@@ -21,7 +21,7 @@ from .config import Settings
 from .database import Database, now_iso
 from .explorer import ASSETS
 from .jobs import latest_for_case
-from .schemas import CaseDetail, CaseSummary, FindingCollection, FindingDetail, Layer, Timeseries
+from .schemas import CaseDetail, CaseSummary, FindingCollection, FindingDetail, Layer, Sensitivity, Timeseries
 
 DEFINITIONS = ASSETS / "analysis-areas.geojson"
 REQUIRED_FILES = ("manifest.json", "before_db.png", "after_db.png", "change_db.png", "findings.geojson", "timeseries.json")
@@ -178,6 +178,12 @@ def router(database: Database, settings: Settings) -> APIRouter:
         if not ready(case_id):
             return {"units": "dB", "points": []}
         return bundle_json(case_id, "timeseries.json")
+
+    @api.get("/curated-cases/{case_id}/sensitivity", response_model=Sensitivity)
+    def sensitivity(case_id: str):
+        if not ready(case_id) or not (bundle_dir(settings, case_id) / "sensitivity.json").is_file():
+            return {"units": "dB", "published_threshold_db": None, "note": None, "rows": [], "highest_threshold_by_finding": {}}
+        return bundle_json(case_id, "sensitivity.json")
 
     @api.get("/findings/{finding_id}", response_model=FindingDetail, tags=["Cases"])
     def finding(finding_id: str):

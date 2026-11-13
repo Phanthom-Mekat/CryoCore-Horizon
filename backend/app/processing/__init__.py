@@ -23,7 +23,7 @@ if _proj := PROJDataFinder().search_wheel():
 if _gdal := GDALDataFinder().search_wheel():
     os.environ["GDAL_DATA"] = _gdal
 
-from . import change, findings, render
+from . import change, findings, render, sensitivity
 from .gcov import DIAGONAL_TERMS, GcovError, full_grid, metadata, power_terms, read, window_for_bounds
 from .grid import after_on_grid, pixel_area_km2
 
@@ -132,8 +132,8 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
                  params: dict | None = None) -> dict:
     """Process one before/after GCOV pair over analysis_area (shapely Polygon, EPSG:4326) into out_dir.
 
-    Writes before_db.png, after_db.png, change_db.png, findings.geojson, timeseries.json. The caller publishes
-    out_dir atomically. Raises GcovError (or NoValidCoverage) with a plain message when the data cannot support it.
+    Writes before_db.png, after_db.png, change_db.png, findings.geojson, timeseries.json, sensitivity.json. The caller
+    publishes out_dir atomically. Raises GcovError (or NoValidCoverage) with a plain message when the data cannot support it.
     """
     before_h5, after_h5, out_dir = Path(before_h5), Path(after_h5), Path(out_dir)
     p = _params(params)
@@ -170,10 +170,10 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
     pixel_km2 = pixel_area_km2(grid)
     min_px = change.min_pixels(p["min_region_km2"], pixel_km2)
     regions = {kind: change.regions(delta, sign, p["threshold_db"], p["opening_px"], min_px)
-               for kind, sign in (("increase", 1), ("decrease", -1))}
+               for kind, sign in change.SIGNS}
 
     granules = [s.get("granule") or path.stem for s, path in zip(sources, (before_h5, after_h5))]
-    fc, total = findings.build(regions, delta, bdb, adb, common, inside, grid, pixel_km2,
+    fc, total, listed = findings.build(regions, delta, bdb, adb, common, inside, grid, pixel_km2,
                                p, f"{granules[0]}|{granules[1]}|{METHOD_VERSION}")
 
     analysis_km2 = abs(Geod(ellps="WGS84").geometry_area_perimeter(analysis_area)[0]) / 1e6
@@ -217,6 +217,7 @@ def process_pair(before_h5: Path, after_h5: Path, analysis_area, out_dir: Path, 
                        "valid_km2": round(valid_km2, 4)})
     _write_json(out_dir / "findings.geojson", fc)
     _write_json(out_dir / "timeseries.json", {"units": "dB", "points": points})
+    _write_json(out_dir / "sensitivity.json", sensitivity.sweep(delta, regions, listed, p, min_px, pixel_km2))
 
     conv = metadata(before_h5)["normalization"]
     synthetic = metadata(before_h5)["synthetic_fixture"] or metadata(after_h5)["synthetic_fixture"]

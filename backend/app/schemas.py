@@ -205,6 +205,24 @@ class Timeseries(BaseModel):
     points: list[TimeseriesPoint]
 
 
+class SensitivityRow(BaseModel):
+    threshold_db: float
+    increase_km2: float
+    decrease_km2: float
+    increase_regions: int
+    decrease_regions: int
+    listed_findings_present: int
+
+
+class Sensitivity(BaseModel):
+    """The change result re-measured at other thresholds; empty when the case isn't ready or predates the file."""
+    units: Literal["dB"] = "dB"
+    published_threshold_db: float | None
+    note: str | None
+    rows: list[SensitivityRow]
+    highest_threshold_by_finding: dict[str, float]  # listed finding id -> highest tested threshold it appears at
+
+
 class JobCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     case_id: str = Field(min_length=1, max_length=100)

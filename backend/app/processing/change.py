@@ -5,6 +5,8 @@ import math
 import numpy as np
 from scipy import ndimage
 
+SIGNS = (("increase", 1), ("decrease", -1))  # change kind, sign of after − before
+
 
 def boxcar(power: np.ndarray, size: int) -> np.ndarray:
     """Mean of valid linear power in a size x size box; invalid (NaN) pixels stay NaN and never contribute."""

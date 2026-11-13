@@ -79,6 +79,31 @@ def test_planted_change_found_and_masked_change_suppressed(pair, tmp_path):
     assert m["threshold_db"] == 3.0
 
 
+def test_threshold_sensitivity(pair, tmp_path):
+    result = run(*pair, tmp_path / "out")
+    s = json.loads((tmp_path / "out" / "sensitivity.json").read_text(encoding="utf-8"))
+    feats = json.loads((tmp_path / "out" / "findings.geojson").read_text(encoding="utf-8"))["features"]
+    assert s["published_threshold_db"] == 3.0 and s["units"] == "dB"
+    rows = s["rows"]
+    assert [r["threshold_db"] for r in rows] == [2.0, 3.0, 4.0, 5.0, 6.0]
+    published = rows[1]
+    m = result["metrics"]
+    assert (published["increase_km2"], published["decrease_km2"]) == (m["increase_km2"], m["decrease_km2"])
+    assert published["listed_findings_present"] == len(feats)
+    assert published["increase_regions"] + published["decrease_regions"] == len(feats)  # few regions: all listed
+    for a, b in zip(rows, rows[1:]):  # a higher threshold never finds more
+        assert b["increase_km2"] <= a["increase_km2"] and b["decrease_km2"] <= a["decrease_km2"]
+        assert b["listed_findings_present"] <= a["listed_findings_present"]
+    assert rows[0]["listed_findings_present"] == len(feats)
+    assert rows[-1]["increase_km2"] > 0 and rows[-1]["decrease_km2"] > 0  # planted ±8 dB survives 6 dB
+    highest = s["highest_threshold_by_finding"]
+    assert set(highest) == {f["id"] for f in feats}
+    inc = next(f["id"] for f in feats if f["properties"]["kind"] == "increase" and near(f, *INCREASE[:2]))
+    dec = next(f["id"] for f in feats if f["properties"]["kind"] == "decrease" and near(f, *DECREASE[:2]))
+    assert highest[inc] == highest[dec] == 6.0
+    assert "sensitivity" not in result  # the manifest stays as it was
+
+
 def test_area_math(pair, tmp_path):
     before, _ = pair
     km2 = pixel_area_km2(full_grid(before, "A"))
@@ -125,7 +150,8 @@ def test_missing_layers_raise(pair, tmp_path):
 def test_repeatable(pair, tmp_path):
     r1, r2 = run(*pair, tmp_path / "a"), run(*pair, tmp_path / "b")
     assert r1 == r2
-    for name in ("before_db.png", "after_db.png", "change_db.png", "findings.geojson", "timeseries.json"):
+    for name in ("before_db.png", "after_db.png", "change_db.png", "findings.geojson", "timeseries.json",
+                 "sensitivity.json"):
         assert (tmp_path / "a" / name).read_bytes() == (tmp_path / "b" / name).read_bytes(), name
 
 

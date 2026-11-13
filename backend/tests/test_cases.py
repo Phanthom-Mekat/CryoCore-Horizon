@@ -12,6 +12,13 @@ from app.main import create_app
 from test_jobs import CASE, PNG, database, fake_downloads, fake_processing, seed_scenes, settings  # noqa: F401
 
 
+EMPTY_SENSITIVITY = {"units": "dB", "published_threshold_db": None, "note": None, "rows": [], "highest_threshold_by_finding": {}}
+SENSITIVITY = {"units": "dB", "published_threshold_db": 3.0, "note": "test",
+               "rows": [{"threshold_db": 3.0, "increase_km2": 0.0, "decrease_km2": 1.5, "increase_regions": 0,
+                         "decrease_regions": 1, "listed_findings_present": 1}],
+               "highest_threshold_by_finding": {"f1": 3.0}}
+
+
 def offline():
     def no_network(request):
         pytest.fail("case replay must not call NASA")
@@ -33,6 +40,7 @@ def test_unprocessed_case_is_honest(settings, database):
         assert client.get(f"/api/v1/curated-cases/{CASE}/layers").json() == []
         assert client.get(f"/api/v1/curated-cases/{CASE}/findings").json() == {"type": "FeatureCollection", "features": []}
         assert client.get(f"/api/v1/curated-cases/{CASE}/timeseries").json() == {"units": "dB", "points": []}
+        assert client.get(f"/api/v1/curated-cases/{CASE}/sensitivity").json() == EMPTY_SENSITIVITY
         assert client.get(f"/api/v1/curated-cases/{CASE}/assets/before_db.png").status_code == 404
         assert client.get(f"/api/v1/curated-cases/{CASE}/export").status_code == 409
         assert client.get("/api/v1/curated-cases/elsewhere").status_code == 404
@@ -77,6 +85,12 @@ def test_ready_case_replays_from_bundle(settings, database, monkeypatch):
         assert len(finding["evidence"]["sources"]) == 2
         assert client.get("/api/v1/findings/nope").status_code == 404
         assert client.get(f"/api/v1/curated-cases/{CASE}/timeseries").json()["points"][0]["mean_db"] == -9.0
+        # a bundle published before the sensitivity file existed: empty, not an error
+        assert client.get(f"/api/v1/curated-cases/{CASE}/sensitivity").json() == EMPTY_SENSITIVITY
+        bundle = settings.resolved_data_dir / "cases" / CASE
+        (bundle / "sensitivity.json").write_text(json.dumps(SENSITIVITY))
+        assert client.get(f"/api/v1/curated-cases/{CASE}/sensitivity").json() == SENSITIVITY
+        assert client.get("/api/v1/curated-cases/elsewhere/sensitivity").status_code == 404
 
         exported = client.get(f"/api/v1/curated-cases/{CASE}/export?format=json")
         texts.append(exported.text)
@@ -96,7 +110,7 @@ def test_ready_case_replays_from_bundle(settings, database, monkeypatch):
 def test_openapi_has_typed_case_models(settings, database):
     with TestClient(create_app(settings, offline())) as client:
         schemas = client.get("/openapi.json").json()["components"]["schemas"]
-    for name in ("CaseSummary", "CaseDetail", "Layer", "FindingCollection", "FindingDetail", "Timeseries", "Job",
+    for name in ("CaseSummary", "CaseDetail", "Layer", "FindingCollection", "FindingDetail", "Timeseries", "Sensitivity", "Job",
                  "JobCreated", "Region"):
         assert name in schemas, name
 

@@ -25,7 +25,7 @@ def test_subset_processes_exactly_like_the_full_file(tmp_path):
     a = process_pair(full["before"], full["after"], AREA, tmp_path / "full", SOURCES)
     b = process_pair(cut["before"], cut["after"], AREA, tmp_path / "cut", SOURCES)
     assert a["metrics"] == b["metrics"] and a["metrics"]["increase_km2"] > 0
-    for name in ("findings.geojson", "timeseries.json", "before_db.png", "after_db.png", "change_db.png"):
+    for name in ("findings.geojson", "timeseries.json", "sensitivity.json", "before_db.png", "after_db.png", "change_db.png"):
         assert (tmp_path / "full" / name).read_bytes() == (tmp_path / "cut" / name).read_bytes(), name
 
 

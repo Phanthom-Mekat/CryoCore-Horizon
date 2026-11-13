@@ -46,6 +46,7 @@ install command when updating an existing environment.
 | GET | `/api/v1/curated-cases/{id}/findings` | GeoJSON "Observed radar change" polygons (empty until ready) |
 | GET | `/api/v1/findings/{id}` | One finding plus evidence: sources, parameters, method version, reference checks |
 | GET | `/api/v1/curated-cases/{id}/timeseries` | Per-date dB statistics over pixels valid on both dates |
+| GET | `/api/v1/curated-cases/{id}/sensitivity` | Changed area, region count and listed findings still present at 2–6 dB thresholds; empty for older bundles |
 | GET | `/api/v1/curated-cases/{id}/export?format=json\|csv\|geojson` | Download with provenance (409 until ready) |
 | POST | `/api/v1/jobs` `{case_id}` | Queue processing (202). Needs `X-Admin-Token` = `CRYO_ADMIN_TOKEN`; 403 if unset |
 | GET | `/api/v1/jobs/{id}` | Job state, stage, progress, error, retryable, attempts |
@@ -88,8 +89,8 @@ dates: [case-selection.md](../docs/case-selection.md).
 
 A job resolves both scenes from the local catalog, downloads the two HDF5 files (about 12.4 GB), and runs
 `app.processing.process_pair` into `data/cases/.tmp-<id>-<job>/`. It then swaps the finished bundle into `data/cases/<id>/`
-(`manifest.json`, `before_db.png`, `after_db.png`, `change_db.png`, `findings.geojson`, `timeseries.json`). A half-written
-bundle is never served. Downloads:
+(`manifest.json`, `before_db.png`, `after_db.png`, `change_db.png`, `findings.geojson`, `timeseries.json`, and `sensitivity.json`, which is optional
+so bundles made before it existed still publish). A half-written bundle is never served. Downloads:
 
 - authenticate with `CRYO_EARTHDATA_TOKEN` (bearer), otherwise `~/.netrc` / `~/_netrc` for `urs.earthdata.nasa.gov`;
 - follow redirects by hand, only to https hosts on an allowlist (URS, `*.earthdatacloud.nasa.gov`, ASF's pinned
